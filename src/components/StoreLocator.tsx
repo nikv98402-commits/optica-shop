@@ -1,85 +1,65 @@
-import { X, MapPin, Phone, Clock, Search } from 'lucide-react'; // Добавил Search
-import { useState } from 'react'; // Добавил useState
+import { Clock, MapPin, Phone, Search, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 interface StoreLocatorProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const stores = [
+  { city: 'Москва', address: 'Тверская, 10, ТЦ Центральный', phone: '+7 (495) 123-45-67', time: '10:00-22:00' },
+  { city: 'Санкт-Петербург', address: 'Невский проспект, 25', phone: '+7 (812) 321-76-54', time: '10:00-21:00' },
+  { city: 'Екатеринбург', address: 'Ленина, 5, офис 102', phone: '+7 (343) 999-00-11', time: '09:00-20:00' },
+  { city: 'Новосибирск', address: 'Красный проспект, 42', phone: '+7 (383) 222-33-44', time: '10:00-20:00' },
+  { city: 'Казань', address: 'Баумана, 7', phone: '+7 (843) 555-44-33', time: '10:00-21:00' },
+];
+
 export function StoreLocator({ isOpen, onClose }: StoreLocatorProps) {
-  const [searchQuery, setSearchQuery] = useState(''); // Состояние для поиска
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredStores = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return stores;
+    return stores.filter((store) => `${store.city} ${store.address}`.toLowerCase().includes(query));
+  }, [searchQuery]);
 
   if (!isOpen) return null;
 
-  const stores = [
-    { city: 'Москва', address: 'ул. Тверская, 10, ТЦ «Центральный»', phone: '+7 (495) 123-45-67', time: '10:00 — 22:00' },
-    { city: 'Санкт-Петербург', address: 'Невский проспект, 25', phone: '+7 (812) 321-76-54', time: '10:00 — 21:00' },
-    { city: 'Екатеринбург', address: 'ул. Ленина, 5, оф. 102', phone: '+7 (343) 999-00-11', time: '09:00 — 20:00' },
-    { city: 'Новосибирск', address: 'Красный проспект, 42', phone: '+7 (383) 222-33-44', time: '10:00 — 20:00' },
-    { city: 'Казань', address: 'ул. Баумана, 7', phone: '+7 (843) 555-44-33', time: '10:00 — 21:00' },
-    { city: 'Краснодар', address: 'ул. Красная, 124', phone: '+7 (861) 777-88-99', time: '10:00 — 22:00' },
-  ];
-
-  // Фильтрация магазинов по вводу пользователя
-  const filteredStores = stores.filter(store => 
-    store.city.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    store.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-      <div className="bg-white max-w-2xl w-full max-h-[90vh] flex flex-col relative shadow-2xl">
-        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 z-10">
-          <X size={24} />
-        </button>
-
-        <div className="p-8 border-b border-gray-100">
-          <h2 className="text-3xl font-serif mb-2 text-gray-900">Наши салоны</h2>
-          
-          {/* Поле поиска */}
-          <div className="relative mt-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input 
-              type="text"
-              placeholder="Введите город или адрес..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 focus:border-gray-900 outline-none transition-all"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[2.5rem] bg-[#fffaf2] shadow-2xl">
+        <div className="relative border-b border-slate-900/10 p-7 md:p-9">
+          <button onClick={onClose} className="absolute right-6 top-6 rounded-full bg-white p-3 ring-1 ring-slate-900/10 transition hover:bg-stone-100"><X size={18} /></button>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#9a6933]">Store locator</p>
+          <h2 className="mt-2 text-4xl font-black tracking-[-0.05em]">Наши салоны</h2>
+          <div className="relative mt-6">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Введите город или адрес" className="w-full rounded-full border border-slate-900/10 bg-white py-4 pl-12 pr-5 outline-none transition focus:border-[#315c56]" />
           </div>
         </div>
 
-        <div className="overflow-y-auto p-8 pt-4 space-y-6 flex-grow">
-          {filteredStores.length > 0 ? (
-            <div className="grid gap-4">
-              {filteredStores.map((store, idx) => (
-                <div key={idx} className="border border-gray-200 p-5 hover:border-blue-600 transition-all group">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-serif text-gray-900">{store.city}</h3>
-                    <span className="text-[10px] bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-100 uppercase font-bold">Открыто</span>
-                  </div>
-                  <div className="space-y-3 text-sm text-gray-600">
-                    <div className="flex items-start space-x-3">
-                      <MapPin size={18} className="text-blue-600" />
-                      <span>{store.address}</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Phone size={18} />
-                      <a href={`tel:${store.phone}`}>{store.phone}</a>
+        <div className="overflow-y-auto p-5 md:p-7">
+          <div className="grid gap-4">
+            {filteredStores.map((store) => (
+              <article key={`${store.city}-${store.address}`} className="rounded-3xl bg-white p-5 ring-1 ring-slate-900/5 transition hover:shadow-lg">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                  <div>
+                    <h3 className="text-2xl font-black tracking-tight">{store.city}</h3>
+                    <div className="mt-4 space-y-3 text-sm text-slate-600">
+                      <p className="flex gap-3"><MapPin className="shrink-0 text-[#315c56]" size={18} /> {store.address}</p>
+                      <p className="flex gap-3"><Phone className="shrink-0 text-[#315c56]" size={18} /> {store.phone}</p>
+                      <p className="flex gap-3"><Clock className="shrink-0 text-[#315c56]" size={18} /> {store.time}</p>
                     </div>
                   </div>
+                  <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-green-700">Открыто</span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-10 text-gray-500">Магазины в этом городе пока не найдены</div>
-          )}
+              </article>
+            ))}
+          </div>
         </div>
 
-        <div className="p-6 border-t border-gray-100 bg-gray-50">
-          <button onClick={onClose} className="w-full bg-gray-900 text-white py-4 font-bold uppercase tracking-widest text-sm">
-            Закрыть
-          </button>
+        <div className="border-t border-slate-900/10 p-5">
+          <button onClick={onClose} className="w-full rounded-full bg-slate-950 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#315c56]">Закрыть</button>
         </div>
       </div>
     </div>

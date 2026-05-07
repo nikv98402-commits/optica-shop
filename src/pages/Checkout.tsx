@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { CreditCard, ShieldCheck, Package, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { useTranslation } from '../hooks/useTranslation';
+import { ArrowLeft, CheckCircle2, CreditCard, Package, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+import { formatPrice } from '../data/products';
 
 interface CheckoutProps {
   onBack: () => void;
@@ -8,122 +8,79 @@ interface CheckoutProps {
 }
 
 export function Checkout({ onBack, onSuccess }: CheckoutProps) {
-  const t = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSubscription, setIsSubscription] = useState(true);
+  const [delivery, setDelivery] = useState<'store' | 'courier'>('store');
 
-  // Расчет цен
-  const basePrice = 3500;
-  const discountAmount = isSubscription ? 525 : 0; 
-  const totalAmount = basePrice - discountAmount;
+  const basePrice = 12990;
+  const servicePrice = delivery === 'courier' ? 490 : 0;
+  const totalAmount = basePrice + servicePrice;
 
   const handlePayment = () => {
     setIsProcessing(true);
-    
-    // Имитация задержки платежного шлюза
-    setTimeout(() => {
+    window.setTimeout(() => {
       setIsProcessing(false);
-      onSuccess(); 
-    }, 2500);
+      onSuccess();
+    }, 1200);
   };
 
   return (
-    <div className="min-h-screen bg-white pt-32 pb-20 px-6">
-      <div className="max-w-4xl mx-auto">
-        <button 
-          onClick={onBack}
-          className="flex items-center text-sm font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-8 group"
-        >
-          <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" /> 
-          Назад в каталог
+    <div className="min-h-screen bg-[#fffaf2] px-6 py-12">
+      <div className="mx-auto max-w-5xl">
+        <button onClick={onBack} className="mb-10 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-slate-500 transition hover:text-slate-950">
+          <ArrowLeft size={18} /> Назад в каталог
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          
-          {/* ФОРМА ОПЛАТЫ */}
-          <div className="space-y-8">
-            <h1 className="text-3xl font-serif text-gray-900">Оформление</h1>
-            
-            <div className="space-y-4">
-              <div className="p-4 border border-black bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-4">
-                  <CreditCard size={24} className="text-gray-900" />
-                  <div>
-                    <p className="text-sm font-bold uppercase tracking-tight">Карта</p>
-                    <p className="text-xs text-gray-500">Любые банки РФ</p>
-                  </div>
-                </div>
-              </div>
+        <div className="grid gap-10 lg:grid-cols-[1fr_380px]">
+          <section className="rounded-[2.5rem] bg-white p-7 shadow-sm ring-1 ring-slate-900/5 md:p-10">
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#9a6933]">Checkout</p>
+            <h1 className="mt-3 text-5xl font-black tracking-[-0.06em]">Оформление заказа</h1>
 
-              <section className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                <div className="flex items-start gap-3">
-                  <ShieldCheck className="text-blue-600 mt-1" size={20} />
-                  <div>
-                    <p className="text-sm font-bold text-blue-900 mb-1">PCI DSS Secure</p>
-                    <p className="text-xs text-blue-700 leading-relaxed">
-                      VisionLux не хранит ваши данные. Платеж проходит через защищенный шлюз.
-                    </p>
-                  </div>
-                </div>
-              </section>
+            <div className="mt-10 grid gap-4">
+              <label className="grid gap-2">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Имя</span>
+                <input className="rounded-2xl border border-slate-900/10 bg-stone-50 px-5 py-4 outline-none transition focus:border-[#315c56]" placeholder="Анна" />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Телефон</span>
+                <input className="rounded-2xl border border-slate-900/10 bg-stone-50 px-5 py-4 outline-none transition focus:border-[#315c56]" placeholder="+7 900 000-00-00" />
+              </label>
             </div>
 
-            <button
-              onClick={handlePayment}
-              disabled={isProcessing}
-              className={`w-full py-5 rounded-full font-bold uppercase tracking-widest text-sm transition-all shadow-lg ${
-                isProcessing 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-black text-white hover:bg-gray-800'
-              }`}
-            >
-              {isProcessing ? 'Связь с банком...' : `Оплатить ${totalAmount} ₽`}
+            <div className="mt-8">
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Получение</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button onClick={() => setDelivery('store')} className={`rounded-3xl border-2 p-5 text-left transition ${delivery === 'store' ? 'border-[#315c56] bg-[#eef5f1]' : 'border-slate-900/10'}`}><strong>Самовывоз</strong><span className="mt-1 block text-sm text-slate-500">Примерка и настройка в салоне</span></button>
+                <button onClick={() => setDelivery('courier')} className={`rounded-3xl border-2 p-5 text-left transition ${delivery === 'courier' ? 'border-[#315c56] bg-[#eef5f1]' : 'border-slate-900/10'}`}><strong>Курьер</strong><span className="mt-1 block text-sm text-slate-500">Доставка по городу за 1-2 дня</span></button>
+              </div>
+            </div>
+
+            <div className="mt-8 rounded-3xl bg-blue-50 p-5 text-blue-950">
+              <div className="flex gap-3">
+                <ShieldCheck className="mt-1" size={22} />
+                <p className="text-sm leading-6">Это demo-оформление: платежная интеграция не подключена, но сценарий заказа уже показывает будущую логику магазина.</p>
+              </div>
+            </div>
+          </section>
+
+          <aside className="h-fit rounded-[2.5rem] bg-slate-950 p-7 text-white shadow-2xl shadow-slate-900/20">
+            <h2 className="text-2xl font-black tracking-tight">Ваш заказ</h2>
+            <div className="mt-6 flex gap-4 rounded-3xl bg-white/10 p-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10"><Package /></div>
+              <div><strong>Aurora Crystal</strong><p className="mt-1 text-sm text-white/60">Оправа + базовые линзы</p></div>
+            </div>
+
+            <div className="mt-6 space-y-4 border-t border-white/10 pt-6 text-sm">
+              <div className="flex justify-between"><span className="text-white/60">Товар</span><strong>{formatPrice(basePrice)}</strong></div>
+              <div className="flex justify-between"><span className="text-white/60">Доставка</span><strong>{servicePrice ? formatPrice(servicePrice) : '0 ₽'}</strong></div>
+              <div className="flex justify-between border-t border-white/10 pt-5 text-2xl"><span>Итого</span><strong>{formatPrice(totalAmount)}</strong></div>
+            </div>
+
+            <button onClick={handlePayment} disabled={isProcessing} className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-[#f5b25f] px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60">
+              {isProcessing ? 'Создаем заказ...' : <><CreditCard size={18} /> Подтвердить</>}
             </button>
-          </div>
 
-          {/* ДЕТАЛИ ЗАКАЗА */}
-          <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 h-fit">
-            <h3 className="text-lg font-serif mb-6 text-gray-900">Ваш заказ</h3>
-            
-            <div className="flex gap-4 mb-8">
-              <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center border border-gray-200">
-                <Package className="text-gray-300" size={28} />
-              </div>
-              <div>
-                <p className="text-sm font-bold">Acuvue Oasys Monthly</p>
-                <p className="text-xs text-gray-500 italic">Линзы (6 шт.)</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 border-t border-gray-200 pt-6">
-              <div 
-                className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${isSubscription ? 'border-blue-600 bg-blue-50/50' : 'border-transparent bg-white shadow-sm'}`}
-                onClick={() => setIsSubscription(!isSubscription)}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSubscription ? 'border-blue-600 bg-blue-600' : 'border-gray-300'}`}>
-                      {isSubscription && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                    </div>
-                    <span className="text-sm font-medium">Подписка «Зрение+»</span>
-                  </div>
-                  <span className="text-xs font-bold text-green-600">-15%</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between pt-6 border-t border-gray-200 px-2">
-                <span className="text-xl font-serif">Итого</span>
-                <span className="text-2xl font-serif font-bold">{totalAmount} ₽</span>
-              </div>
-            </div>
-
-            <div className="mt-8 flex items-center gap-3 p-4 bg-white/50 rounded-xl border border-dashed border-gray-300">
-              <CheckCircle2 size={16} className="text-green-500" />
-              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-[0.1em]">
-                +1 шаг к бесплатному осмотру у врача
-              </p>
-            </div>
-          </div>
+            <div className="mt-6 flex gap-3 text-xs leading-5 text-white/60"><CheckCircle2 className="shrink-0 text-[#f5b25f]" size={18} /> После подтверждения менеджер VisionLux свяжется для уточнения рецепта и времени примерки.</div>
+          </aside>
         </div>
       </div>
     </div>

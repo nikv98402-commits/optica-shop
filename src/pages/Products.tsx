@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Truck, CheckCircle2, Loader2, MapPin } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { CheckCircle2, SlidersHorizontal, Truck } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { demoProducts, formatPrice } from '../data/products';
 import { Product } from '../types';
 
 interface ProductsProps {
@@ -9,218 +9,137 @@ interface ProductsProps {
   onToggleFitting: (id: string) => void;
 }
 
-export function Products({
-  onNavigate,
-  fittingCart = [], 
-  onToggleFitting,
-}: ProductsProps) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+const categories = [
+  { id: 'all', name: 'Все' },
+  { id: 'eyeglasses', name: 'Оправы' },
+  { id: 'sunglasses', name: 'Солнцезащитные' },
+  { id: 'contact_lenses', name: 'Линзы' },
+];
+
+export function Products({ onNavigate, fittingCart, onToggleFitting }: ProductsProps) {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [onlyFitting, setOnlyFitting] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const loadProducts = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const { data, error: supabaseError } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const filteredProducts = useMemo(() => {
+    return demoProducts.filter((product) => {
+      const categoryMatches = categoryFilter === 'all' || product.category === categoryFilter;
+      const brandMatches = brandFilter === 'all' || product.brand_type === brandFilter;
+      const fittingMatches = !onlyFitting || product.category !== 'contact_lenses';
+      return categoryMatches && brandMatches && fittingMatches;
+    });
+  }, [brandFilter, categoryFilter, onlyFitting]);
 
-      if (supabaseError) throw supabaseError;
-      setProducts(data || []);
-    } catch (err: any) {
-      console.error('Ошибка загрузки данных:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
-
-  useEffect(() => {
-    const applyFilters = () => {
-      // Гарантируем, что работаем с массивом
-      let filtered = Array.isArray(products) ? [...products] : [];
-
-      if (categoryFilter !== 'all') {
-        filtered = filtered.filter((p) => p.category === categoryFilter);
-      }
-
-      if (brandFilter !== 'all') {
-        filtered = filtered.filter((p) => p.brand_type === brandFilter);
-      }
-
-      if (onlyFitting) {
-        filtered = filtered.filter((p) => p.category !== 'contact_lenses');
-      }
-
-      setFilteredProducts(filtered);
-    };
-
-    applyFilters();
-  }, [products, categoryFilter, brandFilter, onlyFitting]);
-
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
-        <p className="text-gray-500 animate-pulse font-medium">Загружаем коллекцию...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center p-6">
-        <div className="text-center bg-red-50 p-8 border border-red-100 rounded-2xl max-w-md">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Ошибка подключения</h2>
-          <p className="text-gray-600 mb-6 text-sm">{error}</p>
-          <button
-            onClick={() => loadProducts()}
-            className="px-8 py-3 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all font-bold uppercase text-xs tracking-widest"
-          >
-            Попробовать снова
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const productLabel = (product: Product) => {
+    if (product.category === 'contact_lenses') return 'Контактные линзы';
+    if (product.category === 'sunglasses') return 'Солнцезащитные очки';
+    return 'Оправа';
+  };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="bg-gray-50 py-16 px-6 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-serif mb-4 text-gray-900 uppercase tracking-tight">Каталог оптики</h1>
-          <p className="text-gray-600 max-w-xl mx-auto italic">
-            Премиальные бренды и собственная линия оправ с бесплатной доставкой в наши салоны.
-          </p>
+    <div className="min-h-screen bg-[#fffaf2]">
+      <section className="border-b border-slate-900/10 bg-[#f7f1e8] px-6 py-16">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#9a6933]">Каталог</p>
+          <div className="mt-4 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div>
+              <h1 className="text-5xl font-black tracking-[-0.06em] text-slate-950 md:text-7xl">Очки, линзы, примерка.</h1>
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Выбирайте онлайн, откладывайте модели на примерку и забирайте в ближайшем салоне VisionLux.</p>
+            </div>
+            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">В примерке</p>
+              <p className="mt-1 text-3xl font-black">{fittingCart.length} / 5</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex flex-col md:flex-row gap-12">
-          <aside className="md:w-64 flex-shrink-0">
-            <div className="sticky top-24 space-y-8">
-               <button
-                onClick={() => setOnlyFitting(!onlyFitting)}
-                className={`w-full flex items-center justify-between p-4 border transition-all rounded-lg ${
-                  onlyFitting ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white border-gray-200 text-gray-700 hover:border-blue-400'
-                }`}
-              >
-                <span className="text-sm font-bold uppercase tracking-tighter">Тест-драйв оправы</span>
-                {onlyFitting ? <CheckCircle2 size={16} /> : <Truck size={16} className="text-gray-400" />}
-              </button>
-              
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-12 lg:grid-cols-[280px_1fr]">
+        <aside className="lg:sticky lg:top-28 lg:h-fit">
+          <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+            <div className="mb-6 flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em]"><SlidersHorizontal size={18} /> Фильтры</div>
+
+            <div className="space-y-7">
               <div>
-                <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Категории</h4>
-                <div className="flex flex-col gap-3">
-                  {[
-                    {id: 'all', name: 'Все товары'}, 
-                    {id: 'sunglasses', name: 'Солнцезащитные'}, 
-                    {id: 'eyeglasses', name: 'Оправы'}, 
-                    {id: 'contact_lenses', name: 'Линзы'}
-                  ].map((cat) => (
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Категория</p>
+                <div className="flex flex-wrap gap-2 lg:flex-col">
+                  {categories.map((category) => (
                     <button
-                      key={cat.id}
-                      onClick={() => setCategoryFilter(cat.id)}
-                      className={`text-left text-sm transition-colors ${categoryFilter === cat.id ? 'text-blue-600 font-bold' : 'text-gray-500 hover:text-black'}`}
+                      key={category.id}
+                      onClick={() => setCategoryFilter(category.id)}
+                      className={`rounded-full px-4 py-2 text-left text-sm font-bold transition ${categoryFilter === category.id ? 'bg-slate-950 text-white' : 'bg-stone-100 text-slate-600 hover:bg-stone-200'}`}
                     >
-                      {cat.name}
+                      {category.name}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="p-5 bg-blue-50 rounded-xl border border-blue-100">
-                <MapPin size={20} className="text-blue-600 mb-2" />
-                <p className="text-[11px] text-blue-800 font-bold leading-relaxed">
-                  Бесплатная примерка до 5 моделей в любом из наших салонов.
-                </p>
-              </div>
-            </div>
-          </aside>
-
-          <div className="flex-1">
-            <div className="flex justify-between items-center mb-8 border-b pb-4">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Найдено моделей: {filteredProducts?.length || 0}
-              </span>
-              {(Array.isArray(fittingCart) && fittingCart.length > 0) && (
-                <div className="flex items-center gap-2">
-                   <div className="w-2 h-2 bg-blue-600 rounded-full animate-ping" />
-                   <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">
-                    Для примерки: {fittingCart.length} / 5
-                  </span>
+              <div>
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Бренд</p>
+                <div className="grid gap-2">
+                  {[
+                    { id: 'all', name: 'Все бренды' },
+                    { id: 'our_brand', name: 'VisionLux' },
+                    { id: 'partner_brand', name: 'Партнерские' },
+                  ].map((brand) => (
+                    <button key={brand.id} onClick={() => setBrandFilter(brand.id)} className={`rounded-2xl px-4 py-3 text-left text-sm font-bold transition ${brandFilter === brand.id ? 'bg-[#315c56] text-white' : 'bg-stone-100 text-slate-600 hover:bg-stone-200'}`}>{brand.name}</button>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
 
-            {(!filteredProducts || filteredProducts.length === 0) ? (
-              <div className="text-center py-32 border-2 border-dashed border-gray-100 rounded-3xl">
-                <p className="text-gray-400 font-serif text-xl italic">В этой категории пока пусто</p>
-                <button onClick={() => setCategoryFilter('all')} className="mt-4 text-blue-600 text-sm underline font-bold">Сбросить фильтры</button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-                {filteredProducts.map((product) => (
-                  <div key={product.id} className="group relative">
-                    <div 
-                      onClick={() => onNavigate('product', product.id)}
-                      className="aspect-[3/4] bg-gray-50 mb-4 cursor-pointer overflow-hidden rounded-sm transition-transform duration-500 group-hover:scale-[1.01]"
-                    >
-                      <img 
-                        src={product.image_url} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover mix-blend-multiply" 
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-serif text-lg text-gray-900 leading-tight">{product.name}</h3>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1 font-bold">
-                          {product.brand_name || 'VisionLux'}
-                        </p>
-                      </div>
-                      <p className="font-bold text-gray-900 whitespace-nowrap">
-                        {Math.round(product.price * 95).toLocaleString('ru-RU')} ₽
-                      </p>
-                    </div>
-                    
-                    <div className="flex gap-2 mt-5 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <button 
-                         onClick={() => onNavigate('product', product.id)} 
-                         className="flex-1 border border-gray-200 py-3 text-[9px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all"
-                       >
-                         Детали
-                       </button>
-                       {product.category !== 'contact_lenses' && (
-                         <button 
-                           onClick={() => onToggleFitting(product.id)}
-                           className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-widest transition-all ${
-                             fittingCart?.includes(product.id) 
-                             ? 'bg-blue-600 text-white border-blue-600' 
-                             : 'bg-gray-100 text-gray-900 border-transparent hover:bg-gray-200'
-                           }`}
-                         >
-                           {fittingCart?.includes(product.id) ? 'В списке' : 'Примерить'}
-                         </button>
-                       )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+              <button
+                onClick={() => setOnlyFitting((value) => !value)}
+                className={`flex w-full items-center justify-between rounded-3xl p-4 text-left transition ${onlyFitting ? 'bg-[#f5b25f] text-slate-950' : 'bg-slate-950 text-white'}`}
+              >
+                <span><strong className="block text-sm">Только для примерки</strong><span className="text-xs opacity-70">Без контактных линз</span></span>
+                {onlyFitting ? <CheckCircle2 /> : <Truck />}
+              </button>
+            </div>
           </div>
-        </div>
+        </aside>
+
+        <section>
+          <div className="mb-8 flex items-center justify-between border-b border-slate-900/10 pb-4">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">Найдено: {filteredProducts.length}</p>
+            <button onClick={() => { setCategoryFilter('all'); setBrandFilter('all'); setOnlyFitting(false); }} className="text-sm font-bold text-[#315c56]">Сбросить</button>
+          </div>
+
+          <div className="grid gap-x-7 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredProducts.map((product) => {
+              const inFitting = fittingCart.includes(product.id);
+              const canFit = product.category !== 'contact_lenses';
+
+              return (
+                <article key={product.id} className="group rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:-translate-y-1 hover:shadow-xl">
+                  <button onClick={() => onNavigate('product', product.id)} className="block w-full text-left">
+                    <div className="relative overflow-hidden rounded-[1.45rem] bg-stone-100">
+                      <img src={product.image_url} alt={product.name} className="h-72 w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                      <span className="absolute left-4 top-4 rounded-full bg-white/86 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] backdrop-blur">{productLabel(product)}</span>
+                    </div>
+                    <div className="px-2 pt-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">{product.brand_name}</p>
+                      <div className="mt-2 flex items-start justify-between gap-4">
+                        <h3 className="text-2xl font-black tracking-tight">{product.name}</h3>
+                        <p className="whitespace-nowrap text-lg font-black">{formatPrice(product.price)}</p>
+                      </div>
+                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">{product.description}</p>
+                    </div>
+                  </button>
+
+                  <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                    <button onClick={() => onNavigate('product', product.id)} className="rounded-full border border-slate-900/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-slate-950 hover:text-white">Подробнее</button>
+                    {canFit ? (
+                      <button onClick={() => onToggleFitting(product.id)} className={`rounded-full px-4 py-3 text-xs font-black uppercase tracking-[0.16em] transition ${inFitting ? 'bg-[#315c56] text-white' : 'bg-[#f5b25f] text-slate-950 hover:bg-[#e5a34f]'}`}>{inFitting ? 'В примерке' : 'Примерить'}</button>
+                    ) : (
+                      <button onClick={() => onNavigate('product', product.id)} className="rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-600">Подписка</button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       </div>
     </div>
   );

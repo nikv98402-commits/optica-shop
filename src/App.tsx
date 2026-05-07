@@ -1,90 +1,73 @@
-import { useState, useEffect } from 'react'; // Добавил useEffect для отладки
+import { useState } from 'react';
 import { Navigation } from './components/Navigation';
+import { StoreLocator } from './components/StoreLocator';
 import { Home } from './pages/Home';
 import { Products } from './pages/Products';
-import { Dashboard } from './pages/Dashboard';
+import { ProductDetail } from './pages/ProductDetail';
 import { Checkout } from './pages/Checkout';
-import { Admin } from './pages/Admin'; 
-import { StoreLocator } from './components/StoreLocator';
-import { AuthProvider } from './contexts/AuthContext';
+import { Dashboard } from './pages/Dashboard';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { AuthProvider } from './contexts/AuthContext';
+
+type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [selectedProductId, setSelectedProductId] = useState<string>('aurora-crystal');
   const [isStoreLocatorOpen, setIsStoreLocatorOpen] = useState(false);
   const [fittingCart, setFittingCart] = useState<string[]>([]);
 
-  // Отладочный лог: вы увидите его в консоли (F12) при каждом клике на "Салоны"
-  useEffect(() => {
-    console.log("Состояние модалки изменилось:", isStoreLocatorOpen);
-  }, [isStoreLocatorOpen]);
-
-  const handleNavigate = (page: string) => {
-    setCurrentPage(page);
-    window.scrollTo(0, 0);
+  const handleNavigate = (page: string, productId?: string) => {
+    if (productId) {
+      setSelectedProductId(productId);
+    }
+    setCurrentPage(page as Page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const toggleFitting = (id: string) => {
-    setFittingCart(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+    setFittingCart((prev) => {
+      if (prev.includes(id)) return prev.filter((item) => item !== id);
+      if (prev.length >= 5) return prev;
+      return [...prev, id];
+    });
   };
 
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <div className="relative min-h-screen bg-white"> {/* Добавлен relative */}
-          
-          <Navigation 
-            currentPage={currentPage} 
+    <LanguageProvider>
+      <AuthProvider>
+        <div className="min-h-screen bg-stone-50 text-slate-950">
+          <Navigation
+            currentPage={currentPage}
             onNavigate={handleNavigate}
-            onOpenStores={() => {
-              console.log("Клик зафиксирован в App.tsx");
-              setIsStoreLocatorOpen(true);
-            }} 
-            fittingCount={fittingCart.length} // Передаем реальное число товаров
+            onOpenStores={() => setIsStoreLocatorOpen(true)}
+            fittingCount={fittingCart.length}
           />
-          
-          <main className="pt-20"> {/* Добавлен отступ сверху, чтобы контент не залезал под навигацию */}
-            {currentPage === 'home' && (
-              <Home onNavigate={handleNavigate} />
-            )}
-            
+
+          <main className="pt-20">
+            {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
             {currentPage === 'products' && (
-              <Products 
+              <Products
                 onNavigate={handleNavigate}
                 fittingCart={fittingCart}
                 onToggleFitting={toggleFitting}
               />
             )}
-            
-            {currentPage === 'dashboard' && (
-              <Dashboard onNavigate={handleNavigate} />
+            {currentPage === 'product' && (
+              <ProductDetail productId={selectedProductId} onNavigate={handleNavigate} />
             )}
-            
             {currentPage === 'checkout' && (
-              <Checkout 
-                onBack={() => handleNavigate('products')} 
-                onSuccess={() => handleNavigate('dashboard')} 
-              />
+              <Checkout onBack={() => handleNavigate('products')} onSuccess={() => handleNavigate('dashboard')} />
             )}
-            
-            {currentPage === 'admin' && (
-              <Admin onBack={() => handleNavigate('home')} />
+            {(currentPage === 'dashboard' || currentPage === 'admin') && (
+              <Dashboard onNavigate={handleNavigate} />
             )}
           </main>
 
-          {/* ВАЖНО: StoreLocator рендерится ВНЕ <main>, 
-             чтобы z-index работал корректно поверх всех страниц 
-          */}
-          <StoreLocator 
-            isOpen={isStoreLocatorOpen} 
-            onClose={() => setIsStoreLocatorOpen(false)} 
-          />
-          
+          <StoreLocator isOpen={isStoreLocatorOpen} onClose={() => setIsStoreLocatorOpen(false)} />
         </div>
-      </LanguageProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

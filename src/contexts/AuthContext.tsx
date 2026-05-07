@@ -1,55 +1,103 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+
+export interface DemoUser {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string;
+}
+
+interface StoredAccount extends DemoUser {
+  password: string;
+}
+
+interface AuthResult {
+  error: { message: string } | null;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: DemoUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<AuthResult>;
+  signUp: (email: string, password: string, name?: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
 }
 
+const ACCOUNTS_KEY = 'visionlux_accounts';
+const SESSION_KEY = 'visionlux_session_email';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function readAccounts(): StoredAccount[] {
+  try {
+    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]') as StoredAccount[];
+  } catch {
+    return [];
+  }
+}
+
+function saveAccounts(accounts: StoredAccount[]) {
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+
+function publicUser(account: StoredAccount): DemoUser {
+  const { password: _password, ...user } = account;
+  return user;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<DemoUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setUser(session?.user ?? null);
-      })();
-    });
-
-    return () => subscription.unsubscribe();
+    const sessionEmail = localStorage.getItem(SESSION_KEY);
+    const account = readAccounts().find((item) => item.email === sessionEmail);
+    if (account) setUser(publicUser(account));
+    setLoading(false);
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
-  };
+  const value = useMemo<AuthContextType>(() => ({
+    user,
+    loading,
+    signIn: async (email: string, password: string) => {
+      const normalizedEmail = email.trim().toLowerCase();
+      const account = readAccounts().find((item) => item.email === normalizedEmail);
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error };
-  };
+      if (!account || account.password !== password) {
+        return { error: { message: 'Неверная почта или пароль.' } };
+      }
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
+      localStorage.setItem(SESSION_KEY, account.email);
+      setUser(publicUser(account));
+      return { error: null };
+    },
+    signUp: async (email: string, password: string, name?: string) => {
+      const normalizedEmail = email.trim().toLowerCase();
+      const accounts = readAccounts();
 
-  return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
-      {children}
-    </AuthContext.Provider>
-  );
+      if (accounts.some((item) => item.email === normalizedEmail)) {
+        return { error: { message: 'Аккаунт с такой почтой уже существует.' } };
+      }
+
+      const account: StoredAccount = {
+        id: crypto.randomUUID(),
+        email: normalizedEmail,
+        password,
+        name: name?.trim() || normalizedEmail.split('@')[0] || 'Клиент VisionLux',
+        createdAt: new Date().toISOString(),
+      };
+
+      saveAccounts([...accounts, account]);
+      localStorage.setItem(SESSION_KEY, account.email);
+      setUser(publicUser(account));
+      return { error: null };
+    },
+    signOut: async () => {
+      localStorage.removeItem(SESSION_KEY);
+      setUser(null);
+    },
+  }), [loading, user]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
