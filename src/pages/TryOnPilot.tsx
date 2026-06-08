@@ -1,5 +1,5 @@
 import { Camera, CheckCircle2, Download, MapPin, Phone, SlidersHorizontal, Upload, X } from 'lucide-react';
-import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
+import { ChangeEvent, CSSProperties, FormEvent, useMemo, useState } from 'react';
 import { formatPrice } from '../data/products';
 import { pilotFrames, pilotOptics, PilotFrame } from '../data/pilotOptics';
 
@@ -43,6 +43,44 @@ function frameLabel(frame: PilotFrame) {
   return `${frame.brand} ${frame.model}`;
 }
 
+interface FrameDrawingProps {
+  frame: PilotFrame;
+  className?: string;
+  style?: CSSProperties;
+  compact?: boolean;
+}
+
+function FrameDrawing({ frame, className = '', style, compact = false }: FrameDrawingProps) {
+  const lensHeight = compact ? 'h-14' : 'h-20';
+  const borderWidth = compact ? 'border-[7px]' : 'border-[9px]';
+  const bridgeWidth = compact ? 'w-6' : 'w-8';
+  const bridgeHeight = compact ? 'h-2' : 'h-3';
+
+  return (
+    <div className={`flex items-center ${className}`} style={style}>
+      <div className={`${lensHeight} flex-1 rounded-[42%] ${borderWidth} shadow-xl`} style={{ borderColor: frame.frameColor, backgroundColor: frame.lensTone }} />
+      <div className={`${bridgeHeight} ${bridgeWidth} rounded-full`} style={{ backgroundColor: frame.frameColor }} />
+      <div className={`${lensHeight} flex-1 rounded-[42%] ${borderWidth} shadow-xl`} style={{ borderColor: frame.frameColor, backgroundColor: frame.lensTone }} />
+    </div>
+  );
+}
+
+function FrameThumb({ frame, failedImages, onImageError }: { frame: PilotFrame; failedImages: Set<string>; onImageError: (frameId: string) => void }) {
+  if (frame.imageUrl && !failedImages.has(frame.id)) {
+    return (
+      <img
+        src={frame.imageUrl}
+        alt={frameLabel(frame)}
+        onError={() => onImageError(frame.id)}
+        className="h-24 w-[86%] object-contain"
+        loading="lazy"
+      />
+    );
+  }
+
+  return <FrameDrawing frame={frame} compact className="w-[78%]" />;
+}
+
 export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const optic = pilotOptics[0];
   const frames = useMemo(() => pilotFrames.filter((frame) => frame.opticId === optic.id), [optic.id]);
@@ -52,6 +90,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [frameScale, setFrameScale] = useState(66);
   const [frameX, setFrameX] = useState(50);
   const [frameY, setFrameY] = useState(43);
+  const [failedFrameImages, setFailedFrameImages] = useState<Set<string>>(new Set());
   const [leads, setLeads] = useState<PilotLead[]>(readLeads);
   const [submittedLead, setSubmittedLead] = useState<PilotLead | null>(null);
   const [form, setForm] = useState({
@@ -63,6 +102,11 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   const activeFrame = frames.find((frame) => frame.id === activeFrameId) ?? frames[0];
   const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
+  const activeFrameHasImage = Boolean(activeFrame?.imageUrl) && !failedFrameImages.has(activeFrame.id);
+
+  const markFrameImageFailed = (frameId: string) => {
+    setFailedFrameImages((current) => new Set(current).add(frameId));
+  };
 
   const handlePhoto = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -194,20 +238,32 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 </div>
               )}
 
-              {activeFrame && (
-                <div
-                  className="absolute flex items-center"
+              {activeFrame && activeFrameHasImage && (
+                <img
+                  src={activeFrame.imageUrl}
+                  alt={frameLabel(activeFrame)}
+                  onError={() => markFrameImageFailed(activeFrame.id)}
+                  className="absolute object-contain drop-shadow-2xl"
                   style={{
                     left: `${frameX}%`,
                     top: `${frameY}%`,
                     width: `${frameScale}%`,
                     transform: 'translate(-50%, -50%)',
                   }}
-                >
-                  <div className="h-20 flex-1 rounded-[42%] border-[9px] shadow-xl" style={{ borderColor: activeFrame.frameColor, backgroundColor: activeFrame.lensTone }} />
-                  <div className="h-3 w-8 rounded-full" style={{ backgroundColor: activeFrame.frameColor }} />
-                  <div className="h-20 flex-1 rounded-[42%] border-[9px] shadow-xl" style={{ borderColor: activeFrame.frameColor, backgroundColor: activeFrame.lensTone }} />
-                </div>
+                />
+              )}
+
+              {activeFrame && !activeFrameHasImage && (
+                <FrameDrawing
+                  frame={activeFrame}
+                  className="absolute"
+                  style={{
+                    left: `${frameX}%`,
+                    top: `${frameY}%`,
+                    width: `${frameScale}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                />
               )}
             </div>
 
@@ -249,15 +305,11 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   <article key={frame.id} className={`rounded-[2rem] p-4 ring-1 transition ${isActive ? 'bg-[#eef5f1] ring-[#315c56]/30' : 'bg-stone-50 ring-slate-900/5'}`}>
                     <button type="button" onClick={() => setActiveFrameId(frame.id)} className="block w-full text-left">
                       <div className="flex h-32 items-center justify-center rounded-[1.5rem] bg-white">
-                        <div className="flex w-[78%] items-center">
-                          <div className="h-14 flex-1 rounded-[42%] border-[7px]" style={{ borderColor: frame.frameColor, backgroundColor: frame.lensTone }} />
-                          <div className="h-2 w-6 rounded-full" style={{ backgroundColor: frame.frameColor }} />
-                          <div className="h-14 flex-1 rounded-[42%] border-[7px]" style={{ borderColor: frame.frameColor, backgroundColor: frame.lensTone }} />
-                        </div>
+                        <FrameThumb frame={frame} failedImages={failedFrameImages} onImageError={markFrameImageFailed} />
                       </div>
                       <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-slate-400">{frame.brand}</p>
                       <h3 className="mt-1 text-xl font-black tracking-tight">{frame.model}</h3>
-                      <p className="mt-2 text-sm text-slate-500">{frame.color} · {frame.size}</p>
+                      <p className="mt-2 text-sm text-slate-500">{frame.category === 'sunglasses' ? 'Солнцезащитные' : 'Оправа'} · {frame.color} · {frame.size}</p>
                       <p className="mt-3 text-lg font-black">{formatPrice(frame.price)}</p>
                     </button>
                     <button

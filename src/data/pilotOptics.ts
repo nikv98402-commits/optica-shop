@@ -10,6 +10,7 @@ export interface PilotOptic {
 export interface PilotFrame {
   id: string;
   opticId: string;
+  category: 'eyeglasses' | 'sunglasses';
   brand: string;
   model: string;
   color: string;
@@ -17,6 +18,7 @@ export interface PilotFrame {
   size: string;
   material: string;
   inStock: boolean;
+  imageUrl?: string;
   frameColor: string;
   lensTone: string;
 }
@@ -44,6 +46,7 @@ export const pilotFrames: PilotFrame[] = [
   {
     id: 'pilot-aurora',
     opticId: 'visionlux-pilot',
+    category: 'eyeglasses',
     brand: 'VisionLux Atelier',
     model: 'Aurora Crystal',
     color: 'Прозрачный кристалл',
@@ -57,6 +60,7 @@ export const pilotFrames: PilotFrame[] = [
   {
     id: 'pilot-noir',
     opticId: 'visionlux-pilot',
+    category: 'eyeglasses',
     brand: 'Maison Optique',
     model: 'Noir Line',
     color: 'Графитовый черный',
@@ -70,6 +74,7 @@ export const pilotFrames: PilotFrame[] = [
   {
     id: 'pilot-honey',
     opticId: 'visionlux-pilot',
+    category: 'sunglasses',
     brand: 'VisionLux Sun',
     model: 'Solstice Honey',
     color: 'Медовый',
@@ -83,6 +88,7 @@ export const pilotFrames: PilotFrame[] = [
   {
     id: 'pilot-polar',
     opticId: 'visionlux-pilot',
+    category: 'sunglasses',
     brand: 'North Lens',
     model: 'Polar Drive',
     color: 'Матовая сталь',
@@ -96,6 +102,7 @@ export const pilotFrames: PilotFrame[] = [
   {
     id: 'pilot-softline',
     opticId: 'visionlux-pilot',
+    category: 'eyeglasses',
     brand: 'Clear Form',
     model: 'Softline 42',
     color: 'Пыльная роза',
@@ -109,6 +116,7 @@ export const pilotFrames: PilotFrame[] = [
   {
     id: 'pilot-boston',
     opticId: 'visionlux-pilot',
+    category: 'eyeglasses',
     brand: 'Urban Reader',
     model: 'Boston Work',
     color: 'Темная черепаха',
