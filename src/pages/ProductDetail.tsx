@@ -1,5 +1,6 @@
 import { ArrowLeft, Check, ShieldCheck, Truck } from 'lucide-react';
 import { useState } from 'react';
+import { VirtualTryOn } from '../components/VirtualTryOn';
 import { formatPrice, getProductById } from '../data/products';
 
 interface ProductDetailProps {
@@ -35,6 +36,7 @@ export function ProductDetail({ productId, onNavigate }: ProductDetailProps) {
         <div className="grid gap-12 lg:grid-cols-[1fr_0.9fr] lg:items-start">
           <div className="rounded-[2.5rem] bg-white p-4 shadow-sm ring-1 ring-slate-900/5">
             <img src={product.image_url} alt={product.name} className="h-[560px] w-full rounded-[2rem] object-cover" />
+            <VirtualTryOn product={product} />
           </div>
 
           <div className="rounded-[2.5rem] bg-white p-7 shadow-sm ring-1 ring-slate-900/5 md:p-10">

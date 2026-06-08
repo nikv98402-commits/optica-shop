@@ -57,7 +57,7 @@ function App() {
               <ProductDetail productId={selectedProductId} onNavigate={handleNavigate} />
             )}
             {currentPage === 'checkout' && (
-              <Checkout onBack={() => handleNavigate('products')} onSuccess={() => handleNavigate('dashboard')} />
+              <Checkout productId={selectedProductId} onBack={() => handleNavigate('products')} onSuccess={() => handleNavigate('dashboard')} />
             )}
             {(currentPage === 'dashboard' || currentPage === 'admin') && (
               <Dashboard onNavigate={handleNavigate} />

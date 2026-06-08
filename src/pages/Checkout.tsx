@@ -1,23 +1,43 @@
 import { ArrowLeft, CheckCircle2, CreditCard, Package, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
-import { formatPrice } from '../data/products';
+import { formatPrice, getProductById } from '../data/products';
+import { useAuth } from '../contexts/AuthContext';
 
 interface CheckoutProps {
+  productId: string;
   onBack: () => void;
   onSuccess: () => void;
 }
 
-export function Checkout({ onBack, onSuccess }: CheckoutProps) {
+const PURCHASES_KEY = 'visionlux_purchase_history';
+
+export function Checkout({ productId, onBack, onSuccess }: CheckoutProps) {
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [delivery, setDelivery] = useState<'store' | 'courier'>('store');
+  const product = getProductById(productId) ?? getProductById('aurora-crystal');
 
-  const basePrice = 12990;
+  const basePrice = product?.price ?? 12990;
   const servicePrice = delivery === 'courier' ? 490 : 0;
   const totalAmount = basePrice + servicePrice;
 
   const handlePayment = () => {
     setIsProcessing(true);
     window.setTimeout(() => {
+      if (product) {
+        const current = JSON.parse(localStorage.getItem(PURCHASES_KEY) || '[]') as Array<Record<string, string>>;
+        localStorage.setItem(PURCHASES_KEY, JSON.stringify([
+          {
+            id: crypto.randomUUID(),
+            productId: product.id,
+            category: product.category,
+            brandName: product.brand_name,
+            userId: user?.id ?? 'demo',
+            purchasedAt: new Date().toISOString(),
+          },
+          ...current,
+        ].slice(0, 20)));
+      }
       setIsProcessing(false);
       onSuccess();
     }, 1200);
@@ -66,7 +86,7 @@ export function Checkout({ onBack, onSuccess }: CheckoutProps) {
             <h2 className="text-2xl font-black tracking-tight">Ваш заказ</h2>
             <div className="mt-6 flex gap-4 rounded-3xl bg-white/10 p-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10"><Package /></div>
-              <div><strong>Aurora Crystal</strong><p className="mt-1 text-sm text-white/60">Оправа + базовые линзы</p></div>
+              <div><strong>{product?.name ?? 'Aurora Crystal'}</strong><p className="mt-1 text-sm text-white/60">{product?.category === 'sunglasses' ? 'Солнцезащитные очки' : product?.category === 'contact_lenses' ? 'Контактные линзы' : 'Оправа + базовые линзы'}</p></div>
             </div>
 
             <div className="mt-6 space-y-4 border-t border-white/10 pt-6 text-sm">
