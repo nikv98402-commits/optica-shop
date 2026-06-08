@@ -43,6 +43,39 @@ function frameLabel(frame: PilotFrame) {
   return `${frame.brand} ${frame.model}`;
 }
 
+function getFitScore(frame: PilotFrame) {
+  const sizeMatch = frame.size.match(/^(\d+)-(\d+)-(\d+)/);
+  const lensWidth = sizeMatch ? Number(sizeMatch[1]) : 50;
+  const bridgeWidth = sizeMatch ? Number(sizeMatch[2]) : 18;
+  const isWide = lensWidth >= 53;
+  const isCompact = lensWidth <= 49;
+  const widthScore = isWide ? 72 : isCompact ? 88 : 84;
+  const eyeScore = isWide ? 76 : 86;
+  const styleScore = frame.category === 'sunglasses' ? 82 : frame.material.toLowerCase().includes('металл') ? 80 : 86;
+  const bridgeScore = bridgeWidth >= 20 ? 76 : 84;
+  const total = Math.round(widthScore * 0.4 + eyeScore * 0.3 + styleScore * 0.2 + bridgeScore * 0.1);
+
+  const label = total >= 86 ? 'Отличный выбор для визита' : total >= 80 ? 'Хороший выбор для визита' : 'Стоит проверить размер в салоне';
+  const risk = isWide
+    ? 'Возможный риск: размер может быть широковат. Попросите консультанта подготовить похожую модель уже по мосту.'
+    : isCompact
+      ? 'Что проверить: компактная форма может ощущаться плотнее. В салоне стоит сравнить посадку на переносице.'
+      : 'Что проверить: финальную посадку на переносице и комфорт дужек подтвердит консультант в салоне.';
+
+  return {
+    total,
+    label,
+    strengths: [
+      'Ширина оправы визуально выглядит сбалансированной для первого отбора.',
+      'Глаза находятся близко к центру линз, посадка выглядит спокойной.',
+      frame.category === 'sunglasses'
+        ? 'Стиль подходит для яркого повседневного образа и прогулок.'
+        : 'Стиль подходит для офиса и повседневной носки.',
+    ],
+    risk,
+  };
+}
+
 interface FrameDrawingProps {
   frame: PilotFrame;
   className?: string;
@@ -91,6 +124,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [frameX, setFrameX] = useState(50);
   const [frameY, setFrameY] = useState(43);
   const [failedFrameImages, setFailedFrameImages] = useState<Set<string>>(new Set());
+  const [fitScoreFrameId, setFitScoreFrameId] = useState('');
   const [leads, setLeads] = useState<PilotLead[]>(readLeads);
   const [submittedLead, setSubmittedLead] = useState<PilotLead | null>(null);
   const [form, setForm] = useState({
@@ -103,6 +137,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const activeFrame = frames.find((frame) => frame.id === activeFrameId) ?? frames[0];
   const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
   const activeFrameHasImage = Boolean(activeFrame?.imageUrl) && !failedFrameImages.has(activeFrame.id);
+  const fitScore = activeFrame && fitScoreFrameId === activeFrame.id ? getFitScore(activeFrame) : null;
 
   const markFrameImageFailed = (frameId: string) => {
     setFailedFrameImages((current) => new Set(current).add(frameId));
@@ -120,6 +155,11 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       if (current.length >= MAX_SELECTED_FRAMES) return current;
       return [...current, frameId];
     });
+  };
+
+  const prepareActiveFrame = () => {
+    if (!activeFrame) return;
+    setSelectedFrameIds((current) => current.includes(activeFrame.id) ? current : [activeFrame.id, ...current].slice(0, MAX_SELECTED_FRAMES));
   };
 
   const updateLeadStatus = (leadId: string, status: PilotLead['status']) => {
@@ -285,6 +325,57 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   />
                 </label>
               ))}
+            </div>
+
+            <div className="mt-6 rounded-[2rem] border border-slate-900/10 bg-[#f7f1e8] p-5 md:p-6">
+              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">Face-fit score</p>
+                  <h3 className="mt-2 text-2xl font-black tracking-tight">Помощник выбора перед визитом</h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                    Это не диагноз и не медицинская рекомендация. Оценка помогает выбрать оправы для примерки в салоне.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => activeFrame && setFitScoreFrameId(activeFrame.id)}
+                  className="rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#315c56]"
+                >
+                  Оценить посадку
+                </button>
+              </div>
+
+              {fitScore && activeFrame && (
+                <div className="mt-5 grid gap-5 lg:grid-cols-[170px_1fr]">
+                  <div className="rounded-[1.5rem] bg-white p-5 text-center ring-1 ring-slate-900/5">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Подходит</p>
+                    <p className="mt-2 text-5xl font-black tracking-tight text-[#315c56]">{fitScore.total}</p>
+                    <p className="text-sm font-black text-slate-500">из 100</p>
+                  </div>
+
+                  <div className="rounded-[1.5rem] bg-white p-5 ring-1 ring-slate-900/5">
+                    <h4 className="text-xl font-black tracking-tight">{fitScore.label}</h4>
+                    <div className="mt-4 grid gap-3">
+                      {fitScore.strengths.map((strength) => (
+                        <div key={strength} className="flex gap-3 text-sm leading-6 text-slate-600">
+                          <CheckCircle2 className="mt-1 shrink-0 text-[#315c56]" size={18} />
+                          {strength}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                      {fitScore.risk}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={prepareActiveFrame}
+                      className="mt-4 w-full rounded-full bg-[#f5b25f] px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-[#e5a34f]"
+                    >
+                      Подготовить эту оправу и 2 похожие модели
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
