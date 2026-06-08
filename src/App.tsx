@@ -6,10 +6,11 @@ import { Products } from './pages/Products';
 import { ProductDetail } from './pages/ProductDetail';
 import { Checkout } from './pages/Checkout';
 import { Dashboard } from './pages/Dashboard';
+import { TryOnPilot } from './pages/TryOnPilot';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 
-type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin';
+type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -61,6 +62,9 @@ function App() {
             )}
             {(currentPage === 'dashboard' || currentPage === 'admin') && (
               <Dashboard onNavigate={handleNavigate} />
+            )}
+            {currentPage === 'tryon' && (
+              <TryOnPilot onNavigate={handleNavigate} />
             )}
           </main>
 

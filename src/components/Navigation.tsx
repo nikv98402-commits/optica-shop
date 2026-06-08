@@ -26,6 +26,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
   };
 
   const navItems = [
+    { id: 'tryon', label: 'Онлайн-примерка' },
     { id: 'products', label: 'Каталог' },
     { id: 'home', label: 'О бренде' },
   ];
@@ -61,6 +62,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
       {menuOpen && (
         <div className="border-t border-slate-900/10 bg-[#fffaf2] px-6 py-5 md:hidden">
           <div className="grid gap-3">
+            <button onClick={() => go('tryon')} className="rounded-2xl bg-slate-950 p-4 text-left font-bold text-white">Онлайн-примерка</button>
             <button onClick={() => go('products')} className="rounded-2xl bg-white p-4 text-left font-bold">Каталог</button>
             <button onClick={openStores} className="rounded-2xl bg-white p-4 text-left font-bold">Наши салоны</button>
             <button onClick={() => go('dashboard')} className="rounded-2xl bg-white p-4 text-left font-bold">Личный кабинет</button>
