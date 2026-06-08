@@ -40,8 +40,12 @@ function saveAccounts(accounts: StoredAccount[]) {
 }
 
 function publicUser(account: StoredAccount): DemoUser {
-  const { password: _password, ...user } = account;
-  return user;
+  return {
+    id: account.id,
+    email: account.email,
+    name: account.name,
+    createdAt: account.createdAt,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

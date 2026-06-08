@@ -5,6 +5,29 @@ interface AdminProps {
   onBack: () => void;
 }
 
+interface AdminProduct {
+  id: string;
+  name: string;
+  price: string;
+  brand?: string;
+  category?: string;
+  image: string;
+  description?: string;
+}
+
+function normalizeProduct(value: unknown): AdminProduct {
+  const product = value && typeof value === 'object' ? value as Partial<AdminProduct> : {};
+  return {
+    id: product.id || Math.random().toString(36).substr(2, 9),
+    name: product.name || '',
+    price: String(product.price || ''),
+    brand: product.brand || '',
+    category: product.category || 'lenses',
+    image: product.image || '',
+    description: product.description || '',
+  };
+}
+
 export function Admin({ onBack }: AdminProps) {
   const [newProduct, setNewProduct] = useState({
     name: '',
@@ -16,7 +39,7 @@ export function Admin({ onBack }: AdminProps) {
   });
 
   // Список товаров, добавленных за текущую сессию
-  const [recentProducts, setRecentProducts] = useState<any[]>([]);
+  const [recentProducts, setRecentProducts] = useState<AdminProduct[]>([]);
 
   // МАССОВЫЙ ЗАГРУЗЧИК: Обработка JSON файла
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,14 +54,11 @@ export function Admin({ onBack }: AdminProps) {
         const productsToAdd = Array.isArray(json) ? json : [json];
         
         // Добавляем ID каждому новому товару из файла
-        const formattedProducts = productsToAdd.map(p => ({
-          ...p,
-          id: p.id || Math.random().toString(36).substr(2, 9)
-        }));
+        const formattedProducts = productsToAdd.map(normalizeProduct);
 
         setRecentProducts(prev => [...formattedProducts, ...prev]);
         alert(`Успешно импортировано: ${formattedProducts.length} товаров`);
-      } catch (error) {
+      } catch {
         alert("Ошибка! Проверьте формат JSON-файла. Он должен содержать массив объектов.");
       }
     };
@@ -49,7 +69,7 @@ export function Admin({ onBack }: AdminProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const productEntry = { ...newProduct, id: Date.now().toString() };
+    const productEntry: AdminProduct = { ...newProduct, id: Date.now().toString() };
     setRecentProducts([productEntry, ...recentProducts]);
     alert(`Товар "${newProduct.name}" добавлен!`);
     
