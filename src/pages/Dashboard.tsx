@@ -18,10 +18,21 @@ import {
 } from 'lucide-react';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { AuthModal } from '../components/AuthModal';
+import { VirtualTryOn } from '../components/VirtualTryOn';
 import { useAuth } from '../contexts/AuthContext';
+import { demoProducts, formatPrice } from '../data/products';
 
 interface DashboardProps {
-  onNavigate?: (page: string) => void;
+  onNavigate?: (page: string, productId?: string) => void;
+}
+
+interface PurchaseHistoryItem {
+  id: string;
+  productId: string;
+  category: 'sunglasses' | 'contact_lenses' | 'eyeglasses';
+  brandName: string;
+  userId: string;
+  purchasedAt: string;
 }
 
 interface ClientProfile {
@@ -105,6 +116,8 @@ function sessionsStorageKey(userId: string) {
   return `visionlux_training_sessions_${userId}`;
 }
 
+const PURCHASES_KEY = 'visionlux_purchase_history';
+
 function readJson<T>(key: string, fallback: T): T {
   try {
     const value = localStorage.getItem(key);
@@ -133,6 +146,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const [authOpen, setAuthOpen] = useState(false);
   const [profile, setProfile] = useState<ClientProfile>(defaultProfile);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistoryItem[]>([]);
   const [saved, setSaved] = useState(false);
   const [activeExerciseId, setActiveExerciseId] = useState(exercises[0].id);
   const [isTraining, setIsTraining] = useState(false);
@@ -144,6 +158,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     if (!user) return;
     setProfile(readJson(profileStorageKey(user.id), { ...defaultProfile, fullName: user.name }));
     setSessions(readJson(sessionsStorageKey(user.id), []));
+    setPurchaseHistory(readJson(PURCHASES_KEY, []).filter((item: PurchaseHistoryItem) => item.userId === user.id || item.userId === 'demo'));
   }, [user]);
 
   useEffect(() => {
@@ -182,6 +197,21 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     const prescriptionReady = [profile.leftSph, profile.rightSph].filter(Boolean).length * 50;
     return { strainScore, trainingProgress, nextExamDays, prescriptionReady };
   }, [profile, sessions]);
+
+  const tryOnRecommendations = useMemo(() => {
+    const purchasedTryOnCategories = new Set(
+      purchaseHistory
+        .map((item) => item.category)
+        .filter((category) => category === 'eyeglasses' || category === 'sunglasses'),
+    );
+    const purchasedBrands = new Set(purchaseHistory.map((item) => item.brandName));
+    const categories = purchasedTryOnCategories.size > 0 ? purchasedTryOnCategories : new Set(['eyeglasses', 'sunglasses']);
+
+    return demoProducts
+      .filter((product) => categories.has(product.category))
+      .sort((first, second) => Number(purchasedBrands.has(second.brand_name)) - Number(purchasedBrands.has(first.brand_name)))
+      .slice(0, 3);
+  }, [purchaseHistory]);
 
   const updateProfile = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -361,6 +391,36 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               <p className="mt-2 text-sm text-slate-500">{user.email}</p>
               <div className="mt-5 rounded-3xl bg-blue-50 p-4 text-sm leading-6 text-blue-950"><ShieldCheck className="mb-2" size={18} /> Напоминание об осмотре запланировано за 7 дней до даты визита.</div>
             </section>
+
+            {tryOnRecommendations.length > 0 && (
+              <section className="rounded-[2.5rem] bg-white p-5 shadow-sm ring-1 ring-slate-900/5">
+                <VirtualTryOn product={tryOnRecommendations[0]} compact />
+                <div className="mt-5 px-2">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">По вашим покупкам</p>
+                  <h3 className="mt-2 text-2xl font-black tracking-tight">Релевантные модели для примерки</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Подборка учитывает прошлые покупки в категориях оправ и солнцезащитных очков.
+                  </p>
+                </div>
+                <div className="mt-5 grid gap-3">
+                  {tryOnRecommendations.map((product) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => onNavigate?.('product', product.id)}
+                      className="grid grid-cols-[72px_1fr] gap-4 rounded-3xl bg-stone-100 p-3 text-left transition hover:bg-stone-200"
+                    >
+                      <img src={product.image_url} alt={product.name} className="h-20 w-full rounded-2xl object-cover" />
+                      <span>
+                        <span className="block text-xs font-black uppercase tracking-[0.18em] text-slate-400">{product.category === 'sunglasses' ? 'Солнцезащитные очки' : 'Оправа'}</span>
+                        <strong className="mt-1 block text-lg">{product.name}</strong>
+                        <span className="mt-1 block text-sm font-bold text-[#315c56]">{formatPrice(product.price)}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {ads.map((ad, index) => (
               <section key={ad.title} className={`${index === 0 ? 'bg-[#f5b25f]' : 'bg-[#315c56] text-white'} rounded-[2.5rem] p-7 shadow-sm`}>
