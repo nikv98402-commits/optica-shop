@@ -12,8 +12,15 @@ import { AuthProvider } from './contexts/AuthContext';
 
 type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon';
 
+const pages: Page[] = ['home', 'products', 'product', 'checkout', 'dashboard', 'admin', 'tryon'];
+
+function getInitialPage(): Page {
+  const page = new URLSearchParams(window.location.search).get('page');
+  return pages.includes(page as Page) ? page as Page : 'home';
+}
+
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [currentPage, setCurrentPage] = useState<Page>(getInitialPage);
   const [selectedProductId, setSelectedProductId] = useState<string>('aurora-crystal');
   const [isStoreLocatorOpen, setIsStoreLocatorOpen] = useState(false);
   const [fittingCart, setFittingCart] = useState<string[]>([]);
@@ -23,6 +30,8 @@ function App() {
       setSelectedProductId(productId);
     }
     setCurrentPage(page as Page);
+    const nextUrl = page === 'home' ? window.location.pathname : `${window.location.pathname}?page=${page}`;
+    window.history.replaceState(null, '', nextUrl);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

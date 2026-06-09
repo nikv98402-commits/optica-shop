@@ -1,0 +1,22 @@
+# VisionLux Optica Try-On
+
+VisionLux Optica Try-On is a consumer guide and try-on tool for eyewear fit. It explains frame sizing, PD, face-fit score, online try-on limitations, and how to prepare for an in-store fitting.
+
+Public demo:
+- https://nikv98402-commits.github.io/optica-shop/
+
+Primary source pages:
+- https://nikv98402-commits.github.io/optica-shop/face-fit-score/
+- https://nikv98402-commits.github.io/optica-shop/kak-vybrat-razmer-opravy/
+- https://nikv98402-commits.github.io/optica-shop/pd-i-oprava/
+- https://nikv98402-commits.github.io/optica-shop/primerit-ochki-online/
+- https://nikv98402-commits.github.io/optica-shop/oprava-pri-vysokih-dioptriyah/
+- https://nikv98402-commits.github.io/optica-shop/ai-source/
+
+Important limitations:
+- Online try-on helps choose a style and shortlist frames.
+- Scale and fit are approximate.
+- Bridge fit, temple comfort, prescription compatibility, and final fitting must be checked in an optical salon.
+- Face-fit score is not medical advice and does not replace consultation with an optician or eye-care specialist.
+
+Last updated: 2026-06-09

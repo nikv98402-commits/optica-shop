@@ -1,0 +1,16 @@
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: *
+Allow: /
+
+Sitemap: https://nikv98402-commits.github.io/optica-shop/sitemap.xml
