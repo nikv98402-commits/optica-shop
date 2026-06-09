@@ -17,6 +17,8 @@ interface PilotLead {
   messenger: string;
   preferredTime: string;
   selectedFrames: string[];
+  consentAccepted: boolean;
+  consentAt: string;
   status: 'new' | 'contacted' | 'booked' | 'visited' | 'bought' | 'lost';
 }
 
@@ -132,6 +134,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     phone: '',
     messenger: 'WhatsApp',
     preferredTime: '',
+    consentAccepted: false,
   });
 
   const activeFrame = frames.find((frame) => frame.id === activeFrameId) ?? frames[0];
@@ -182,13 +185,15 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       messenger: form.messenger,
       preferredTime: form.preferredTime.trim(),
       selectedFrames: selectedFrames.map(frameLabel),
+      consentAccepted: form.consentAccepted,
+      consentAt: new Date().toISOString(),
       status: 'new',
     };
     const next = [lead, ...leads].slice(0, 100);
     setLeads(next);
     saveLeads(next);
     setSubmittedLead(lead);
-    setForm({ name: '', phone: '', messenger: 'WhatsApp', preferredTime: '' });
+    setForm({ name: '', phone: '', messenger: 'WhatsApp', preferredTime: '', consentAccepted: false });
   };
 
   const exportCsv = () => {
@@ -202,9 +207,11 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
         lead.messenger,
         lead.preferredTime,
         lead.selectedFrames.join('; '),
+        lead.consentAccepted ? 'yes' : 'no',
         lead.status,
       ]),
     ];
+    rows[0] = ['Дата', 'Оптика', 'Имя', 'Телефон', 'Мессенджер', 'Время', 'Оправы', 'Согласие', 'Статус'];
     const csv = rows.map((row) => row.map(csvCell).join(',')).join('\n');
     const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -453,6 +460,17 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 <input value={form.preferredTime} onChange={(event) => setForm((current) => ({ ...current, preferredTime: event.target.value }))} className="w-full rounded-2xl border border-slate-900/10 bg-stone-50 px-5 py-4 outline-none transition focus:border-[#315c56]" placeholder="Сегодня после 18:00" />
               </label>
 
+              <label className="flex gap-3 rounded-3xl bg-blue-50 p-4 text-sm leading-6 text-blue-950">
+                <input
+                  required
+                  type="checkbox"
+                  checked={form.consentAccepted}
+                  onChange={(event) => setForm((current) => ({ ...current, consentAccepted: event.target.checked }))}
+                  className="mt-1 h-5 w-5 shrink-0 accent-[#315c56]"
+                />
+                <span>Я согласен на обработку имени, телефона и выбранных оправ для связи с салоном по этой заявке.</span>
+              </label>
+
               <div className="rounded-3xl bg-stone-100 p-4">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Выбрано</p>
                 {selectedFrames.length > 0 ? (
@@ -464,7 +482,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 )}
               </div>
 
-              <button disabled={selectedFrameIds.length === 0} className="rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#315c56] disabled:cursor-not-allowed disabled:opacity-45">
+              <button disabled={selectedFrameIds.length === 0 || !form.consentAccepted} className="rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#315c56] disabled:cursor-not-allowed disabled:opacity-45">
                 Отправить заявку
               </button>
             </form>

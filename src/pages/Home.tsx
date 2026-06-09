@@ -29,16 +29,16 @@ export function Home({ onNavigate }: HomeProps) {
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <button
-                onClick={() => onNavigate('products')}
+                onClick={() => onNavigate('tryon')}
                 className="group rounded-full bg-slate-950 px-8 py-4 text-sm font-bold uppercase tracking-[0.2em] text-white transition hover:-translate-y-0.5 hover:bg-[#315c56]"
               >
-                Смотреть каталог <ArrowRight className="ml-2 inline transition group-hover:translate-x-1" size={18} />
+                Онлайн-примерка <ArrowRight className="ml-2 inline transition group-hover:translate-x-1" size={18} />
               </button>
               <button
-                onClick={() => document.getElementById('care')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => onNavigate('products')}
                 className="rounded-full border border-slate-950/20 bg-white/60 px-8 py-4 text-sm font-bold uppercase tracking-[0.2em] text-slate-950 backdrop-blur transition hover:bg-white"
               >
-                Как это работает
+                Смотреть каталог
               </button>
             </div>
           </div>

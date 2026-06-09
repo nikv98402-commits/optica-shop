@@ -44,6 +44,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
         </div>
 
         <div className="flex items-center gap-3">
+          <button onClick={() => go('tryon')} className="rounded-full bg-[#f5b25f] px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-slate-950 transition hover:bg-white md:hidden">Примерка</button>
           <button onClick={() => setLanguage(language === 'en' ? 'ru' : 'en')} className="hidden items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ring-1 ring-slate-900/10 sm:flex"><Languages size={15} /> {language}</button>
           <button onClick={() => go('dashboard')} className="flex items-center gap-2 rounded-full bg-white px-3 py-3 ring-1 ring-slate-900/10 transition hover:bg-stone-100 md:px-4">
             <User size={18} />
