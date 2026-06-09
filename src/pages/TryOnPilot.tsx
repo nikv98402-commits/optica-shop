@@ -223,31 +223,31 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#fffaf2]">
-      <section className="border-b border-slate-900/10 bg-[#f7f1e8] px-6 py-12">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.24em] text-[#9a6933]">Try-On Pilot</p>
-            <h1 className="mt-4 text-5xl font-black leading-[0.95] tracking-[-0.06em] text-slate-950 md:text-7xl">
+    <div className="min-h-screen overflow-x-hidden bg-[#fffaf2]">
+      <section className="w-full overflow-x-hidden border-b border-slate-900/10 bg-[#f7f1e8] px-4 py-10 sm:px-6 sm:py-12">
+        <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933] sm:text-sm sm:tracking-[0.24em]">Try-On Pilot</p>
+            <h1 className="mt-4 max-w-full break-words text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl md:text-7xl md:leading-[0.95]">
               Примерьте оправы онлайн и забронируйте лучшие в салоне
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
               Выберите 2-3 модели, отправьте заявку, и консультант подготовит оправы к вашему визиту.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3 text-sm font-bold text-slate-700">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-3 ring-1 ring-slate-900/10"><MapPin size={16} /> {optic.address}</span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-3 ring-1 ring-slate-900/10"><Phone size={16} /> {optic.phone}</span>
+            <div className="mt-7 flex min-w-0 flex-wrap gap-3 text-sm font-bold text-slate-700">
+              <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-white px-4 py-3 ring-1 ring-slate-900/10"><MapPin className="shrink-0" size={16} /> <span className="min-w-0 break-words">{optic.address}</span></span>
+              <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-white px-4 py-3 ring-1 ring-slate-900/10"><Phone className="shrink-0" size={16} /> <span className="min-w-0 break-words">{optic.phone}</span></span>
             </div>
           </div>
 
-          <div className="rounded-[2.5rem] bg-slate-950 p-6 text-white shadow-2xl shadow-slate-900/20">
-            <div className="grid gap-4 sm:grid-cols-3">
+          <div className="min-w-0 rounded-[2rem] bg-slate-950 p-5 text-white shadow-2xl shadow-slate-900/20 sm:rounded-[2.5rem] sm:p-6">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-3">
               {[
                 ['1', 'Загрузите фото'],
                 ['2', 'Примерьте оправы'],
                 ['3', 'Оставьте заявку'],
               ].map(([step, label]) => (
-                <div key={step} className="rounded-3xl bg-white/10 p-5">
+                <div key={step} className="min-w-0 rounded-3xl bg-white/10 p-5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5b25f] text-sm font-black text-slate-950">{step}</span>
                   <p className="mt-4 font-black">{label}</p>
                 </div>
@@ -260,21 +260,21 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_420px]">
-        <main className="space-y-8">
+      <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+        <main className="min-w-0 space-y-8">
           <section className="rounded-[2.5rem] bg-white p-5 shadow-sm ring-1 ring-slate-900/5 md:p-7">
             <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">Примерочная</p>
-                <h2 className="mt-2 text-3xl font-black tracking-tight">{activeFrame ? frameLabel(activeFrame) : 'Выберите оправу'}</h2>
+                <h2 className="mt-2 break-words text-3xl font-black tracking-tight">{activeFrame ? frameLabel(activeFrame) : 'Выберите оправу'}</h2>
               </div>
-              <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#315c56]">
+              <label className="inline-flex max-w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#315c56] sm:px-6 sm:tracking-[0.16em]">
                 <Upload size={16} /> Загрузить фото
                 <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
               </label>
             </div>
 
-            <div className="relative flex aspect-[4/3] min-h-[360px] items-center justify-center overflow-hidden rounded-[2rem] bg-stone-100">
+            <div className="relative flex aspect-[4/3] min-h-[320px] w-full items-center justify-center overflow-hidden rounded-[2rem] bg-stone-100 sm:min-h-[360px]">
               {photoUrl ? (
                 <img src={photoUrl} alt="Фото для примерки" className="absolute inset-0 h-full w-full object-contain" />
               ) : (
@@ -303,7 +303,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               {activeFrame && !activeFrameHasImage && (
                 <FrameDrawing
                   frame={activeFrame}
-                  className="absolute"
+                  className="absolute max-w-[92%]"
                   style={{
                     left: `${frameX}%`,
                     top: `${frameY}%`,
@@ -314,7 +314,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               )}
             </div>
 
-            <div className="mt-6 grid gap-5 md:grid-cols-3">
+            <div className="mt-6 grid min-w-0 gap-5 md:grid-cols-3">
               {[
                 ['Масштаб', frameScale, setFrameScale, 42, 88],
                 ['Влево / вправо', frameX, setFrameX, 32, 68],
@@ -335,10 +335,10 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             </div>
 
             <div className="mt-6 rounded-[2rem] border border-slate-900/10 bg-[#f7f1e8] p-5 md:p-6">
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <div>
+              <div className="flex min-w-0 flex-col justify-between gap-4 md:flex-row md:items-center">
+                <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">Face-fit score</p>
-                  <h3 className="mt-2 text-2xl font-black tracking-tight">Помощник выбора перед визитом</h3>
+                  <h3 className="mt-2 break-words text-2xl font-black tracking-tight">Помощник выбора перед визитом</h3>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                     Это не диагноз и не медицинская рекомендация. Оценка помогает выбрать оправы для примерки в салоне.
                   </p>
@@ -346,7 +346,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 <button
                   type="button"
                   onClick={() => activeFrame && setFitScoreFrameId(activeFrame.id)}
-                  className="rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#315c56]"
+                  className="rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#315c56] sm:tracking-[0.16em]"
                 >
                   Оценить посадку
                 </button>
@@ -361,7 +361,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   </div>
 
                   <div className="rounded-[1.5rem] bg-white p-5 ring-1 ring-slate-900/5">
-                    <h4 className="text-xl font-black tracking-tight">{fitScore.label}</h4>
+                    <h4 className="break-words text-xl font-black tracking-tight">{fitScore.label}</h4>
                     <div className="mt-4 grid gap-3">
                       {fitScore.strengths.map((strength) => (
                         <div key={strength} className="flex gap-3 text-sm leading-6 text-slate-600">
@@ -376,7 +376,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     <button
                       type="button"
                       onClick={prepareActiveFrame}
-                      className="mt-4 w-full rounded-full bg-[#f5b25f] px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-[#e5a34f]"
+                      className="mt-4 w-full rounded-full bg-[#f5b25f] px-5 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-950 transition hover:bg-[#e5a34f] sm:tracking-[0.14em]"
                     >
                       Подготовить эту оправу и 2 похожие модели
                     </button>
@@ -388,9 +388,9 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
           <section className="rounded-[2.5rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5 md:p-8">
             <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">Каталог пилота</p>
-                <h2 className="mt-2 text-3xl font-black tracking-tight">Выберите до 3 оправ</h2>
+                <h2 className="mt-2 break-words text-3xl font-black tracking-tight">Выберите до 3 оправ</h2>
               </div>
               <p className="rounded-full bg-stone-100 px-4 py-2 text-sm font-black">{selectedFrameIds.length} / {MAX_SELECTED_FRAMES}</p>
             </div>
@@ -406,7 +406,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                         <FrameThumb frame={frame} failedImages={failedFrameImages} onImageError={markFrameImageFailed} />
                       </div>
                       <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-slate-400">{frame.brand}</p>
-                      <h3 className="mt-1 text-xl font-black tracking-tight">{frame.model}</h3>
+                      <h3 className="mt-1 break-words text-xl font-black tracking-tight">{frame.model}</h3>
                       <p className="mt-2 text-sm text-slate-500">{frame.category === 'sunglasses' ? 'Солнцезащитные' : 'Оправа'} · {frame.color} · {frame.size}</p>
                       <p className="mt-3 text-lg font-black">{formatPrice(frame.price)}</p>
                     </button>
@@ -424,7 +424,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           </section>
         </main>
 
-        <aside className="space-y-8 lg:sticky lg:top-28 lg:h-fit">
+        <aside className="min-w-0 space-y-8 lg:sticky lg:top-28 lg:h-fit">
           <section className="rounded-[2.5rem] bg-white p-7 shadow-sm ring-1 ring-slate-900/5">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">Заявка в салон</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight">Забронировать оправы</h2>
