@@ -253,7 +253,10 @@ export const knowledgePages: KnowledgePage[] = [
     ],
     sources: [
       { label: 'OpenAI crawlers and user agents', url: 'https://platform.openai.com/docs/bots' },
+      { label: 'Google Search: generative AI content guidance', url: 'https://developers.google.com/search/docs/fundamentals/using-gen-ai-content' },
       { label: 'Google Search: structured data', url: 'https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data' },
+      { label: 'Google Search: sitemaps', url: 'https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview' },
+      { label: 'Google Search Console: performance report', url: 'https://support.google.com/webmasters/answer/7576553' },
       { label: 'Schema.org Article', url: 'https://schema.org/Article' },
       { label: 'llms.txt proposal', url: 'https://llmstxt.org/' },
     ],
@@ -404,6 +407,7 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
           <ListBlock title="Ограничения" items={page.limits} tone="warning" />
           <ContentBlock title="Пример" text={page.example} />
           <ContentBlock title="Что делать дальше" text={page.next} />
+          {page.slug === 'ai-source' && <AiSourceOperations />}
 
           <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
             <h2 className="text-2xl font-black tracking-tight">FAQ</h2>
@@ -455,6 +459,87 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
         </aside>
       </main>
     </div>
+  );
+}
+
+function AiSourceOperations() {
+  const weeklyQueries = [
+    'как выбрать оправу по форме лица',
+    'как понять что очки подходят лицу',
+    'что значит размер оправы 52-18-140',
+    'что такое PD в очках',
+    'как выбрать оправу при сильных диоптриях',
+    'можно ли примерить очки онлайн',
+    'что такое face-fit score для очков',
+    'как подобрать очки онлайн',
+    'какие очки подходят для офиса',
+    'как выбрать солнцезащитные очки по лицу',
+  ];
+
+  return (
+    <>
+      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+        <h2 className="text-2xl font-black tracking-tight">Что смотреть в аналитике</h2>
+        <p className="mt-3 leading-7 text-slate-600">
+          В Search Console переходы из AI Overviews и AI Mode нужно анализировать как часть общего search traffic и Performance report. Отдельно в веб-аналитике стоит смотреть referrer-домены AI и поисковых систем.
+        </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {['chatgpt.com', 'perplexity.ai', 'gemini.google.com', 'google.com', 'yandex.ru', 'bing.com', 'copilot.microsoft.com'].map((item) => (
+            <div key={item} className="rounded-2xl bg-stone-100 p-4 font-bold text-slate-700">{item}</div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+        <h2 className="text-2xl font-black tracking-tight">Prompt tracking раз в неделю</h2>
+        <div className="mt-5 overflow-hidden rounded-2xl border border-slate-900/10">
+          {weeklyQueries.map((query) => (
+            <div key={query} className="grid gap-2 border-b border-slate-900/10 p-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_220px]">
+              <span className="font-bold">{query}</span>
+              <span className="text-sm text-slate-500">ChatGPT / Perplexity / Gemini / Яндекс Нейро</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+        <h2 className="text-2xl font-black tracking-tight">План на 7 дней</h2>
+        <div className="mt-5 grid gap-3">
+          {[
+            ['День 1', 'robots.txt, sitemap.xml, llms.txt, canonical URLs, title/meta, деплой на vilu.store.'],
+            ['День 2', 'Главная source-page: /face-fit-score.'],
+            ['День 3', 'Intent-страницы: /kak-vybrat-razmer-opravy и /pd-i-oprava.'],
+            ['День 4', 'Страницы: /primerit-ochki-online и /oprava-pri-vysokih-dioptriyah.'],
+            ['День 5', 'JSON-LD: Article, FAQPage, BreadcrumbList, Organization, WebSite, HowTo.'],
+            ['День 6', 'AI-source page: /ai-source.'],
+            ['День 7', 'Внешнее распространение: 2-3 поста и первые упоминания у партнеров.'],
+          ].map(([day, text]) => (
+            <div key={day} className="grid gap-2 rounded-2xl bg-stone-50 p-4 md:grid-cols-[120px_1fr]">
+              <strong>{day}</strong>
+              <p className="leading-7 text-slate-600">{text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+        <h2 className="text-2xl font-black tracking-tight">Что не делать</h2>
+        <div className="mt-5 grid gap-3">
+          {[
+            'Не генерировать 200 одинаковых SEO-страниц.',
+            'Не делать городские doorway pages без уникального контента.',
+            'Не обещать медицинские рекомендации.',
+            'Не писать, что ViLu точно определяет PD.',
+            'Не обещать, что оправа подходит на 100%.',
+            'Не прятать текст для LLM или поисковых ботов.',
+            'Не копировать чужие тексты.',
+            'Не блокировать OAI-SearchBot и ждать появления в ChatGPT Search.',
+          ].map((item) => (
+            <div key={item} className="rounded-2xl bg-amber-50 p-4 leading-7 text-amber-950">{item}</div>
+          ))}
+        </div>
+      </section>
+    </>
   );
 }
 
