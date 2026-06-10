@@ -7,20 +7,38 @@ import { ProductDetail } from './pages/ProductDetail';
 import { Checkout } from './pages/Checkout';
 import { Dashboard } from './pages/Dashboard';
 import { TryOnPilot } from './pages/TryOnPilot';
+import { getKnowledgePage, KnowledgeBase } from './pages/KnowledgeBase';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 
 type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon';
 
+function currentKnowledgeSlug() {
+  const redirect = new URLSearchParams(window.location.search).get('redirect');
+  if (redirect) {
+    const normalizedRedirect = redirect.startsWith('/') ? redirect : `/${redirect}`;
+    window.history.replaceState({}, '', normalizedRedirect);
+  }
+  return window.location.pathname.replace(/^\/+|\/+$/g, '');
+}
+
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [currentPage, setCurrentPage] = useState<Page>(getKnowledgePage(currentKnowledgeSlug()) ? 'home' : 'home');
   const [selectedProductId, setSelectedProductId] = useState<string>('aurora-crystal');
   const [isStoreLocatorOpen, setIsStoreLocatorOpen] = useState(false);
   const [fittingCart, setFittingCart] = useState<string[]>([]);
+  const knowledgePage = getKnowledgePage(currentKnowledgeSlug());
 
   const handleNavigate = (page: string, productId?: string) => {
     if (productId) {
       setSelectedProductId(productId);
+    }
+    if (getKnowledgePage(page)) {
+      window.location.href = `/${page}`;
+      return;
+    }
+    if (knowledgePage) {
+      window.history.pushState({}, '', '/');
     }
     setCurrentPage(page as Page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -46,7 +64,8 @@ function App() {
           />
 
           <main className="pt-20">
-            {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
+            {knowledgePage && <KnowledgeBase page={knowledgePage} onNavigate={handleNavigate} />}
+            {!knowledgePage && currentPage === 'home' && <Home onNavigate={handleNavigate} />}
             {currentPage === 'products' && (
               <Products
                 onNavigate={handleNavigate}

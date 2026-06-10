@@ -30,21 +30,25 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
     setError('');
     setLoading(true);
 
-    const result = isSignup
-      ? await signUp(email, password, name)
-      : await signIn(email, password);
+    try {
+      const result = isSignup
+        ? await signUp(email, password, name)
+        : await signIn(email, password);
 
-    setLoading(false);
+      if (result.error) {
+        setError(result.error.message);
+        return;
+      }
 
-    if (result.error) {
-      setError(result.error.message);
-      return;
+      setName('');
+      setEmail('');
+      setPassword('');
+      onClose();
+    } catch {
+      setError('Не удалось завершить вход. Проверьте данные и попробуйте еще раз.');
+    } finally {
+      setLoading(false);
     }
-
-    setName('');
-    setEmail('');
-    setPassword('');
-    onClose();
   };
 
   return (

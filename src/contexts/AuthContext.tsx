@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { createLocalId } from '../lib/id';
 
 export interface DemoUser {
   id: string;
@@ -83,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const account: StoredAccount = {
-        id: crypto.randomUUID(),
+        id: createLocalId('account'),
         email: normalizedEmail,
         password,
         name: name?.trim() || normalizedEmail.split('@')[0] || 'Клиент VisionLux',

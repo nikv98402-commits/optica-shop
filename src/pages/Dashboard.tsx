@@ -21,6 +21,7 @@ import { AuthModal } from '../components/AuthModal';
 import { VirtualTryOn } from '../components/VirtualTryOn';
 import { useAuth } from '../contexts/AuthContext';
 import { demoProducts, formatPrice } from '../data/products';
+import { createLocalId } from '../lib/id';
 
 interface DashboardProps {
   onNavigate?: (page: string, productId?: string) => void;
@@ -170,7 +171,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
     if (timer === 0) {
       const session: TrainingSession = {
-        id: crypto.randomUUID(),
+        id: createLocalId('training'),
         title: activeExercise.title,
         duration: activeExercise.duration,
         completedAt: new Date().toISOString(),

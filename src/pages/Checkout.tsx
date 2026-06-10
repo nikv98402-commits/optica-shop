@@ -2,6 +2,7 @@ import { ArrowLeft, CheckCircle2, CreditCard, Package, ShieldCheck } from 'lucid
 import { useState } from 'react';
 import { formatPrice, getProductById } from '../data/products';
 import { useAuth } from '../contexts/AuthContext';
+import { createLocalId } from '../lib/id';
 
 interface CheckoutProps {
   productId: string;
@@ -28,7 +29,7 @@ export function Checkout({ productId, onBack, onSuccess }: CheckoutProps) {
         const current = JSON.parse(localStorage.getItem(PURCHASES_KEY) || '[]') as Array<Record<string, string>>;
         localStorage.setItem(PURCHASES_KEY, JSON.stringify([
           {
-            id: crypto.randomUUID(),
+            id: createLocalId('purchase'),
             productId: product.id,
             category: product.category,
             brandName: product.brand_name,
