@@ -19,20 +19,20 @@ export function Home({ onNavigate }: HomeProps) {
         <div className="relative mx-auto grid max-w-7xl items-center gap-14 md:grid-cols-[1.05fr_0.95fr]">
           <div>
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white/60 px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-slate-700 backdrop-blur">
-              <Sparkles size={14} /> Новая коллекция 2026
+              <Sparkles size={14} /> Онлайн-подбор и оптики рядом
             </div>
             <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-[-0.06em] text-slate-950 md:text-8xl">
-              Оптика, которая выглядит как характер.
+              Подберите очки онлайн и найдите, где примерить похожие рядом.
             </h1>
             <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-700 md:text-xl">
-              VisionLux собирает оправы, солнцезащитные очки и контактные линзы в один спокойный сервис: подбор, примерка в салоне, подписка и забота о зрении без суеты.
+              Загрузите фото, выберите 2-3 подходящих стиля и получите список ближайших оптик для финальной примерки.
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <button
                 onClick={() => onNavigate('tryon')}
                 className="group rounded-full bg-slate-950 px-8 py-4 text-sm font-bold uppercase tracking-[0.2em] text-white transition hover:-translate-y-0.5 hover:bg-[#315c56]"
               >
-                Онлайн-примерка <ArrowRight className="ml-2 inline transition group-hover:translate-x-1" size={18} />
+                Начать подбор <ArrowRight className="ml-2 inline transition group-hover:translate-x-1" size={18} />
               </button>
               <button
                 onClick={() => onNavigate('products')}
