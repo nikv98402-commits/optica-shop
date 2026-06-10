@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Navigation as RouteIcon,
   Phone,
+  Send,
   ShieldCheck,
   SlidersHorizontal,
   Upload,
@@ -32,7 +33,7 @@ interface UserLocation {
 interface IntentEvent {
   id: string;
   createdAt: string;
-  action: 'route' | 'call' | 'whatsapp' | 'copy';
+  action: 'route' | 'call' | 'whatsapp' | 'telegram' | 'copy';
   opticId: string;
   opticName: string;
   selectedFrames: string[];
@@ -245,7 +246,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   };
 
   const copySelection = async (optic: DirectoryOptic) => {
-    const text = `Мой подбор ViLi / VisionLux\nЦель: ${selectedGoal}\n${selectionText}\n\nПеред визитом уточните наличие похожих моделей.\nОптика: ${optic.name}, ${optic.address}`;
+    const text = `Мой подбор ViLu / VisionLux\nЦель: ${selectedGoal}\n${selectionText}\n\nПеред визитом уточните наличие похожих моделей.\nОптика: ${optic.name}, ${optic.address}`;
     await navigator.clipboard.writeText(text);
     recordIntent(optic, 'copy');
     setCopiedOpticId(optic.id);
@@ -259,8 +260,14 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const openWhatsApp = (optic: DirectoryOptic) => {
     if (!optic.whatsapp) return;
     recordIntent(optic, 'whatsapp');
-    const message = `Здравствуйте! Хочу уточнить наличие похожих оправ по подбору ViLi:%0A${encodeURIComponent(selectionText)}`;
+    const message = `Здравствуйте! Хочу уточнить наличие похожих оправ по подбору ViLu:%0A${encodeURIComponent(selectionText)}`;
     window.open(`https://wa.me/${optic.whatsapp.replace(/\D/g, '')}?text=${message}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const openTelegram = (optic: DirectoryOptic) => {
+    if (!optic.telegram) return;
+    recordIntent(optic, 'telegram');
+    window.open(`https://t.me/${optic.telegram.replace('@', '')}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -287,7 +294,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
           <div className="min-w-0 rounded-[2rem] bg-slate-950 p-5 text-white shadow-2xl shadow-slate-900/20 sm:rounded-[2.5rem] sm:p-6">
             <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              {['Примерил', 'Понял, что подходит', 'Сохранил подбор', 'Маршрут / звонок / WhatsApp'].map((label, index) => (
+              {['Примерил', 'Понял, что подходит', 'Сохранил подбор', 'Маршрут / звонок / WhatsApp / Telegram'].map((label, index) => (
                 <div key={label} className="min-w-0 rounded-3xl bg-white/10 p-5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5b25f] text-sm font-black text-slate-950">{index + 1}</span>
                   <p className="mt-4 font-black">{label}</p>
@@ -422,12 +429,14 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           </section>
 
           <section className="rounded-[2.5rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5 md:p-8">
-            <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div className="mb-6 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">Каталог пилота</p>
                 <h2 className="mt-2 break-words text-3xl font-black tracking-tight">Примерьте 6 оправ и выберите до 3</h2>
               </div>
-              <p className="rounded-full bg-stone-100 px-4 py-2 text-sm font-black">{selectedFrameIds.length} / {MAX_SELECTED_FRAMES}</p>
+              <p className="inline-flex min-w-[112px] items-center justify-center rounded-2xl bg-stone-100 px-4 py-3 text-sm font-black text-slate-950 ring-1 ring-slate-900/5 sm:mt-7">
+                {selectedFrameIds.length} из {MAX_SELECTED_FRAMES}
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -481,7 +490,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           <section className="rounded-[2.5rem] bg-slate-950 p-7 text-white shadow-2xl shadow-slate-900/20">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[#f5b25f]">Intent-сигналы</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight">{intentCount}</h2>
-            <p className="mt-3 text-sm leading-6 text-white/65">Считаем клики по маршруту, звонку, WhatsApp и копированию подбора. Точное местоположение и фото не сохраняются.</p>
+            <p className="mt-3 text-sm leading-6 text-white/65">Считаем клики по маршруту, звонку, WhatsApp, Telegram и копированию подбора. Точное местоположение и фото не сохраняются.</p>
           </section>
 
           <button onClick={() => onNavigate?.('products')} className="w-full rounded-full bg-[#f5b25f] px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-slate-950 transition hover:bg-white">
@@ -522,7 +531,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="break-words text-2xl font-black tracking-tight">{optic.name}</h3>
                         {optic.partnerStatus === 'partner' ? (
-                          <span className="rounded-full bg-[#315c56] px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-white">Партнер ViLi</span>
+                          <span className="rounded-full bg-[#315c56] px-3 py-1 text-[11px] font-black text-white">Партнер ViLu</span>
                         ) : (
                           <span className="rounded-full bg-stone-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">Открытые источники</span>
                         )}
@@ -533,7 +542,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
                     <button type="button" onClick={() => openRoute(optic)} className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:bg-[#315c56]">
                       <RouteIcon size={15} /> Маршрут
                     </button>
@@ -542,6 +551,9 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     </a>
                     <button type="button" onClick={() => openWhatsApp(optic)} disabled={!optic.whatsapp} className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 transition hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-45">
                       <MessageCircle size={15} /> WhatsApp
+                    </button>
+                    <button type="button" onClick={() => openTelegram(optic)} disabled={!optic.telegram} className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 transition hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-45">
+                      <Send size={15} /> Telegram
                     </button>
                     <button type="button" onClick={() => copySelection(optic)} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f5b25f] px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-950 transition hover:bg-[#e5a34f]">
                       <Copy size={15} /> {copiedOpticId === optic.id ? 'Скопировано' : 'Подбор'}
