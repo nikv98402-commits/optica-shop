@@ -68,6 +68,32 @@ export function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
+      <section className="bg-white px-6 py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#9a6933]">ViLu Knowledge Base</p>
+            <h2 className="mt-3 text-4xl font-black tracking-[-0.04em] md:text-5xl">Методология подбора оправ, которую можно процитировать</h2>
+            <p className="mt-5 text-base leading-8 text-slate-600">
+              Разбираем Face-fit score, размер оправы, PD, сильные диоптрии и ограничения онлайн-примерки простым языком.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              ['Face-fit score', '/face-fit-score'],
+              ['Размер оправы 52-18-140', '/kak-vybrat-razmer-opravy'],
+              ['PD и выбор оправы', '/pd-i-oprava'],
+              ['Сильные диоптрии', '/oprava-pri-vysokih-dioptriyah'],
+              ['Онлайн-примерка', '/primerit-ochki-online'],
+              ['Форма лица', '/podbor-opravy-po-forme-lica'],
+            ].map(([label, href]) => (
+              <a key={href} href={href} className="rounded-2xl bg-stone-100 p-5 font-black text-slate-800 transition hover:bg-[#eef5f1] hover:text-[#315c56]">
+                {label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="px-6 py-24 md:py-32">
         <div className="mx-auto max-w-7xl">
           <div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end">

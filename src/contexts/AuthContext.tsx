@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { createLocalId } from '../lib/id';
 
 export interface DemoUser {
   id: string;
@@ -48,14 +49,6 @@ function publicUser(account: StoredAccount): DemoUser {
   };
 }
 
-function createDemoId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-
-  return `demo-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<DemoUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const account: StoredAccount = {
-        id: createDemoId(),
+        id: createLocalId('account'),
         email: normalizedEmail,
         password,
         name: name?.trim() || normalizedEmail.split('@')[0] || 'Клиент VisionLux',

@@ -19,6 +19,7 @@ import { ChangeEvent, CSSProperties, useMemo, useState } from 'react';
 import { opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
+import { createLocalId } from '../lib/id';
 
 interface TryOnPilotProps {
   onNavigate?: (page: string) => void;
@@ -234,7 +235,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   const recordIntent = (optic: DirectoryOptic, action: IntentEvent['action']) => {
     saveIntentEvent({
-      id: crypto.randomUUID(),
+      id: createLocalId('intent'),
       createdAt: new Date().toISOString(),
       action,
       opticId: optic.id,
