@@ -6,11 +6,42 @@
 
 После успешного GitHub Actions деплоя демо должно открываться как обычный сайт:
 
-https://nikv98402-commits.github.io/optica-shop/
+https://vilu.store/
 
 Ссылку можно открыть прямо на iPhone в Safari/Chrome — ничего устанавливать не нужно.
 
-Если ссылка пока показывает 404, нужно в настройках репозитория GitHub включить Pages с источником `GitHub Actions`, затем запустить workflow `Deploy demo to GitHub Pages`.
+Fallback GitHub Pages URL после перехода на корневой custom domain может не работать как `/optica-shop/`, потому что Vite собирает ассеты для корня домена.
+
+## Релиз на vilu.store
+
+1. В настройках DNS домена `vilu.store` добавить A-записи для apex-домена:
+
+```text
+@  A  185.199.108.153
+@  A  185.199.109.153
+@  A  185.199.110.153
+@  A  185.199.111.153
+```
+
+2. Для `www.vilu.store` добавить CNAME:
+
+```text
+www  CNAME  nikv98402-commits.github.io
+```
+
+3. В GitHub открыть `Settings -> Pages`.
+4. В `Build and deployment` выбрать `GitHub Actions`, если еще не выбрано.
+5. В `Custom domain` указать:
+
+```text
+vilu.store
+```
+
+6. Сохранить домен и дождаться DNS check.
+7. Включить `Enforce HTTPS`, когда GitHub выпустит сертификат.
+8. Смёржить релизную ветку в `main` или вручную запустить workflow `Deploy demo to GitHub Pages`.
+
+Файл `public/CNAME` добавлен как явный артефакт домена и fallback для статической публикации, но при деплое через GitHub Actions домен все равно нужно сохранить в `Settings -> Pages -> Custom domain`. Vite настроен на `base: '/'`, потому что сайт будет жить в корне `https://vilu.store/`, а не в подпапке `/optica-shop/`.
 
 ## Что уже есть
 
