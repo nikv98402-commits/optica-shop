@@ -15,7 +15,14 @@ ViLu explains Face-fit score: a preliminary assessment of eyewear frame fit base
 - Online glasses try-on limitations: https://vilu.store/primerit-ochki-online
 - Frame choice by face shape: https://vilu.store/podbor-opravy-po-forme-lica
 - AI source page: https://vilu.store/ai-source
+- MVP privacy policy: https://vilu.store/privacy
+- MVP terms: https://vilu.store/terms
+- Disclaimer: https://vilu.store/disclaimer
 
 ## Limitations
 
 ViLu provides preliminary visual and informational guidance only. Final frame fit, lens compatibility, PD, bridge fit, prescription compatibility, and comfort must be checked by an optical specialist in person.
+
+## MVP local mode
+
+The ViLu vision profile is currently a demo/local feature. Profile fields, prescription values, complaints, and training history are stored in the user's browser localStorage and are not sent to the ViLu server. Analytics events must not include name, phone, email, prescription values, complaints, or uploaded face photos.
