@@ -100,7 +100,7 @@ export function Checkout({ productId, onBack, onSuccess }: CheckoutProps) {
               {isProcessing ? 'Создаем заказ...' : <><CreditCard size={18} /> Подтвердить</>}
             </button>
 
-            <div className="mt-6 flex gap-3 text-xs leading-5 text-white/60"><CheckCircle2 className="shrink-0 text-[#f5b25f]" size={18} /> После подтверждения менеджер VisionLux свяжется для уточнения рецепта и времени примерки.</div>
+            <div className="mt-6 flex gap-3 text-xs leading-5 text-white/60"><CheckCircle2 className="shrink-0 text-[#f5b25f]" size={18} /> После подтверждения менеджер ViLu свяжется для уточнения рецепта и времени примерки.</div>
           </aside>
         </div>
       </div>

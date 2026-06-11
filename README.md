@@ -1,4 +1,4 @@
-# VisionLux Optica Shop
+# ViLu Optica Shop
 
 Интернет-магазин оптики на React, TypeScript, Vite и Tailwind CSS.
 

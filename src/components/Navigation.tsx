@@ -34,7 +34,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
   return (
     <nav className="fixed left-0 right-0 top-0 z-50 border-b border-slate-900/10 bg-[#fffaf2]/86 backdrop-blur-xl">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-        <button onClick={() => go('home')} className="text-2xl font-black tracking-[-0.08em] text-slate-950">VisionLux</button>
+        <button onClick={() => go('home')} className="text-2xl font-black tracking-[-0.08em] text-slate-950">ViLu</button>
 
         <div className="hidden items-center gap-8 md:flex">
           {navItems.map((item) => (

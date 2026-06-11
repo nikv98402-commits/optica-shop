@@ -20,6 +20,7 @@ import { opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
 import { createLocalId } from '../lib/id';
+import { reachGoal } from '../lib/metrika';
 
 interface TryOnPilotProps {
   onNavigate?: (page: string) => void;
@@ -190,6 +191,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     const file = event.target.files?.[0];
     if (!file) return;
     setPhotoUrl(URL.createObjectURL(file));
+    reachGoal('photo_uploaded', { source: 'tryon' });
   };
 
   const toggleFrame = (frameId: string) => {
@@ -203,9 +205,11 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const saveActiveFrame = () => {
     if (!activeFrame) return;
     setSelectedFrameIds((current) => current.includes(activeFrame.id) ? current : [activeFrame.id, ...current].slice(0, MAX_SELECTED_FRAMES));
+    reachGoal('save_frame', { frame_id: activeFrame.id, goal: selectedGoal });
   };
 
   const requestLocation = () => {
+    reachGoal('nearby_optics_opened', { method: 'geolocation' });
     if (!navigator.geolocation) {
       setGeoStatus('Геолокация недоступна в этом браузере. Выберите город вручную.');
       return;
@@ -231,6 +235,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const chooseCity = (city: string) => {
     setUserLocation(cityFallbacks[city]);
     setGeoStatus(`Показываем оптики для города: ${city}.`);
+    reachGoal('nearby_optics_opened', { method: 'city_fallback', city });
   };
 
   const recordIntent = (optic: DirectoryOptic, action: IntentEvent['action']) => {
@@ -244,10 +249,23 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       goal: selectedGoal,
     });
     setIntentCount(getStoredIntentEvents().length);
+
+    const goalByAction: Record<IntentEvent['action'], string> = {
+      route: 'route_clicked',
+      call: 'call_clicked',
+      whatsapp: 'whatsapp_clicked',
+      telegram: 'telegram_clicked',
+      copy: 'selection_copied',
+    };
+    reachGoal(goalByAction[action], {
+      optic_id: optic.id,
+      selected_count: selectedFrames.length,
+      goal: selectedGoal,
+    });
   };
 
   const copySelection = async (optic: DirectoryOptic) => {
-    const text = `Мой подбор ViLu / VisionLux\nЦель: ${selectedGoal}\n${selectionText}\n\nПеред визитом уточните наличие похожих моделей.\nОптика: ${optic.name}, ${optic.address}`;
+    const text = `Мой подбор ViLu\nЦель: ${selectedGoal}\n${selectionText}\n\nПеред визитом уточните наличие похожих моделей.\nОптика: ${optic.name}, ${optic.address}`;
     await navigator.clipboard.writeText(text);
     recordIntent(optic, 'copy');
     setCopiedOpticId(optic.id);
@@ -284,7 +302,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               Загрузите фото, выберите 2-3 подходящих стиля и получите список ближайших оптик для финальной примерки.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="#fit-goal" className="inline-flex justify-center rounded-full bg-slate-950 px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#315c56]">
+              <a href="#fit-goal" onClick={() => reachGoal('tryon_opened', { source: 'tryon_hero' })} className="inline-flex justify-center rounded-full bg-slate-950 px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#315c56]">
                 Начать подбор <ArrowRight className="ml-2" size={16} />
               </a>
               <a href="#nearby-optics" className="inline-flex justify-center rounded-full bg-white px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-slate-950 ring-1 ring-slate-900/10 transition hover:bg-stone-50">
@@ -395,7 +413,15 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   <h3 className="mt-2 break-words text-2xl font-black tracking-tight">Помощник выбора перед визитом</h3>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Оценка помогает выбрать оправы для салона. Финальную посадку проверяет консультант.</p>
                 </div>
-                <button type="button" onClick={() => activeFrame && setFitScoreFrameId(activeFrame.id)} className="rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#315c56]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!activeFrame) return;
+                    setFitScoreFrameId(activeFrame.id);
+                    reachGoal('fit_score_viewed', { frame_id: activeFrame.id, goal: selectedGoal });
+                  }}
+                  className="rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#315c56]"
+                >
                   Оценить посадку
                 </button>
               </div>
@@ -483,7 +509,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               )}
             </div>
 
-            <a href="#nearby-optics" className={`mt-6 flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.14em] transition ${selectedFrames.length > 0 ? 'bg-slate-950 text-white hover:bg-[#315c56]' : 'pointer-events-none bg-slate-200 text-slate-400'}`}>
+            <a href="#nearby-optics" onClick={() => reachGoal('nearby_optics_opened', { method: 'selection_cta', selected_count: selectedFrames.length })} className={`mt-6 flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.14em] transition ${selectedFrames.length > 0 ? 'bg-slate-950 text-white hover:bg-[#315c56]' : 'pointer-events-none bg-slate-200 text-slate-400'}`}>
               Найти оптику рядом <MapPinned size={16} />
             </a>
           </section>

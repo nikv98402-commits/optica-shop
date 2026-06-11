@@ -1,5 +1,6 @@
 import { ArrowRight, CalendarDays, CheckCircle2, MapPin, Sparkles } from 'lucide-react';
 import { demoProducts, formatPrice } from '../data/products';
+import { reachGoal } from '../lib/metrika';
 
 interface HomeProps {
   onNavigate: (page: string, productId?: string) => void;
@@ -29,7 +30,10 @@ export function Home({ onNavigate }: HomeProps) {
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <button
-                onClick={() => onNavigate('tryon')}
+                onClick={() => {
+                  reachGoal('tryon_opened', { source: 'home_hero' });
+                  onNavigate('tryon');
+                }}
                 className="group rounded-full bg-slate-950 px-8 py-4 text-sm font-bold uppercase tracking-[0.2em] text-white transition hover:-translate-y-0.5 hover:bg-[#315c56]"
               >
                 Начать подбор <ArrowRight className="ml-2 inline transition group-hover:translate-x-1" size={18} />
@@ -48,7 +52,7 @@ export function Home({ onNavigate }: HomeProps) {
             <div className="relative overflow-hidden rounded-[3rem] bg-white p-4 shadow-2xl shadow-slate-900/20">
               <img
                 src="https://images.unsplash.com/photo-1509695507497-903c140c43b0?auto=format&fit=crop&w=1100&q=80"
-                alt="Премиальная оправа VisionLux"
+                alt="Премиальная оправа ViLu"
                 className="h-[520px] w-full rounded-[2.4rem] object-cover"
               />
               <div className="absolute bottom-8 left-8 right-8 rounded-[2rem] bg-white/86 p-5 backdrop-blur-xl">

@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: createLocalId('account'),
         email: normalizedEmail,
         password,
-        name: name?.trim() || normalizedEmail.split('@')[0] || 'Клиент VisionLux',
+        name: name?.trim() || normalizedEmail.split('@')[0] || 'Клиент ViLu',
         createdAt: new Date().toISOString(),
       };
 

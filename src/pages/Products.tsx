@@ -44,7 +44,7 @@ export function Products({ onNavigate, fittingCart, onToggleFitting }: ProductsP
           <div className="mt-4 flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div>
               <h1 className="text-5xl font-black tracking-[-0.06em] text-slate-950 md:text-7xl">Очки, линзы, примерка.</h1>
-              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Выбирайте онлайн, откладывайте модели на примерку и забирайте в ближайшем салоне VisionLux.</p>
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Выбирайте онлайн, откладывайте модели на примерку и забирайте в ближайшем салоне ViLu.</p>
             </div>
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">В примерке</p>
@@ -80,7 +80,7 @@ export function Products({ onNavigate, fittingCart, onToggleFitting }: ProductsP
                 <div className="grid gap-2">
                   {[
                     { id: 'all', name: 'Все бренды' },
-                    { id: 'our_brand', name: 'VisionLux' },
+                    { id: 'our_brand', name: 'ViLu' },
                     { id: 'partner_brand', name: 'Партнерские' },
                   ].map((brand) => (
                     <button key={brand.id} onClick={() => setBrandFilter(brand.id)} className={`rounded-2xl px-4 py-3 text-left text-sm font-bold transition ${brandFilter === brand.id ? 'bg-[#315c56] text-white' : 'bg-stone-100 text-slate-600 hover:bg-stone-200'}`}>{brand.name}</button>
