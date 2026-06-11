@@ -1,5 +1,6 @@
 import { ArrowRight, BookOpen, CheckCircle2, ExternalLink, ShieldCheck } from 'lucide-react';
 import { useEffect } from 'react';
+import { reachGoal } from '../lib/metrika';
 
 export interface KnowledgePageSource {
   label: string;
@@ -362,6 +363,7 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
     script.type = 'application/ld+json';
     script.text = JSON.stringify(articleJsonLd(page));
     document.head.appendChild(script);
+    reachGoal('knowledge_page_view', { slug: page.slug });
 
     return () => {
       document.getElementById(scriptId)?.remove();

@@ -1,7 +1,7 @@
 export const translations = {
   en: {
     header: {
-      brand: 'VisionLux',
+      brand: 'ViLu',
       shop: 'Shop',
       visionHub: 'Vision Hub',
       signIn: 'Sign In',
@@ -30,7 +30,7 @@ export const translations = {
       includesVisionHub: 'Includes Vision Hub Access',
       getStartedBtn: 'Get Started',
       experienceDifference: 'Experience the Difference',
-      experienceDifferenceDesc: 'Join thousands who have transformed their vision care with VisionLux.',
+      experienceDifferenceDesc: 'Join thousands who have transformed their vision care with ViLu.',
       startShopping: 'Start Shopping',
     },
     products: {
@@ -129,7 +129,7 @@ export const translations = {
     },
     storeLocator: {
       title: 'Store Locator',
-      subtitle: 'Find VisionLux stores near you',
+      subtitle: 'Find ViLu stores near you',
       locations: 'Over 100 locations nationwide',
       description: 'Visit our premium stores for eye exams and expert consultations.',
       mockStores: [
@@ -142,7 +142,7 @@ export const translations = {
   },
   ru: {
     header: {
-      brand: 'VisionLux',
+      brand: 'ViLu',
       shop: 'Каталог',
       visionHub: 'Зрение+',
       signIn: 'Вход',
@@ -270,7 +270,7 @@ export const translations = {
     },
     storeLocator: {
       title: 'Поиск магазина',
-      subtitle: 'Магазины VisionLux рядом с вами',
+      subtitle: 'Магазины ViLu рядом с вами',
       locations: 'Более 100 точек по всей стране',
       description: 'Посетите наши салоны для примерки оправ и проверки зрения.',
       mockStores: [

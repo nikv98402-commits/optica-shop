@@ -19,14 +19,14 @@ export interface DirectoryOptic {
 export const opticsDirectory: DirectoryOptic[] = [
   {
     id: 'optic-msk-atrium',
-    name: 'VisionLux Pilot',
+    name: 'ViLu Pilot',
     address: 'Москва, Земляной Вал, 33, ТЦ Атриум',
     city: 'Москва',
     lat: 55.7577,
     lng: 37.6596,
     phone: '+7 999 000-00-00',
     whatsapp: '+79990000000',
-    telegram: 'visionlux_pilot',
+    telegram: 'vilu_pilot',
     hours: '10:00-22:00',
     source: 'partner',
     partnerStatus: 'partner',

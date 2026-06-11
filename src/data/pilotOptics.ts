@@ -26,7 +26,7 @@ export interface PilotFrame {
 export const pilotOptics: PilotOptic[] = [
   {
     id: 'visionlux-pilot',
-    name: 'VisionLux Pilot',
+    name: 'ViLu Pilot',
     address: 'ТЦ Атриум, 1 этаж',
     phone: '+7 999 000-00-00',
     messenger: 'WhatsApp / Telegram',
@@ -47,7 +47,7 @@ export const pilotFrames: PilotFrame[] = [
     id: 'pilot-aurora',
     opticId: 'visionlux-pilot',
     category: 'eyeglasses',
-    brand: 'VisionLux Atelier',
+    brand: 'ViLu Atelier',
     model: 'Aurora Crystal',
     color: 'Прозрачный кристалл',
     price: 12990,
@@ -75,7 +75,7 @@ export const pilotFrames: PilotFrame[] = [
     id: 'pilot-honey',
     opticId: 'visionlux-pilot',
     category: 'sunglasses',
-    brand: 'VisionLux Sun',
+    brand: 'ViLu Sun',
     model: 'Solstice Honey',
     color: 'Медовый',
     price: 18990,
