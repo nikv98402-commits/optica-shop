@@ -22,6 +22,7 @@ import { VirtualTryOn } from '../components/VirtualTryOn';
 import { useAuth } from '../contexts/AuthContext';
 import { demoProducts, formatPrice } from '../data/products';
 import { createLocalId } from '../lib/id';
+import { reachGoal } from '../lib/metrika';
 
 interface DashboardProps {
   onNavigate?: (page: string, productId?: string) => void;
@@ -60,8 +61,8 @@ interface TrainingSession {
 }
 
 const defaultProfile: ClientProfile = {
-  fullName: '',
-  phone: '',
+  fullName: 'Demo user',
+  phone: '+7 000 000-00-00',
   city: 'Москва',
   birthDate: '',
   lastExamDate: '2026-04-20',
@@ -142,7 +143,7 @@ function calculateStrainScore(profile: ClientProfile, sessions: TrainingSession[
 }
 
 export function Dashboard({ onNavigate }: DashboardProps) {
-  const { user, signOut } = useAuth();
+  const { user, signIn, signUp, signOut } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [authOpen, setAuthOpen] = useState(false);
   const [profile, setProfile] = useState<ClientProfile>(defaultProfile);
@@ -157,9 +158,10 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
   useEffect(() => {
     if (!user) return;
-    setProfile(readJson(profileStorageKey(user.id), { ...defaultProfile, fullName: user.name }));
+    setProfile(readJson(profileStorageKey(user.id), defaultProfile));
     setSessions(readJson(sessionsStorageKey(user.id), []));
     setPurchaseHistory(readJson(PURCHASES_KEY, []).filter((item: PurchaseHistoryItem) => item.userId === user.id || item.userId === 'demo'));
+    reachGoal('dashboard_opened', { mode: 'demo_local' });
   }, [user]);
 
   useEffect(() => {
@@ -224,8 +226,22 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     event.preventDefault();
     if (!user) return;
     localStorage.setItem(profileStorageKey(user.id), JSON.stringify(profile));
+    reachGoal('profile_saved_local', { mode: 'local_storage' });
+    if (profile.leftSph || profile.rightSph || profile.leftCyl || profile.rightCyl || profile.leftAxis || profile.rightAxis) {
+      reachGoal('recipe_completed', { mode: 'local_storage' });
+    }
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1800);
+  };
+
+  const openDemoProfile = async () => {
+    const demoEmail = 'demo@vilu.store';
+    const demoPassword = 'demo-local-mode';
+    const signupResult = await signUp(demoEmail, demoPassword, 'Demo user');
+
+    if (signupResult.error) {
+      await signIn(demoEmail, demoPassword);
+    }
   };
 
   const openAuth = (mode: 'login' | 'signup') => {
@@ -244,9 +260,13 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               Создайте demo-аккаунт, сохраните рецепт, контактные данные, график осмотров и проверьте тренажеры для глаз. Все данные сохраняются локально в браузере.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <button onClick={openDemoProfile} className="rounded-full bg-[#315c56] px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-slate-950">Открыть demo-кабинет</button>
               <button onClick={() => openAuth('signup')} className="rounded-full bg-slate-950 px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#315c56]">Зарегистрироваться</button>
               <button onClick={() => openAuth('login')} className="rounded-full border border-slate-900/15 bg-white px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition hover:bg-stone-100">Войти</button>
             </div>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">
+              Demo-режим можно открыть без реальных персональных данных. Профиль хранится только на этом устройстве.
+            </p>
           </section>
 
           <section className="rounded-[3rem] bg-slate-950 p-5 text-white shadow-2xl shadow-slate-900/20">
@@ -282,6 +302,9 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             <p className="text-sm font-black uppercase tracking-[0.24em] text-[#9a6933]">Vision profile</p>
             <h1 className="mt-3 text-5xl font-black tracking-[-0.06em] md:text-7xl">Кабинет зрения</h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Здравствуйте, {profile.fullName || user.name}. Здесь собраны данные клиента, рецепт, тренировки, инфографика и персональные предложения.</p>
+            <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-[#315c56]">
+              Demo/local mode: данные кабинета сохраняются только в вашем браузере и не отправляются на сервер.
+            </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <button onClick={() => onNavigate?.('products')} className="rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#315c56]">В каталог</button>
@@ -303,11 +326,12 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-[#9a6933]">Данные клиента</p>
                   <h2 className="mt-2 text-3xl font-black tracking-tight">Анкета и рецепт</h2>
+                  <p className="mt-2 text-sm font-bold leading-6 text-slate-500">Demo-режим: данные анкеты и рецепта сохраняются только на этом устройстве.</p>
                 </div>
                 <button className="inline-flex items-center justify-center gap-2 rounded-full bg-[#315c56] px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:bg-slate-950"><Save size={16} /> Сохранить</button>
               </div>
 
-              {saved && <div className="mb-5 rounded-2xl bg-green-50 p-4 text-sm font-bold text-green-700">Данные клиента сохранены.</div>}
+              {saved && <div className="mb-5 rounded-2xl bg-green-50 p-4 text-sm font-bold text-green-700">Сохранено локально. Данные не отправлены на сервер.</div>}
 
               <div className="grid gap-4 md:grid-cols-2">
                 <Field icon={<UserRound />} label="ФИО" name="fullName" value={profile.fullName} onChange={updateProfile} placeholder="Анна Смирнова" />
@@ -322,6 +346,9 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                 <PrescriptionEye title="Левый глаз (OS)" prefix="left" profile={profile} onChange={updateProfile} />
                 <PrescriptionEye title="Правый глаз (OD)" prefix="right" profile={profile} onChange={updateProfile} />
               </div>
+              <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-950">
+                Рецепт и параметры зрения используются только для предварительного подбора оправ. ViLu не ставит диагноз и не заменяет консультацию специалиста.
+              </p>
 
               <label className="mt-5 block">
                 <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-400">Особенности и жалобы</span>
@@ -390,7 +417,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               <Mail className="mb-5 text-[#315c56]" />
               <h3 className="text-2xl font-black tracking-tight">Контакт для уведомлений</h3>
               <p className="mt-2 text-sm text-slate-500">{user.email}</p>
-              <div className="mt-5 rounded-3xl bg-blue-50 p-4 text-sm leading-6 text-blue-950"><ShieldCheck className="mb-2" size={18} /> Напоминание об осмотре запланировано за 7 дней до даты визита.</div>
+              <div className="mt-5 rounded-3xl bg-blue-50 p-4 text-sm leading-6 text-blue-950"><ShieldCheck className="mb-2" size={18} /> Уведомления в MVP-версии не отправляются. Блок показывает будущий сценарий сервиса.</div>
             </section>
 
             {tryOnRecommendations.length > 0 && (
@@ -400,7 +427,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">По вашим покупкам</p>
                   <h3 className="mt-2 text-2xl font-black tracking-tight">Релевантные модели для примерки</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Подборка учитывает прошлые покупки в категориях оправ и солнцезащитных очков.
+                    Подборка строится локально и учитывает только demo-историю в этом браузере.
                   </p>
                 </div>
                 <div className="mt-5 grid gap-3">
@@ -408,7 +435,10 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                     <button
                       key={product.id}
                       type="button"
-                      onClick={() => onNavigate?.('product', product.id)}
+                      onClick={() => {
+                        reachGoal('tryon_opened_from_dashboard', { source: 'dashboard_recommendation' });
+                        onNavigate?.('product', product.id);
+                      }}
                       className="grid grid-cols-[72px_1fr] gap-4 rounded-3xl bg-stone-100 p-3 text-left transition hover:bg-stone-200"
                     >
                       <img src={product.image_url} alt={product.name} className="h-20 w-full rounded-2xl object-cover" />
@@ -434,6 +464,13 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             ))}
           </aside>
         </div>
+        <footer className="mt-10 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-slate-500">
+          <button type="button" onClick={() => onNavigate?.('privacy')} className="transition hover:text-slate-950">Политика конфиденциальности</button>
+          <span>·</span>
+          <button type="button" onClick={() => onNavigate?.('terms')} className="transition hover:text-slate-950">Условия</button>
+          <span>·</span>
+          <button type="button" onClick={() => onNavigate?.('disclaimer')} className="transition hover:text-slate-950">Дисклеймер</button>
+        </footer>
       </div>
     </div>
   );
@@ -490,7 +527,10 @@ interface PrescriptionEyeProps {
 function PrescriptionEye({ title, prefix, profile, onChange }: PrescriptionEyeProps) {
   return (
     <div className="rounded-3xl bg-stone-100 p-5">
-      <h3 className="mb-4 font-black">{title}</h3>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <h3 className="font-black">{title}</h3>
+        <span title="Не является медицинской рекомендацией" className="rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Demo</span>
+      </div>
       <div className="grid grid-cols-3 gap-3">
         {[
           ['SPH', `${prefix}Sph`],

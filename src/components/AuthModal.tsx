@@ -68,8 +68,8 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
             {isSignup
-              ? 'Зарегистрируйтесь, чтобы сохранить рецепт, тренировки и персональные рекомендации.'
-              : 'Введите данные demo-аккаунта, чтобы продолжить работу с профилем зрения.'}
+              ? 'Создайте demo-кабинет. Данные сохраняются только в браузере и не отправляются на сервер.'
+              : 'Введите данные demo-аккаунта, чтобы продолжить работу с локальным профилем зрения.'}
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
               <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-400">Имя</span>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input value={name} onChange={(event) => setName(event.target.value)} className="w-full rounded-2xl border border-slate-900/10 bg-white py-4 pl-12 pr-4 outline-none transition focus:border-[#315c56]" placeholder="Анна" />
+                <input value={name} onChange={(event) => setName(event.target.value)} className="w-full rounded-2xl border border-slate-900/10 bg-white py-4 pl-12 pr-4 outline-none transition focus:border-[#315c56]" placeholder="Demo user" />
               </div>
             </label>
           )}
@@ -88,7 +88,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
             <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-400">Email</span>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required className="w-full rounded-2xl border border-slate-900/10 bg-white py-4 pl-12 pr-4 outline-none transition focus:border-[#315c56]" placeholder="client@visionlux.ru" />
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required className="w-full rounded-2xl border border-slate-900/10 bg-white py-4 pl-12 pr-4 outline-none transition focus:border-[#315c56]" placeholder="demo@vilu.store" />
             </div>
           </label>
 
