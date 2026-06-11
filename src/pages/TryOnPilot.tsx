@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { ChangeEvent, CSSProperties, useMemo, useState } from 'react';
-import { opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
+import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
 import { createLocalId } from '../lib/id';
@@ -54,11 +54,11 @@ const fitGoals = [
   'Минимализм',
 ];
 
-const cityFallbacks: Record<string, UserLocation> = {
-  'Москва': { lat: 55.7558, lng: 37.6173, label: 'Москва' },
-  'Санкт-Петербург': { lat: 59.9343, lng: 30.3351, label: 'Санкт-Петербург' },
-  'Казань': { lat: 55.7961, lng: 49.1064, label: 'Казань' },
-};
+const cityFallbacks: Record<string, UserLocation> = Object.fromEntries(
+  Object.entries(cityCoordinates)
+    .sort(([cityA], [cityB]) => cityA.localeCompare(cityB, 'ru'))
+    .map(([city, coordinates]) => [city, { ...coordinates, label: city }]),
+);
 
 function frameLabel(frame: PilotFrame) {
   return `${frame.brand} ${frame.model}`;
@@ -112,6 +112,13 @@ function distanceKm(from: UserLocation, optic: DirectoryOptic) {
 function formatDistance(km: number) {
   if (km < 1) return `${Math.round(km * 1000)} м`;
   return `${km.toFixed(km < 10 ? 1 : 0)} км`;
+}
+
+function opticHoursLabel(hours: string) {
+  if (!hours.includes('-')) return hours;
+
+  const closingTime = hours.split('-')[1];
+  return closingTime ? `Сегодня открыто до ${closingTime}` : hours;
 }
 
 function getStoredIntentEvents(): IntentEvent[] {
@@ -564,7 +571,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                         )}
                       </div>
                       <p className="mt-2 flex gap-2 text-sm leading-6 text-slate-600"><MapPin className="mt-1 shrink-0" size={16} /> {formatDistance(distance)} от {userLocation?.label ?? 'центра Москвы'} - {optic.address}</p>
-                      <p className="mt-1 text-sm font-bold text-slate-500">Сегодня открыто до {optic.hours.split('-')[1] ?? optic.hours}</p>
+                      <p className="mt-1 text-sm font-bold text-slate-500">{opticHoursLabel(optic.hours)}</p>
                       <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm leading-6 text-amber-950">Перед визитом уточните наличие похожих моделей.</p>
                     </div>
                   </div>
@@ -573,9 +580,15 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     <button type="button" onClick={() => openRoute(optic)} className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:bg-[#315c56]">
                       <RouteIcon size={15} /> Маршрут
                     </button>
-                    <a onClick={() => recordIntent(optic, 'call')} href={`tel:${optic.phone.replace(/\s/g, '')}`} className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 transition hover:bg-stone-200">
-                      <Phone size={15} /> Позвонить
-                    </a>
+                    {optic.phone ? (
+                      <a onClick={() => recordIntent(optic, 'call')} href={`tel:${optic.phone.replace(/\s/g, '')}`} className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 transition hover:bg-stone-200">
+                        <Phone size={15} /> Позвонить
+                      </a>
+                    ) : (
+                      <button type="button" disabled className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 opacity-45">
+                        <Phone size={15} /> Позвонить
+                      </button>
+                    )}
                     <button type="button" onClick={() => openWhatsApp(optic)} disabled={!optic.whatsapp} className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 transition hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-45">
                       <MessageCircle size={15} /> WhatsApp
                     </button>
