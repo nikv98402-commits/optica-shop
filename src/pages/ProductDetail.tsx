@@ -41,7 +41,7 @@ export function ProductDetail({ productId, onNavigate }: ProductDetailProps) {
 
           <div className="rounded-[2.5rem] bg-white p-7 shadow-sm ring-1 ring-slate-900/5 md:p-10">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#9a6933]">{product.brand_name}</p>
-            <h1 className="mt-4 text-5xl font-black tracking-[-0.06em] text-slate-950 md:text-6xl">{product.name}</h1>
+            <h1 className="mt-4 text-5xl font-black text-slate-950 md:text-6xl">{product.name}</h1>
             <p className="mt-6 text-lg leading-8 text-slate-600">{product.description}</p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">

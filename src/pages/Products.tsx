@@ -43,7 +43,7 @@ export function Products({ onNavigate, fittingCart, onToggleFitting }: ProductsP
           <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#9a6933]">Каталог</p>
           <div className="mt-4 flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div>
-              <h1 className="text-5xl font-black tracking-[-0.06em] text-slate-950 md:text-7xl">Очки, линзы, примерка.</h1>
+              <h1 className="text-5xl font-black text-slate-950 md:text-7xl">Очки, линзы, примерка.</h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Выбирайте онлайн, откладывайте модели на примерку и забирайте в ближайшем салоне ViLu.</p>
             </div>
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-900/5">

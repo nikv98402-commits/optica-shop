@@ -54,7 +54,7 @@ export function Checkout({ productId, onBack, onSuccess }: CheckoutProps) {
         <div className="grid gap-10 lg:grid-cols-[1fr_380px]">
           <section className="rounded-[2.5rem] bg-white p-7 shadow-sm ring-1 ring-slate-900/5 md:p-10">
             <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#9a6933]">Checkout</p>
-            <h1 className="mt-3 text-5xl font-black tracking-[-0.06em]">Оформление заказа</h1>
+            <h1 className="mt-3 text-5xl font-black">Оформление заказа</h1>
 
             <div className="mt-10 grid gap-4">
               <label className="grid gap-2">
