@@ -12,15 +12,15 @@ const featuredLens = demoProducts.find((product) => product.category === 'contac
 export function Home({ onNavigate }: HomeProps) {
   return (
     <div className="overflow-hidden bg-vilu-cream">
-      <section className="relative px-6 py-14 md:py-20">
+      <section className="relative px-4 py-12 sm:px-6 md:py-16">
         <div className="absolute inset-0 bg-gradient-to-br from-vilu-cream via-vilu-paper to-vilu-mist" />
 
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 md:grid-cols-[1fr_0.95fr]">
-          <div>
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
+          <div className="min-w-0">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white/70 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-700 backdrop-blur">
               <Sparkles size={14} /> Онлайн-подбор и оптики рядом
             </div>
-            <h1 className="max-w-3xl text-4xl font-black leading-[1.04] text-vilu-ink sm:text-5xl md:text-6xl">
+            <h1 className="max-w-3xl text-[2.65rem] font-black leading-[1.06] text-vilu-ink sm:text-5xl lg:text-6xl">
               Подберите очки онлайн и найдите, где примерить похожие рядом.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700">
@@ -32,13 +32,13 @@ export function Home({ onNavigate }: HomeProps) {
                   trackEvent(AnalyticsEvent.TryOnOpened, { source: 'home_hero' });
                   onNavigate('tryon');
                 }}
-                className="group rounded-full bg-vilu-ink px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-white transition hover:-translate-y-0.5 hover:bg-vilu-green"
+                className="group rounded-full bg-vilu-ink px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-white transition hover:-translate-y-0.5 hover:bg-vilu-green focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-amber/40"
               >
                 Начать подбор <ArrowRight className="ml-2 inline transition group-hover:translate-x-1" size={18} />
               </button>
               <button
                 onClick={() => onNavigate('products')}
-                className="rounded-full border border-vilu-ink/20 bg-white/70 px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-vilu-ink backdrop-blur transition hover:bg-white"
+                className="rounded-full border border-vilu-ink/20 bg-white/70 px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-vilu-ink backdrop-blur transition hover:bg-white focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-green/20"
               >
                 Смотреть каталог
               </button>
@@ -53,24 +53,24 @@ export function Home({ onNavigate }: HomeProps) {
             </div>
           </div>
 
-          <div className="relative">
-            <div className="absolute -left-5 top-7 h-full w-full rotate-[-4deg] rounded-[1.75rem] bg-vilu-green" />
-            <div className="relative overflow-hidden rounded-[1.75rem] bg-white p-4 shadow-2xl shadow-slate-900/20">
+          <div className="relative min-w-0">
+            <div className="absolute -left-3 top-5 h-full w-full rotate-[-3deg] rounded-[1.75rem] bg-vilu-green sm:-left-5 sm:top-7 sm:rotate-[-4deg]" />
+            <div className="relative overflow-hidden rounded-[1.75rem] bg-white p-3 shadow-2xl shadow-slate-900/20 sm:p-4">
               <img
                 src="https://images.unsplash.com/photo-1509695507497-903c140c43b0?auto=format&fit=crop&w=1100&q=80"
                 alt="Премиальная оправа ViLu"
-                className="h-[420px] w-full rounded-[1.35rem] object-cover"
+                className="h-[340px] w-full rounded-[1.35rem] object-cover sm:h-[420px]"
               />
-              <div className="absolute left-8 top-8 rounded-full bg-vilu-ink px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-white">
+              <div className="absolute left-6 top-6 rounded-full bg-vilu-ink px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-white sm:left-8 sm:top-8 sm:text-xs">
                 Face-fit score 84
               </div>
-              <div className="absolute bottom-8 left-8 right-8 rounded-[1.25rem] bg-white/90 p-5 backdrop-blur-xl">
+              <div className="absolute bottom-5 left-5 right-5 rounded-[1.25rem] bg-white/90 p-4 backdrop-blur-xl sm:bottom-8 sm:left-8 sm:right-8 sm:p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">Lab snapshot</p>
-                    <p className="mt-2 text-2xl font-black text-vilu-ink">2 оправы готовы к визиту</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">Снимок подбора</p>
+                    <p className="mt-2 text-xl font-black text-vilu-ink sm:text-2xl">2 оправы готовы к визиту</p>
                   </div>
-                  <div className="rounded-2xl bg-vilu-mist px-3 py-2 text-xs font-black text-vilu-green">local</div>
+                  <div className="hidden rounded-2xl bg-vilu-mist px-3 py-2 text-xs font-black text-vilu-green sm:block">локально</div>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
                   <span className="rounded-xl bg-vilu-paper py-2"><Eye className="mx-auto mb-1 text-vilu-green" size={14} />Фото</span>
