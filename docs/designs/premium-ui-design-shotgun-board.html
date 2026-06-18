@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ViLu Design Shotgun Board</title>
+  <style>
+    :root {
+      --ink: #08101f;
+      --paper: #fffaf2;
+      --cream: #f7f1e8;
+      --mist: #eef5f1;
+      --green: #315c56;
+      --amber: #f5b25f;
+      --line: #e8dfd2;
+      --slate: #647085;
+      --white: #ffffff;
+      font-family: Inter, Manrope, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f4f1eb;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .page {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 0.96;
+      letter-spacing: 0;
+      max-width: 900px;
+    }
+    .meta {
+      color: var(--slate);
+      max-width: 420px;
+      font-size: 15px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 22px;
+    }
+    .variant {
+      min-height: 780px;
+      border: 1px solid rgba(8, 16, 31, 0.08);
+      background: var(--white);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 18px 50px rgba(8, 16, 31, 0.08);
+      display: flex;
+      flex-direction: column;
+    }
+    .variant-head {
+      padding: 22px 24px;
+      border-bottom: 1px solid rgba(8, 16, 31, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .badge {
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    h2 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.05;
+    }
+    .screen {
+      flex: 1;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 42px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .brand {
+      font-size: 25px;
+      font-weight: 950;
+      letter-spacing: -0.03em;
+      text-transform: none;
+    }
+    .links {
+      display: flex;
+      gap: 16px;
+      color: var(--slate);
+    }
+    .hero-title {
+      font-size: clamp(42px, 5vw, 64px);
+      line-height: 0.98;
+      font-weight: 950;
+      letter-spacing: -0.02em;
+      margin: 0 0 18px;
+      max-width: 560px;
+    }
+    .hero-copy {
+      color: #59657a;
+      max-width: 520px;
+      margin: 0 0 22px;
+      font-size: 16px;
+    }
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 26px;
+    }
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 20px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+    .btn-dark { background: var(--ink); color: white; }
+    .btn-amber { background: var(--amber); color: var(--ink); }
+    .btn-soft { background: rgba(49, 92, 86, 0.10); color: var(--green); }
+    .rail {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 24px;
+    }
+    .step {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(8,16,31,0.08);
+      border-radius: 14px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .preview-card, .mini-card, .salon-card {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(8,16,31,0.08);
+      border-radius: 20px;
+      box-shadow: 0 12px 36px rgba(8, 16, 31, 0.08);
+    }
+    .frame-art {
+      height: 110px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 32% 50%, transparent 0 28px, currentColor 29px 36px, transparent 37px),
+        radial-gradient(circle at 68% 50%, transparent 0 28px, currentColor 29px 36px, transparent 37px),
+        linear-gradient(90deg, transparent 43%, currentColor 43% 57%, transparent 57%);
+      opacity: .9;
+      color: var(--green);
+    }
+    .variant-a .screen { background: linear-gradient(145deg, #fffdf8, #eef5f1); }
+    .variant-a .badge { background: var(--mist); color: var(--green); }
+    .variant-a .product-state {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: 1fr 0.85fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .variant-a .preview-card { padding: 22px; }
+    .variant-a .mini-card { padding: 18px; color: var(--green); font-weight: 900; }
+
+    .variant-b .screen { background: #07101f; color: white; }
+    .variant-b .links, .variant-b .hero-copy { color: #aeb8c9; }
+    .variant-b .badge { background: rgba(245,178,95,0.18); color: #f7c77c; }
+    .variant-b .cockpit {
+      margin-top: 26px;
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 14px;
+    }
+    .variant-b .preview-card {
+      padding: 18px;
+      background: #ffffff;
+      color: var(--ink);
+    }
+    .variant-b .score {
+      border-radius: 18px;
+      padding: 18px;
+      background: rgba(238,245,241,0.12);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    .variant-b .score strong { font-size: 42px; color: var(--amber); }
+    .variant-b .rail .step { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); color: white; }
+
+    .variant-c .screen { background: linear-gradient(145deg, #fff7eb, #ffffff); }
+    .variant-c .badge { background: #fff1d9; color: #9a6933; }
+    .variant-c .visit-card {
+      margin-top: 28px;
+      padding: 20px;
+      border-radius: 24px;
+      background: var(--green);
+      color: white;
+      box-shadow: 0 22px 50px rgba(49, 92, 86, 0.28);
+    }
+    .variant-c .salon-card {
+      margin-top: 14px;
+      padding: 18px;
+      color: var(--ink);
+    }
+    .variant-c .salon-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .variant-c .salon-actions span {
+      border-radius: 999px;
+      background: var(--cream);
+      padding: 10px;
+      font-weight: 900;
+      text-align: center;
+      font-size: 12px;
+    }
+    .notes {
+      padding: 20px 24px 24px;
+      background: #fff;
+      border-top: 1px solid rgba(8,16,31,0.08);
+    }
+    .notes ul { margin: 10px 0 0; padding-left: 18px; color: #47536a; }
+    .notes li { margin: 6px 0; }
+    .pick {
+      margin-top: 24px;
+      padding: 22px 24px;
+      border-radius: 24px;
+      background: var(--ink);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+    }
+    .pick strong { color: var(--amber); }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      header { display: block; }
+      .variant { min-height: auto; }
+    }
+    @media (max-width: 640px) {
+      .page { padding: 18px; }
+      .screen { padding: 20px; }
+      .links { display: none; }
+      .product-state, .variant-b .cockpit { grid-template-columns: 1fr !important; }
+      .hero-title { font-size: 42px; }
+      .rail { grid-template-columns: 1fr 1fr; }
+      .pick { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>ViLu design shotgun</h1>
+        <p class="meta">Три разные визуальные системы для редизайна: минимализм, продуктовый cockpit и подготовка к визиту в салон. Рекомендация: B + сдержанность A.</p>
+      </div>
+    </header>
+
+    <section class="grid" aria-label="Design variants">
+      <article class="variant variant-a">
+        <div class="variant-head">
+          <h2>A. Premium Optical Minimalism</h2>
+          <span class="badge">calm</span>
+        </div>
+        <div class="screen">
+          <nav class="nav"><span class="brand">ViLu</span><span class="links"><span>примерка</span><span>каталог</span><span>салоны</span></span></nav>
+          <p class="badge" style="display:inline-block">точная онлайн-подготовка</p>
+          <h3 class="hero-title">Подберите оправу спокойно и точно</h3>
+          <p class="hero-copy">Загрузите фото, получите предварительный Face-fit score и сохраните 2-3 оправы для салона.</p>
+          <div class="cta-row"><button class="btn btn-dark">Начать подбор</button><button class="btn btn-soft">Смотреть оправы</button></div>
+          <div class="product-state">
+            <div class="preview-card"><div class="frame-art"></div><h4>Aurora Crystal</h4><p class="hero-copy">Офис / каждый день · 49-19-140</p></div>
+            <div class="mini-card">Фото остается в браузере<br><br>Face-fit: 84/100</div>
+          </div>
+        </div>
+        <div class="notes"><strong>Лучше всего:</strong><ul><li>убрать ощущение «колхозно»;</li><li>дать премиум и доверие;</li><li>KB/dashboard/product pages.</li></ul></div>
+      </article>
+
+      <article class="variant variant-b">
+        <div class="variant-head">
+          <h2>B. Product-Led Try-On Cockpit</h2>
+          <span class="badge">recommended</span>
+        </div>
+        <div class="screen">
+          <nav class="nav"><span class="brand">ViLu</span><span class="links"><span>примерка</span><span>score</span><span>салон</span></span></nav>
+          <p class="badge" style="display:inline-block">Фото → Face-fit → Подбор → Салон</p>
+          <h3 class="hero-title">Выберите 3 оправы до визита</h3>
+          <p class="hero-copy">ViLu показывает посадку, сохраняет подбор и ведет к ближайшей оптике без отправки фото на сервер.</p>
+          <div class="cta-row"><button class="btn btn-amber">Начать подбор</button><button class="btn btn-soft">Как работает</button></div>
+          <div class="rail"><div class="step">1 Фото</div><div class="step">2 Score</div><div class="step">3 Подбор</div><div class="step">4 Салон</div></div>
+          <div class="cockpit">
+            <div class="preview-card"><div class="frame-art"></div><strong>Сохранено 2 из 3</strong><p>Следующий шаг: найти салон рядом</p></div>
+            <div class="score"><strong>84</strong><br>Подходит для первого визита<br><br><button class="btn btn-amber">Найти салон</button></div>
+          </div>
+        </div>
+        <div class="notes"><strong>Лучше всего:</strong><ul><li>объяснить уникальность ViLu за 5 секунд;</li><li>поднять старт примерки;</li><li>держать CJM на виду.</li></ul></div>
+      </article>
+
+      <article class="variant variant-c">
+        <div class="variant-head">
+          <h2>C. Boutique Salon Preparation</h2>
+          <span class="badge">salon</span>
+        </div>
+        <div class="screen">
+          <nav class="nav"><span class="brand">ViLu</span><span class="links"><span>подбор</span><span>визит</span><span>партнеры</span></span></nav>
+          <p class="badge" style="display:inline-block">подготовка к примерке</p>
+          <h3 class="hero-title">Приходите в салон уже с подбором</h3>
+          <p class="hero-copy">Сохраните оправы, проверьте чеклист посадки и отправляйтесь в ближайшую оптику.</p>
+          <div class="cta-row"><button class="btn btn-dark">Собрать подбор</button><button class="btn btn-soft">Найти салон</button></div>
+          <div class="visit-card"><strong>Ваш визит готов</strong><p>3 оправы · офис / каждый день · проверить мост и размер M</p></div>
+          <div class="salon-card"><strong>VisionLux Pilot</strong><p>2.7 км · открыто до 22:00</p><div class="salon-actions"><span>Маршрут</span><span>Позвонить</span><span>Telegram</span><span>Подбор</span></div></div>
+        </div>
+        <div class="notes"><strong>Лучше всего:</strong><ul><li>салоны и партнерский слой;</li><li>ощущение полезного визита;</li><li>B2B narrative для оптик.</li></ul></div>
+      </article>
+    </section>
+
+    <section class="pick">
+      <div><strong>Рекомендация:</strong> выбрать B как базу, взять типографическую сдержанность и чистоту A, а салонные карточки доработать в духе C.</div>
+      <div>Следующий шаг: implementation branch с design tokens + hero only.</div>
+    </section>
+  </main>
+</body>
+</html>
