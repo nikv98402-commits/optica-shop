@@ -34,11 +34,20 @@ Always mention which checks were run and which were skipped.
 - Do not remove demo data from `src/data/products.ts` unless a real API replacement is added.
 - Keep iPhone/Safari usability in mind: responsive layouts, readable button sizes, no desktop-only critical flows.
 
+## Design system
+
+- Always read `DESIGN.md` before making visual or UI decisions.
+- ViLu should feel like methodical premium utility: calm, expert, product-led, and privacy-aware.
+- Keep the main user path visible: online try-on -> Face-fit score -> save 2-3 frames -> nearby optics -> route/contact/checklist.
+- Avoid internal implementation language in the UI: do not show words like "lead", "Tally", or "intent signals" to users.
+- Do not use negative letter spacing on Cyrillic headings.
+- For data collection surfaces, preserve local/demo/privacy notices and do not send PII or prescription data to analytics.
+
 ## Deployment
 
-The app is configured for GitHub Pages with Vite base `/optica-shop/`.
-The public demo URL should be:
+The app is configured for GitHub Pages and a custom domain.
+The public production URL is:
 
-https://nikv98402-commits.github.io/optica-shop/
+https://vilu.store/
 
 The workflow file is `.github/workflows/deploy-pages.yml`.
