@@ -1,6 +1,6 @@
 import { ArrowRight, CalendarDays, CheckCircle2, MapPin, Sparkles } from 'lucide-react';
 import { demoProducts, formatPrice } from '../data/products';
-import { reachGoal } from '../lib/metrika';
+import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 
 interface HomeProps {
   onNavigate: (page: string, productId?: string) => void;
@@ -31,7 +31,7 @@ export function Home({ onNavigate }: HomeProps) {
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <button
                 onClick={() => {
-                  reachGoal('tryon_opened', { source: 'home_hero' });
+                  trackEvent(AnalyticsEvent.TryOnOpened, { source: 'home_hero' });
                   onNavigate('tryon');
                 }}
                 className="group rounded-full bg-slate-950 px-8 py-4 text-sm font-bold uppercase tracking-[0.2em] text-white transition hover:-translate-y-0.5 hover:bg-[#315c56]"
