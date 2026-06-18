@@ -11,9 +11,9 @@ const featuredLens = demoProducts.find((product) => product.category === 'contac
 
 export function Home({ onNavigate }: HomeProps) {
   return (
-    <div className="overflow-hidden bg-vilu-cream">
+    <div className="overflow-hidden bg-[#f5f7fa]">
       <section className="relative px-4 py-12 sm:px-6 md:py-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-vilu-cream via-vilu-paper to-vilu-mist" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(49,92,86,0.16),transparent_32%),linear-gradient(135deg,#ffffff_0%,#f5f7fa_58%,#eef5f1_100%)]" />
 
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
           <div className="min-w-0">
@@ -54,31 +54,66 @@ export function Home({ onNavigate }: HomeProps) {
           </div>
 
           <div className="relative min-w-0">
-            <div className="absolute -left-3 top-5 h-full w-full rotate-[-3deg] rounded-[1.75rem] bg-vilu-green sm:-left-5 sm:top-7 sm:rotate-[-4deg]" />
-            <div className="relative overflow-hidden rounded-[1.75rem] bg-white p-3 shadow-2xl shadow-slate-900/20 sm:p-4">
-              <img
-                src="https://images.unsplash.com/photo-1509695507497-903c140c43b0?auto=format&fit=crop&w=1100&q=80"
-                alt="Премиальная оправа ViLu"
-                className="h-[340px] w-full rounded-[1.35rem] object-cover sm:h-[420px]"
-              />
-              <div className="absolute left-6 top-6 rounded-full bg-vilu-ink px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-white sm:left-8 sm:top-8 sm:text-xs">
-                Face-fit score 84
-              </div>
-              <div className="absolute bottom-5 left-5 right-5 rounded-[1.25rem] bg-white/90 p-4 backdrop-blur-xl sm:bottom-8 sm:left-8 sm:right-8 sm:p-5">
-                <div className="flex items-start justify-between gap-4">
+            <div className="absolute -inset-4 rounded-[2.25rem] bg-white/45 blur-2xl" />
+            <div className="relative overflow-hidden rounded-[2rem] border border-slate-900/10 bg-white/82 p-4 shadow-2xl shadow-slate-900/12 backdrop-blur-2xl sm:p-5">
+              <div className="rounded-[1.6rem] bg-gradient-to-br from-slate-50 via-white to-vilu-mist p-4 ring-1 ring-slate-900/5 sm:p-5">
+                <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">Снимок подбора</p>
-                    <p className="mt-2 text-xl font-black text-vilu-ink sm:text-2xl">2 оправы готовы к визиту</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">ViLu try-on</p>
+                    <p className="mt-1 text-2xl font-black text-vilu-ink">Подбор перед салоном</p>
                   </div>
-                  <div className="hidden rounded-2xl bg-vilu-mist px-3 py-2 text-xs font-black text-vilu-green sm:block">локально</div>
+                  <div className="rounded-full bg-vilu-mist px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-vilu-green">локально</div>
                 </div>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-[1.05fr_0.95fr]">
+                  <div className="rounded-[1.4rem] bg-white p-4 shadow-sm ring-1 ring-slate-900/5">
+                    <div className="flex h-48 items-center justify-center rounded-[1.15rem] bg-[#f5f7fa]">
+                      <div className="relative h-24 w-64 max-w-full text-vilu-green">
+                        <div className="absolute left-4 top-2 h-20 w-24 rounded-[2.2rem] border-[10px] border-current bg-white/70 shadow-xl shadow-slate-900/10" />
+                        <div className="absolute right-4 top-2 h-20 w-24 rounded-[2.2rem] border-[10px] border-current bg-white/70 shadow-xl shadow-slate-900/10" />
+                        <div className="absolute left-1/2 top-[2.9rem] h-3 w-14 -translate-x-1/2 rounded-full bg-current" />
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Aurora Crystal</p>
+                        <p className="mt-1 text-lg font-black text-vilu-ink">Офис / каждый день</p>
+                      </div>
+                      <span className="rounded-full bg-vilu-paper px-3 py-2 text-xs font-black text-vilu-ink">49-19-140</span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3">
+                    <div className="rounded-[1.4rem] bg-vilu-ink p-4 text-white">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-amber">Face-fit score</p>
+                      <div className="mt-2 flex items-end gap-2">
+                        <span className="text-5xl font-black tracking-tight">84</span>
+                        <span className="pb-2 text-sm font-bold text-white/60">/100</span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-white/72">Подходит для первого визита. Проверьте мост и ширину в салоне.</p>
+                    </div>
+                    <div className="rounded-[1.4rem] bg-white p-4 ring-1 ring-slate-900/5">
+                      <div className="flex items-center justify-between text-sm font-black">
+                        <span>Сохранено</span>
+                        <span className="text-vilu-green">2 из 3</span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        <span className="h-2 rounded-full bg-vilu-green" />
+                        <span className="h-2 rounded-full bg-vilu-green" />
+                        <span className="h-2 rounded-full bg-slate-200" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
-                  <span className="rounded-xl bg-vilu-paper py-2"><Eye className="mx-auto mb-1 text-vilu-green" size={14} />Фото</span>
-                  <span className="rounded-xl bg-vilu-mist py-2 text-vilu-green"><Sparkles className="mx-auto mb-1" size={14} />Score</span>
-                  <span className="rounded-xl bg-vilu-paper py-2"><MapPinned className="mx-auto mb-1 text-vilu-green" size={14} />Салоны</span>
+                  <span className="rounded-2xl bg-white py-3 ring-1 ring-slate-900/5"><Eye className="mx-auto mb-1 text-vilu-green" size={15} />Фото</span>
+                  <span className="rounded-2xl bg-white py-3 text-vilu-green ring-1 ring-vilu-green/10"><Sparkles className="mx-auto mb-1" size={15} />Score</span>
+                  <span className="rounded-2xl bg-white py-3 ring-1 ring-slate-900/5"><MapPinned className="mx-auto mb-1 text-vilu-green" size={15} />Салон</span>
                 </div>
-                <div className="mt-4 flex items-center justify-between rounded-2xl bg-vilu-ink px-4 py-3 text-white">
-                  <span className="text-sm font-bold">Маршрут после подбора</span>
+
+                <div className="mt-4 flex items-center justify-between rounded-2xl bg-vilu-amber px-4 py-3 text-vilu-ink">
+                  <span className="text-sm font-black">Найти салон после подбора</span>
                   <Route size={17} />
                 </div>
               </div>
