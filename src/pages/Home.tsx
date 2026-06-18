@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, CheckCircle2, MapPin, Sparkles } from 'lucide-react';
+import { ArrowRight, CalendarDays, CheckCircle2, Eye, MapPin, MapPinned, Route, Sparkles } from 'lucide-react';
 import { demoProducts, formatPrice } from '../data/products';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 
@@ -61,10 +61,26 @@ export function Home({ onNavigate }: HomeProps) {
                 alt="Премиальная оправа ViLu"
                 className="h-[420px] w-full rounded-[1.35rem] object-cover"
               />
-              <div className="absolute bottom-8 left-8 right-8 rounded-[1.25rem] bg-white/88 p-5 backdrop-blur-xl">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">Путь пользователя</p>
-                <p className="mt-2 text-2xl font-black">Подбор - салоны рядом</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Сначала выбираете оправы, потом открываете маршрут, звонок или мессенджер.</p>
+              <div className="absolute left-8 top-8 rounded-full bg-vilu-ink px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-white">
+                Face-fit score 84
+              </div>
+              <div className="absolute bottom-8 left-8 right-8 rounded-[1.25rem] bg-white/90 p-5 backdrop-blur-xl">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">Lab snapshot</p>
+                    <p className="mt-2 text-2xl font-black text-vilu-ink">2 оправы готовы к визиту</p>
+                  </div>
+                  <div className="rounded-2xl bg-vilu-mist px-3 py-2 text-xs font-black text-vilu-green">local</div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
+                  <span className="rounded-xl bg-vilu-paper py-2"><Eye className="mx-auto mb-1 text-vilu-green" size={14} />Фото</span>
+                  <span className="rounded-xl bg-vilu-mist py-2 text-vilu-green"><Sparkles className="mx-auto mb-1" size={14} />Score</span>
+                  <span className="rounded-xl bg-vilu-paper py-2"><MapPinned className="mx-auto mb-1 text-vilu-green" size={14} />Салоны</span>
+                </div>
+                <div className="mt-4 flex items-center justify-between rounded-2xl bg-vilu-ink px-4 py-3 text-white">
+                  <span className="text-sm font-bold">Маршрут после подбора</span>
+                  <Route size={17} />
+                </div>
               </div>
             </div>
           </div>
