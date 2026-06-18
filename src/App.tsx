@@ -13,6 +13,15 @@ import { AuthProvider } from './contexts/AuthContext';
 
 type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon';
 
+const pathPageMap: Record<string, Page> = {
+  '': 'home',
+  catalog: 'products',
+  products: 'products',
+  dashboard: 'dashboard',
+  cabinet: 'dashboard',
+  tryon: 'tryon',
+};
+
 function currentKnowledgeSlug() {
   const redirect = new URLSearchParams(window.location.search).get('redirect');
   if (redirect) {
@@ -22,8 +31,12 @@ function currentKnowledgeSlug() {
   return window.location.pathname.replace(/^\/+|\/+$/g, '');
 }
 
+function currentAppPage(): Page {
+  return pathPageMap[currentKnowledgeSlug()] ?? 'home';
+}
+
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>(getKnowledgePage(currentKnowledgeSlug()) ? 'home' : 'home');
+  const [currentPage, setCurrentPage] = useState<Page>(getKnowledgePage(currentKnowledgeSlug()) ? 'home' : currentAppPage());
   const [selectedProductId, setSelectedProductId] = useState<string>('aurora-crystal');
   const [isStoreLocatorOpen, setIsStoreLocatorOpen] = useState(false);
   const [fittingCart, setFittingCart] = useState<string[]>([]);
@@ -39,6 +52,9 @@ function App() {
     }
     if (knowledgePage) {
       window.history.pushState({}, '', '/');
+    }
+    if (page in pathPageMap) {
+      window.history.pushState({}, '', page === 'home' ? '/' : `/${page}`);
     }
     setCurrentPage(page as Page);
     window.scrollTo({ top: 0, behavior: 'smooth' });

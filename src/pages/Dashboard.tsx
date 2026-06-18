@@ -22,7 +22,7 @@ import { VirtualTryOn } from '../components/VirtualTryOn';
 import { useAuth } from '../contexts/AuthContext';
 import { demoProducts, formatPrice } from '../data/products';
 import { createLocalId } from '../lib/id';
-import { reachGoal } from '../lib/metrika';
+import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 
 interface DashboardProps {
   onNavigate?: (page: string, productId?: string) => void;
@@ -161,7 +161,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     setProfile(readJson(profileStorageKey(user.id), defaultProfile));
     setSessions(readJson(sessionsStorageKey(user.id), []));
     setPurchaseHistory(readJson(PURCHASES_KEY, []).filter((item: PurchaseHistoryItem) => item.userId === user.id || item.userId === 'demo'));
-    reachGoal('dashboard_opened', { mode: 'demo_local' });
+    trackEvent(AnalyticsEvent.DashboardOpened, { mode: 'demo_local' });
   }, [user]);
 
   useEffect(() => {
@@ -226,9 +226,9 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     event.preventDefault();
     if (!user) return;
     localStorage.setItem(profileStorageKey(user.id), JSON.stringify(profile));
-    reachGoal('profile_saved_local', { mode: 'local_storage' });
+    trackEvent(AnalyticsEvent.ProfileSavedLocal, { mode: 'local_storage' });
     if (profile.leftSph || profile.rightSph || profile.leftCyl || profile.rightCyl || profile.leftAxis || profile.rightAxis) {
-      reachGoal('recipe_completed', { mode: 'local_storage' });
+      trackEvent(AnalyticsEvent.RecipeCompleted, { mode: 'local_storage' });
     }
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1800);
@@ -436,7 +436,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                       key={product.id}
                       type="button"
                       onClick={() => {
-                        reachGoal('tryon_opened_from_dashboard', { source: 'dashboard_recommendation' });
+                        trackEvent(AnalyticsEvent.TryOnOpenedFromDashboard, { source: 'dashboard_recommendation' });
                         onNavigate?.('product', product.id);
                       }}
                       className="grid grid-cols-[72px_1fr] gap-4 rounded-3xl bg-stone-100 p-3 text-left transition hover:bg-stone-200"

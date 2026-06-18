@@ -16,11 +16,12 @@ import {
   X,
 } from 'lucide-react';
 import { ChangeEvent, CSSProperties, useMemo, useState } from 'react';
+import { hasLeadForm, TALLY_FORM_URL } from '../config/leads';
 import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
 import { createLocalId } from '../lib/id';
-import { reachGoal } from '../lib/metrika';
+import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
 
 interface TryOnPilotProps {
   onNavigate?: (page: string) => void;
@@ -35,11 +36,19 @@ interface UserLocation {
 interface IntentEvent {
   id: string;
   createdAt: string;
-  action: 'route' | 'call' | 'whatsapp' | 'telegram' | 'copy';
+  action: 'route' | 'call' | 'whatsapp' | 'telegram' | 'copy' | 'visit_lead';
   opticId: string;
   opticName: string;
   selectedFrames: string[];
   goal: string;
+}
+
+interface VisitLeadForm {
+  city: string;
+  contactMethod: 'phone' | 'telegram' | 'whatsapp';
+  contact: string;
+  comment: string;
+  consent: boolean;
 }
 
 const INTENT_KEY = 'visionlux_tryon_intent_events';
@@ -121,6 +130,24 @@ function opticHoursLabel(hours: string) {
   return closingTime ? `Сегодня открыто до ${closingTime}` : hours;
 }
 
+function routeQuery(optic: DirectoryOptic) {
+  return encodeURIComponent(`${optic.name}, ${optic.address}`);
+}
+
+function buildTallyUrl(form: VisitLeadForm, selectedFrames: PilotFrame[], selectedGoal: string) {
+  const url = new URL(TALLY_FORM_URL);
+  url.searchParams.set('city', form.city);
+  url.searchParams.set('contact_method', form.contactMethod);
+  url.searchParams.set('contact', form.contact.trim());
+  url.searchParams.set('goal', selectedGoal);
+  url.searchParams.set('selected_count', String(selectedFrames.length));
+  url.searchParams.set('frames', selectedFrames.map(frameLabel).join(', '));
+  if (form.comment.trim()) {
+    url.searchParams.set('comment', form.comment.trim());
+  }
+  return url.toString();
+}
+
 function getStoredIntentEvents(): IntentEvent[] {
   try {
     return JSON.parse(localStorage.getItem(INTENT_KEY) || '[]') as IntentEvent[];
@@ -171,6 +198,15 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [geoStatus, setGeoStatus] = useState('');
   const [copiedOpticId, setCopiedOpticId] = useState('');
+  const [isVisitLeadOpen, setIsVisitLeadOpen] = useState(false);
+  const [visitLeadStatus, setVisitLeadStatus] = useState('');
+  const [visitLeadForm, setVisitLeadForm] = useState<VisitLeadForm>({
+    city: 'Москва',
+    contactMethod: 'telegram',
+    contact: '',
+    comment: '',
+    consent: false,
+  });
   const [intentCount, setIntentCount] = useState(() => getStoredIntentEvents().length);
 
   const activeFrame = frames.find((frame) => frame.id === activeFrameId) ?? frames[0];
@@ -190,6 +226,9 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     ? selectedFrames.map((frame, index) => `${index + 1}. ${frameLabel(frame)} - ${frame.color}, ${frameUseCase(frame, selectedGoal)}`).join('\n')
     : 'Подбор пока пуст.';
 
+  const canPrepareVisit = selectedFrames.length >= 2;
+  const canSubmitVisitLead = canPrepareVisit && visitLeadForm.contact.trim().length >= 3 && visitLeadForm.consent;
+
   const markFrameImageFailed = (frameId: string) => {
     setFailedFrameImages((current) => new Set(current).add(frameId));
   };
@@ -198,7 +237,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     const file = event.target.files?.[0];
     if (!file) return;
     setPhotoUrl(URL.createObjectURL(file));
-    reachGoal('photo_uploaded', { source: 'tryon' });
+    trackEvent(AnalyticsEvent.PhotoUploaded, { source: 'tryon' });
   };
 
   const toggleFrame = (frameId: string) => {
@@ -212,11 +251,11 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const saveActiveFrame = () => {
     if (!activeFrame) return;
     setSelectedFrameIds((current) => current.includes(activeFrame.id) ? current : [activeFrame.id, ...current].slice(0, MAX_SELECTED_FRAMES));
-    reachGoal('save_frame', { frame_id: activeFrame.id, goal: selectedGoal });
+    trackEvent(AnalyticsEvent.FrameSaved, { frame_id: activeFrame.id, goal: selectedGoal });
   };
 
   const requestLocation = () => {
-    reachGoal('nearby_optics_opened', { method: 'geolocation' });
+    trackEvent(AnalyticsEvent.NearbyOpticsOpened, { method: 'geolocation' });
     if (!navigator.geolocation) {
       setGeoStatus('Геолокация недоступна в этом браузере. Выберите город вручную.');
       return;
@@ -242,7 +281,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const chooseCity = (city: string) => {
     setUserLocation(cityFallbacks[city]);
     setGeoStatus(`Показываем оптики для города: ${city}.`);
-    reachGoal('nearby_optics_opened', { method: 'city_fallback', city });
+    trackEvent(AnalyticsEvent.NearbyOpticsOpened, { method: 'city_fallback', city });
   };
 
   const recordIntent = (optic: DirectoryOptic, action: IntentEvent['action']) => {
@@ -257,18 +296,71 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     });
     setIntentCount(getStoredIntentEvents().length);
 
-    const goalByAction: Record<IntentEvent['action'], string> = {
-      route: 'route_clicked',
-      call: 'call_clicked',
-      whatsapp: 'whatsapp_clicked',
-      telegram: 'telegram_clicked',
-      copy: 'selection_copied',
+    const goalByAction: Record<IntentEvent['action'], AnalyticsEventName> = {
+      route: AnalyticsEvent.RouteClicked,
+      call: AnalyticsEvent.CallClicked,
+      whatsapp: AnalyticsEvent.WhatsappClicked,
+      telegram: AnalyticsEvent.TelegramClicked,
+      copy: AnalyticsEvent.SelectionCopied,
+      visit_lead: AnalyticsEvent.VisitLeadSubmitted,
     };
-    reachGoal(goalByAction[action], {
+    trackEvent(goalByAction[action], {
       optic_id: optic.id,
       selected_count: selectedFrames.length,
       goal: selectedGoal,
     });
+  };
+
+  const openVisitLead = () => {
+    if (!canPrepareVisit) {
+      setVisitLeadStatus('Сохраните минимум 2 оправы, чтобы подготовить подбор к визиту.');
+      return;
+    }
+    setVisitLeadStatus('');
+    setVisitLeadForm((current) => ({
+      ...current,
+      city: userLocation?.label && userLocation.label !== 'ваше местоположение' ? userLocation.label : current.city,
+    }));
+    setIsVisitLeadOpen(true);
+    trackEvent(AnalyticsEvent.VisitLeadOpened, {
+      selected_count: selectedFrames.length,
+      source: 'selection_card',
+    });
+  };
+
+  const submitVisitLead = async () => {
+    if (!canSubmitVisitLead) {
+      setVisitLeadStatus('Укажите контакт и подтвердите согласие на передачу данных в форму.');
+      return;
+    }
+
+    saveIntentEvent({
+      id: createLocalId('intent'),
+      createdAt: new Date().toISOString(),
+      action: 'visit_lead',
+      opticId: 'visit-lead',
+      opticName: visitLeadForm.city,
+      selectedFrames: selectedFrames.map(frameLabel),
+      goal: selectedGoal,
+    });
+    setIntentCount(getStoredIntentEvents().length);
+
+    trackEvent(AnalyticsEvent.VisitLeadSubmitted, {
+      selected_count: selectedFrames.length,
+      city: visitLeadForm.city,
+      contact_type: visitLeadForm.contactMethod,
+      mode: hasLeadForm() ? 'tally' : 'copy_fallback',
+    });
+
+    if (hasLeadForm()) {
+      window.open(buildTallyUrl(visitLeadForm, selectedFrames, selectedGoal), '_blank', 'noopener,noreferrer');
+      setVisitLeadStatus('Форма для визита открыта. Фото и рецепт не передаются.');
+      return;
+    }
+
+    const text = `Подбор ViLu для визита\nГород: ${visitLeadForm.city}\nЦель: ${selectedGoal}\n${selectionText}\n\nКонтакт: ${visitLeadForm.contactMethod}\nКомментарий: ${visitLeadForm.comment || 'нет'}\n\nФото и рецепт не передаются.`;
+    await navigator.clipboard.writeText(text);
+    setVisitLeadStatus('Tally пока не подключен. Подбор скопирован, данные не отправлены на сервер.');
   };
 
   const copySelection = async (optic: DirectoryOptic) => {
@@ -280,7 +372,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   const openRoute = (optic: DirectoryOptic) => {
     recordIntent(optic, 'route');
-    window.open(`https://www.google.com/maps/search/?api=1&query=${optic.lat},${optic.lng}`, '_blank', 'noopener,noreferrer');
+    window.open(`https://www.google.com/maps/search/?api=1&query=${routeQuery(optic)}`, '_blank', 'noopener,noreferrer');
   };
 
   const openWhatsApp = (optic: DirectoryOptic) => {
@@ -309,7 +401,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               Загрузите фото, выберите 2-3 подходящих стиля и получите список ближайших оптик для финальной примерки.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="#fit-goal" onClick={() => reachGoal('tryon_opened', { source: 'tryon_hero' })} className="inline-flex justify-center rounded-full bg-slate-950 px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#315c56]">
+              <a href="#fit-goal" onClick={() => trackEvent(AnalyticsEvent.TryOnOpened, { source: 'tryon_hero' })} className="inline-flex justify-center rounded-full bg-slate-950 px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-[#315c56]">
                 Начать подбор <ArrowRight className="ml-2" size={16} />
               </a>
               <a href="#nearby-optics" className="inline-flex justify-center rounded-full bg-white px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-slate-950 ring-1 ring-slate-900/10 transition hover:bg-stone-50">
@@ -425,7 +517,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   onClick={() => {
                     if (!activeFrame) return;
                     setFitScoreFrameId(activeFrame.id);
-                    reachGoal('fit_score_viewed', { frame_id: activeFrame.id, goal: selectedGoal });
+                    trackEvent(AnalyticsEvent.FitScoreViewed, { frame_id: activeFrame.id, goal: selectedGoal });
                   }}
                   className="rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#315c56]"
                 >
@@ -516,9 +608,23 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               )}
             </div>
 
-            <a href="#nearby-optics" onClick={() => reachGoal('nearby_optics_opened', { method: 'selection_cta', selected_count: selectedFrames.length })} className={`mt-6 flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.14em] transition ${selectedFrames.length > 0 ? 'bg-slate-950 text-white hover:bg-[#315c56]' : 'pointer-events-none bg-slate-200 text-slate-400'}`}>
+            <a href="#nearby-optics" onClick={() => trackEvent(AnalyticsEvent.NearbyOpticsOpened, { method: 'selection_cta', selected_count: selectedFrames.length })} className={`mt-6 flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.14em] transition ${selectedFrames.length > 0 ? 'bg-slate-950 text-white hover:bg-[#315c56]' : 'pointer-events-none bg-slate-200 text-slate-400'}`}>
               Найти оптику рядом <MapPinned size={16} />
             </a>
+            <button
+              type="button"
+              onClick={openVisitLead}
+              disabled={!canPrepareVisit}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#f5b25f] px-6 py-4 text-center text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-[#e5a34f] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+            >
+              Подготовить подбор к визиту <ArrowRight size={16} />
+            </button>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Контакт передается только после согласия. Фото, рецепт и точное местоположение не отправляются.
+            </p>
+            {visitLeadStatus && !isVisitLeadOpen && (
+              <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-xs leading-5 text-amber-950">{visitLeadStatus}</p>
+            )}
           </section>
 
           <section className="rounded-[2.5rem] bg-slate-950 p-7 text-white shadow-2xl shadow-slate-900/20">
@@ -605,6 +711,129 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           </div>
         </div>
       </section>
+
+      {isVisitLeadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-[#fffaf2] p-6 shadow-2xl ring-1 ring-white/20 md:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">Visit lead</p>
+                <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Подготовить подбор к визиту</h2>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  Передадим только выбранные оправы и контакт, если вы подтвердите согласие. Фото, рецепт и точные координаты не отправляются.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsVisitLeadOpen(false)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-slate-950 ring-1 ring-slate-900/10 transition hover:bg-stone-100"
+                aria-label="Закрыть форму"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3">
+              {selectedFrames.map((frame, index) => (
+                <div key={frame.id} className="rounded-3xl bg-white p-4 ring-1 ring-slate-900/5">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Оправа {index + 1}</p>
+                  <p className="mt-1 font-black text-slate-950">{frameLabel(frame)}</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">{frame.color} - {frameUseCase(frame, selectedGoal)}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Город</span>
+                <select
+                  value={visitLeadForm.city}
+                  onChange={(event) => setVisitLeadForm((current) => ({ ...current, city: event.target.value }))}
+                  className="mt-2 w-full rounded-2xl border border-slate-900/10 bg-white px-4 py-4 text-sm font-bold outline-none transition focus:border-[#315c56]"
+                >
+                  {Object.keys(cityFallbacks).map((city) => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Способ связи</span>
+                <select
+                  value={visitLeadForm.contactMethod}
+                  onChange={(event) => setVisitLeadForm((current) => ({ ...current, contactMethod: event.target.value as VisitLeadForm['contactMethod'] }))}
+                  className="mt-2 w-full rounded-2xl border border-slate-900/10 bg-white px-4 py-4 text-sm font-bold outline-none transition focus:border-[#315c56]"
+                >
+                  <option value="telegram">Telegram</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="phone">Телефон</option>
+                </select>
+              </label>
+            </div>
+
+            <label className="mt-4 block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Контакт</span>
+              <input
+                value={visitLeadForm.contact}
+                onChange={(event) => setVisitLeadForm((current) => ({ ...current, contact: event.target.value }))}
+                placeholder="@username или +7 900 000-00-00"
+                className="mt-2 w-full rounded-2xl border border-slate-900/10 bg-white px-4 py-4 text-sm font-bold outline-none transition focus:border-[#315c56]"
+              />
+            </label>
+
+            <label className="mt-4 block">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Комментарий</span>
+              <textarea
+                value={visitLeadForm.comment}
+                onChange={(event) => setVisitLeadForm((current) => ({ ...current, comment: event.target.value }))}
+                rows={3}
+                placeholder="Например: хочу примерить похожие прозрачные оправы в выходные"
+                className="mt-2 w-full rounded-2xl border border-slate-900/10 bg-white px-4 py-4 text-sm font-bold outline-none transition focus:border-[#315c56]"
+              />
+            </label>
+
+            <label className="mt-5 flex gap-3 rounded-3xl bg-white p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-900/5">
+              <input
+                type="checkbox"
+                checked={visitLeadForm.consent}
+                onChange={(event) => {
+                  setVisitLeadForm((current) => ({ ...current, consent: event.target.checked }));
+                  if (event.target.checked) {
+                    trackEvent(AnalyticsEvent.ConsentChecked, { source: 'visit_lead' });
+                  }
+                }}
+                className="mt-1 h-5 w-5 shrink-0 accent-[#315c56]"
+              />
+              <span>
+                Согласен передать контакт и выбранные оправы для подготовки визита. Я понимаю, что фото, рецепт и параметры зрения не отправляются.{' '}
+                <a href="/privacy" className="font-black text-[#315c56] underline">Политика</a>
+              </span>
+            </label>
+
+            {visitLeadStatus && (
+              <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">{visitLeadStatus}</p>
+            )}
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={submitVisitLead}
+                disabled={!canSubmitVisitLead}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#315c56] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              >
+                {hasLeadForm() ? 'Открыть форму визита' : 'Скопировать подбор'} <ArrowRight size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsVisitLeadOpen(false)}
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-slate-950 ring-1 ring-slate-900/10 transition hover:bg-stone-50"
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
