@@ -3,12 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #111111;
+  --vilu-ink: #08101f;
+  --vilu-paper: #fffaf2;
+  --vilu-cream: #f7f1e8;
+  --vilu-mist: #eef5f1;
+  --vilu-green: #315c56;
+  --vilu-amber: #f5b25f;
+  --vilu-clay: #9a6933;
+  --vilu-line: #e8dfd2;
+  --background: var(--vilu-paper);
+  --foreground: var(--vilu-ink);
   --card: #ffffff;
   --muted: #f5f5f5;
-  color: #111111;
-  background: #ffffff;
+  color: var(--vilu-ink);
+  background: var(--vilu-paper);
   font-family: 'Manrope', system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,7 +32,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #ffffff;
+  background: var(--vilu-paper);
   overflow-x: hidden;
 }
 

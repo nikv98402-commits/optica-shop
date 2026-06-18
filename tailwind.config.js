@@ -8,6 +8,20 @@ export default {
         display: ['Unbounded', 'Manrope', 'system-ui', 'sans-serif'],
       },
       colors: {
+        vilu: {
+          ink: '#08101f',
+          paper: '#fffaf2',
+          cream: '#f7f1e8',
+          mist: '#eef5f1',
+          green: '#315c56',
+          amber: '#f5b25f',
+          clay: '#9a6933',
+          line: '#e8dfd2',
+          success: '#15803d',
+          warning: '#92400e',
+          error: '#b91c1c',
+          info: '#1d4ed8',
+        },
         neutral: {
           50: '#fafafa',
           900: '#111111',
@@ -19,6 +33,10 @@ export default {
         }
       },
       borderRadius: {
+        'vilu-sm': '0.75rem',
+        'vilu-md': '1rem',
+        'vilu-lg': '1.5rem',
+        'vilu-xl': '2rem',
         '4xl': '2.5rem',
       },
       boxShadow: {
