@@ -41,8 +41,26 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Add SPA fallback for GitHub Pages
-        run: cp dist/index.html dist/404.html
+      - name: Add static route entries for GitHub Pages
+        run: |
+          routes=(
+            products
+            face-fit-score
+            kak-vybrat-razmer-opravy
+            pd-i-oprava
+            oprava-pri-vysokih-dioptriyah
+            primerit-ochki-online
+            podbor-opravy-po-forme-lica
+            ai-source
+            privacy
+            terms
+            disclaimer
+          )
+          for route in "${routes[@]}"; do
+            mkdir -p "dist/$route"
+            cp dist/index.html "dist/$route/index.html"
+          done
+          cp dist/index.html dist/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
