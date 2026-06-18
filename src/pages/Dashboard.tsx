@@ -255,13 +255,13 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.95fr_1.05fr]">
           <section>
             <p className="text-sm font-black uppercase tracking-[0.24em] text-[#9a6933]">Личный кабинет</p>
-            <h1 className="mt-4 text-5xl font-black leading-[0.95] tracking-[-0.06em] md:text-7xl">Ваш центр управления зрением.</h1>
+            <h1 className="mt-4 text-4xl font-black leading-[1.06] sm:text-5xl md:text-6xl">Ваш центр управления зрением.</h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-600">
               Создайте demo-аккаунт, сохраните рецепт, контактные данные, график осмотров и проверьте тренажеры для глаз. Все данные сохраняются локально в браузере.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <button onClick={openDemoProfile} className="rounded-full bg-[#315c56] px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-slate-950">Открыть demo-кабинет</button>
-              <button onClick={() => openAuth('signup')} className="rounded-full bg-slate-950 px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#315c56]">Зарегистрироваться</button>
+              <button onClick={() => openAuth('signup')} className="rounded-full bg-slate-950 px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#315c56]">Создать demo-кабинет</button>
               <button onClick={() => openAuth('login')} className="rounded-full border border-slate-900/15 bg-white px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition hover:bg-stone-100">Войти</button>
             </div>
             <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">
@@ -270,7 +270,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           </section>
 
           <section className="rounded-[3rem] bg-slate-950 p-5 text-white shadow-2xl shadow-slate-900/20">
-            <div className="rounded-[2.4rem] bg-[radial-gradient(circle_at_20%_15%,rgba(245,178,95,0.32),transparent_32%),linear-gradient(135deg,#315c56,#101010)] p-7 md:p-10">
+            <div className="rounded-[2.4rem] bg-[linear-gradient(135deg,#315c56,#101010)] p-7 md:p-10">
               <div className="grid gap-4 sm:grid-cols-2">
                 {[
                   ['Рецепт', 'SPH / CYL / AXIS'],
@@ -300,7 +300,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         <header className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.24em] text-[#9a6933]">Vision profile</p>
-            <h1 className="mt-3 text-5xl font-black tracking-[-0.06em] md:text-7xl">Кабинет зрения</h1>
+            <h1 className="mt-3 text-4xl font-black sm:text-5xl md:text-6xl">Кабинет зрения</h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Здравствуйте, {profile.fullName || user.name}. Здесь собраны данные клиента, рецепт, тренировки, инфографика и персональные предложения.</p>
             <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-[#315c56]">
               Demo/local mode: данные кабинета сохраняются только в вашем браузере и не отправляются на сервер.
@@ -456,7 +456,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             {ads.map((ad, index) => (
               <section key={ad.title} className={`${index === 0 ? 'bg-[#f5b25f]' : 'bg-[#315c56] text-white'} rounded-[2.5rem] p-7 shadow-sm`}>
                 <Sparkles className="mb-5" />
-                <p className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Реклама внутри кабинета</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Персональное предложение</p>
                 <h3 className="mt-2 text-2xl font-black tracking-tight">{ad.title}</h3>
                 <p className="mt-3 text-sm leading-6 opacity-75">{ad.text}</p>
                 <button onClick={() => onNavigate?.('products')} className="mt-6 rounded-full bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-white hover:text-slate-950">{ad.action}</button>

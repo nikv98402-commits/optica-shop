@@ -38,7 +38,7 @@ export function StoreLocator({ isOpen, onClose }: StoreLocatorProps) {
         <div className="relative border-b border-slate-900/10 p-7 md:p-9">
           <button onClick={onClose} className="absolute right-6 top-6 rounded-full bg-white p-3 ring-1 ring-slate-900/10 transition hover:bg-stone-100"><X size={18} /></button>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#9a6933]">Store locator</p>
-          <h2 className="mt-2 text-4xl font-black tracking-[-0.05em]">Наши салоны</h2>
+          <h2 className="mt-2 text-4xl font-black">Наши салоны</h2>
           <p className="mt-2 text-sm font-bold text-slate-500">{stores.length} салонов в справочнике</p>
           <div className="relative mt-6">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />

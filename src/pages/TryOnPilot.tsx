@@ -330,7 +330,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   const submitVisitLead = async () => {
     if (!canSubmitVisitLead) {
-      setVisitLeadStatus('Укажите контакт и подтвердите согласие на передачу данных в форму.');
+      setVisitLeadStatus('Укажите контакт и подтвердите согласие, чтобы подготовить заявку к визиту.');
       return;
     }
 
@@ -360,7 +360,28 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
     const text = `Подбор ViLu для визита\nГород: ${visitLeadForm.city}\nЦель: ${selectedGoal}\n${selectionText}\n\nКонтакт: ${visitLeadForm.contactMethod}\nКомментарий: ${visitLeadForm.comment || 'нет'}\n\nФото и рецепт не передаются.`;
     await navigator.clipboard.writeText(text);
-    setVisitLeadStatus('Tally пока не подключен. Подбор скопирован, данные не отправлены на сервер.');
+    setVisitLeadStatus('Подбор скопирован. Данные не отправлены на сервер.');
+  };
+
+  const copyVisitSelection = async () => {
+    const text = `Мой подбор ViLu\nЦель: ${selectedGoal}\n${selectionText}\n\nФото, рецепт, контакт и точное местоположение не передаются. Перед визитом уточните наличие похожих моделей.`;
+    await navigator.clipboard.writeText(text);
+    saveIntentEvent({
+      id: createLocalId('intent'),
+      createdAt: new Date().toISOString(),
+      action: 'copy',
+      opticId: 'visit-selection',
+      opticName: 'Самостоятельный подбор',
+      selectedFrames: selectedFrames.map(frameLabel),
+      goal: selectedGoal,
+    });
+    setIntentCount(getStoredIntentEvents().length);
+    trackEvent(AnalyticsEvent.SelectionCopied, {
+      selected_count: selectedFrames.length,
+      goal: selectedGoal,
+      source: 'visit_modal',
+    });
+    setVisitLeadStatus('Подбор скопирован без контакта. Вы можете показать его консультанту в салоне.');
   };
 
   const copySelection = async (optic: DirectoryOptic) => {
@@ -394,7 +415,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
         <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center">
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933] sm:text-sm">Try-On Pilot</p>
-            <h1 className="mt-4 max-w-full break-words text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl md:text-7xl md:leading-[0.95]">
+            <h1 className="mt-4 max-w-full break-words text-4xl font-black leading-[1.06] text-slate-950 sm:text-5xl md:text-6xl">
               Подберите очки онлайн и найдите, где примерить похожие рядом
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
@@ -412,15 +433,15 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
           <div className="min-w-0 rounded-[2rem] bg-slate-950 p-5 text-white shadow-2xl shadow-slate-900/20 sm:rounded-[2.5rem] sm:p-6">
             <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              {['Примерил', 'Понял, что подходит', 'Сохранил подбор', 'Маршрут / звонок / WhatsApp / Telegram'].map((label, index) => (
-                <div key={label} className="min-w-0 rounded-3xl bg-white/10 p-5">
+              {['Примерил', 'Оценил посадку', 'Сохранил 2-3 оправы', 'Открыл маршрут или контакт'].map((label, index) => (
+                <div key={label} className="min-w-0 rounded-2xl bg-white/10 p-5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5b25f] text-sm font-black text-slate-950">{index + 1}</span>
                   <p className="mt-4 font-black">{label}</p>
                 </div>
               ))}
             </div>
             <p className="mt-6 text-sm leading-6 text-white/60">
-              Это не справочник оптик. Список появляется после персонального подбора оправ и работает как intent-сигнал для партнерских точек.
+              Список оптик появляется после персонального подбора, чтобы пользователь шел в салон уже с коротким чеклистом.
             </p>
           </div>
         </div>
@@ -628,9 +649,9 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           </section>
 
           <section className="rounded-[2.5rem] bg-slate-950 p-7 text-white shadow-2xl shadow-slate-900/20">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-[#f5b25f]">Intent-сигналы</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-[#f5b25f]">Готовность к визиту</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight">{intentCount}</h2>
-            <p className="mt-3 text-sm leading-6 text-white/65">Считаем клики по маршруту, звонку, WhatsApp, Telegram и копированию подбора. Точное местоположение и фото не сохраняются.</p>
+            <p className="mt-3 text-sm leading-6 text-white/65">Сохраняем только локальные действия: маршрут, звонок, мессенджер или копирование подбора. Фото, рецепт и точное местоположение не сохраняются.</p>
           </section>
 
           <button onClick={() => onNavigate?.('products')} className="w-full rounded-full bg-[#f5b25f] px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-slate-950 transition hover:bg-white">
@@ -717,10 +738,10 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-[#fffaf2] p-6 shadow-2xl ring-1 ring-white/20 md:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">Visit lead</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a6933]">Подбор к визиту</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Подготовить подбор к визиту</h2>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Передадим только выбранные оправы и контакт, если вы подтвердите согласие. Фото, рецепт и точные координаты не отправляются.
+                  Можно просто скопировать чеклист без контакта или подготовить заявку с удобным способом связи. Фото, рецепт и точные координаты не отправляются.
                 </p>
               </div>
               <button
@@ -821,16 +842,23 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 disabled={!canSubmitVisitLead}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#315c56] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
               >
-                {hasLeadForm() ? 'Открыть форму визита' : 'Скопировать подбор'} <ArrowRight size={16} />
+                {hasLeadForm() ? 'Открыть заявку' : 'Скопировать заявку'} <ArrowRight size={16} />
               </button>
               <button
                 type="button"
-                onClick={() => setIsVisitLeadOpen(false)}
+                onClick={copyVisitSelection}
                 className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-slate-950 ring-1 ring-slate-900/10 transition hover:bg-stone-50"
               >
-                Закрыть
+                Скопировать без контакта
               </button>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsVisitLeadOpen(false)}
+              className="mt-3 w-full text-center text-xs font-black uppercase tracking-[0.14em] text-slate-500 transition hover:text-slate-950"
+            >
+              Закрыть
+            </button>
           </div>
         </div>
       )}

@@ -63,7 +63,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
             <Eye size={24} />
           </div>
           <p className="text-xs font-black uppercase tracking-[0.24em] text-[#9a6933]">Vision profile</p>
-          <h2 className="mt-2 text-4xl font-black tracking-[-0.05em]">
+          <h2 className="mt-2 text-4xl font-black">
             {isSignup ? 'Создать кабинет' : 'Войти в кабинет'}
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
@@ -103,7 +103,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
           {error && <div className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
 
           <button disabled={loading} className="w-full rounded-full bg-slate-950 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-[#315c56] disabled:cursor-not-allowed disabled:opacity-60">
-            {loading ? 'Проверяем...' : isSignup ? 'Зарегистрироваться' : 'Войти'}
+            {loading ? 'Проверяем...' : isSignup ? 'Создать demo-кабинет' : 'Войти'}
           </button>
         </form>
 
