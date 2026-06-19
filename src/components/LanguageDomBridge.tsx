@@ -171,6 +171,19 @@ const textTranslations: Record<string, string> = {
   'Закрыть форму': 'Close form',
   'Согласен передать контакт и выбранные оправы для подготовки визита. Я понимаю, что фото, рецепт и параметры зрения не отправляются.': 'I agree to share my contact and selected frames to prepare the visit. I understand that photo, prescription, and vision parameters are not sent.',
   'Город': 'City',
+  'Москва': 'Moscow',
+  'Санкт-Петербург': 'Saint Petersburg',
+  'Екатеринбург': 'Yekaterinburg',
+  'Новосибирск': 'Novosibirsk',
+  'Казань': 'Kazan',
+  'Нижний Новгород': 'Nizhny Novgorod',
+  'Краснодар': 'Krasnodar',
+  'Ростов-на-Дону': 'Rostov-on-Don',
+  'Самара': 'Samara',
+  'Уфа': 'Ufa',
+  'Челябинск': 'Chelyabinsk',
+  'Пермь': 'Perm',
+  'Воронеж': 'Voronezh',
   'Способ связи': 'Contact method',
   'Контакт': 'Contact',
   'Комментарий': 'Comment',
@@ -202,6 +215,7 @@ const textTranslations: Record<string, string> = {
   'офис / каждый день': 'office / everyday',
   'ваше местоположение': 'your location',
   'центра Москвы': 'Moscow center',
+  'Самостоятельный подбор': 'Self-service selection',
   'нет': 'none',
 };
 
@@ -219,6 +233,7 @@ const textPatterns: Array<[RegExp, (match: RegExpMatchArray) => string]> = [
   [/^(\d+) из (\d+)$/, (match) => `${match[1]} of ${match[2]}`],
   [/^Вариант (\d+)$/, (match) => `Option ${match[1]}`],
   [/^Оправа (\d+)$/, (match) => `Frame ${match[1]}`],
+  [/^Сегодня открыто до (.+)$/, (match) => `Open today until ${match[1]}`],
   [/^(.+) от (.+) - (.+)$/, (match) => `${match[1]} from ${match[2]} - ${match[3]}`],
   [/^Показываем оптики для города: (.+)\.$/, (match) => `Showing optical stores for: ${match[1]}.`],
   [/^(.+) от (ваше местоположение|центра Москвы)$/, (match) => `${match[1]} from ${translateValue(match[2])}`],
@@ -283,6 +298,14 @@ function translateDom(root: ParentNode, language: 'en' | 'ru') {
     const nextTitle = language === 'en' ? translateValue(original) : original;
     if (element.getAttribute('title') !== nextTitle) element.setAttribute('title', nextTitle);
   });
+
+  document.querySelectorAll<HTMLElement>('[aria-label]').forEach((element) => {
+    if (element.closest('[data-no-translate="true"]')) return;
+    const original = element.dataset.i18nAriaLabelSource ?? element.getAttribute('aria-label') ?? '';
+    element.dataset.i18nAriaLabelSource = original;
+    const nextLabel = language === 'en' ? translateValue(original) : original;
+    if (element.getAttribute('aria-label') !== nextLabel) element.setAttribute('aria-label', nextLabel);
+  });
 }
 
 export function LanguageDomBridge() {
@@ -300,7 +323,7 @@ export function LanguageDomBridge() {
       subtree: true,
       characterData: true,
       attributes: true,
-      attributeFilter: ['placeholder', 'title'],
+      attributeFilter: ['placeholder', 'title', 'aria-label'],
     });
 
     return () => observer.disconnect();
