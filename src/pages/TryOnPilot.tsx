@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { ChangeEvent, CSSProperties, useMemo, useState } from 'react';
 import { hasLeadForm, TALLY_FORM_URL } from '../config/leads';
+import { useLanguage } from '../contexts/LanguageContext';
 import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
@@ -118,9 +119,9 @@ function distanceKm(from: UserLocation, optic: DirectoryOptic) {
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function formatDistance(km: number) {
-  if (km < 1) return `${Math.round(km * 1000)} м`;
-  return `${km.toFixed(km < 10 ? 1 : 0)} км`;
+function formatDistance(km: number, language: 'ru' | 'en') {
+  if (km < 1) return `${Math.round(km * 1000)} ${language === 'en' ? 'm' : 'м'}`;
+  return `${km.toFixed(km < 10 ? 1 : 0)} ${language === 'en' ? 'km' : 'км'}`;
 }
 
 function opticHoursLabel(hours: string) {
@@ -184,6 +185,7 @@ function FrameThumb({ frame, failedImages, onImageError }: { frame: PilotFrame; 
 }
 
 export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
+  const { language } = useLanguage();
   const frames = pilotFrames;
   const [selectedGoal, setSelectedGoal] = useState(fitGoals[0]);
   const [activeFrameId, setActiveFrameId] = useState(frames[0]?.id ?? '');
@@ -696,7 +698,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                           <span className="rounded-full bg-stone-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">Открытые источники</span>
                         )}
                       </div>
-                      <p className="mt-2 flex gap-2 text-sm leading-6 text-slate-600"><MapPin className="mt-1 shrink-0" size={16} /> {formatDistance(distance)} от {userLocation?.label ?? 'центра Москвы'} - {optic.address}</p>
+                      <p className="mt-2 flex gap-2 text-sm leading-6 text-slate-600"><MapPin className="mt-1 shrink-0" size={16} /> {formatDistance(distance, language)} от {userLocation?.label ?? 'центра Москвы'} - {optic.address}</p>
                       <p className="mt-1 text-sm font-bold text-slate-500">{opticHoursLabel(optic.hours)}</p>
                       <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm leading-6 text-amber-950">Перед визитом уточните наличие похожих моделей.</p>
                     </div>
