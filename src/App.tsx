@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigation } from './components/Navigation';
 import { StoreLocator } from './components/StoreLocator';
+import { LanguageDomBridge } from './components/LanguageDomBridge';
 import { Home } from './pages/Home';
 import { Products } from './pages/Products';
 import { ProductDetail } from './pages/ProductDetail';
@@ -72,6 +73,7 @@ function App() {
     <LanguageProvider>
       <AuthProvider>
         <div className="min-h-screen bg-stone-50 text-slate-950">
+          <LanguageDomBridge />
           <Navigation
             currentPage={currentPage}
             onNavigate={handleNavigate}

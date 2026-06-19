@@ -14,6 +14,8 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
   const { language, setLanguage } = useLanguage();
   const { user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const targetLanguage = language === 'en' ? 'ru' : 'en';
+  const targetLanguageLabel = targetLanguage.toUpperCase();
 
   const go = (page: string) => {
     setMenuOpen(false);
@@ -45,7 +47,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
 
         <div className="flex items-center gap-3">
           <button onClick={() => go('tryon')} className="rounded-full bg-vilu-amber px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-white md:hidden">Примерка</button>
-          <button onClick={() => setLanguage(language === 'en' ? 'ru' : 'en')} className="hidden items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ring-1 ring-slate-900/10 sm:flex"><Languages size={15} /> {language}</button>
+          <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="hidden items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ring-1 ring-slate-900/10 sm:flex" aria-label={`Switch language to ${targetLanguageLabel}`}><Languages size={15} /> {targetLanguageLabel}</button>
           <button onClick={() => go('dashboard')} className="flex items-center gap-2 rounded-full bg-white px-3 py-3 ring-1 ring-slate-900/10 transition hover:bg-stone-100 md:px-4">
             <User size={18} />
             {user && <span className="hidden max-w-28 truncate text-xs font-black md:inline">{user.name}</span>}
@@ -68,6 +70,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
             <button onClick={openStores} className="rounded-2xl bg-white p-4 text-left font-bold">Наши салоны</button>
             <button onClick={() => go('dashboard')} className="rounded-2xl bg-white p-4 text-left font-bold">Личный кабинет</button>
             <button onClick={() => go('home')} className="rounded-2xl bg-white p-4 text-left font-bold">О бренде</button>
+            <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="rounded-2xl bg-white p-4 text-left font-bold uppercase">Language: {targetLanguageLabel}</button>
             {user && <button onClick={() => signOut()} className="rounded-2xl bg-vilu-ink p-4 text-left font-bold text-white">Выйти</button>}
           </div>
         </div>
