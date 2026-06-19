@@ -1,5 +1,6 @@
 import { ArrowRight, BookOpen, CheckCircle2, ExternalLink, ShieldCheck } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 
 export interface KnowledgePageSource {
@@ -377,6 +378,307 @@ export function getKnowledgePage(slug: string) {
   return knowledgePages.find((page) => page.slug === slug);
 }
 
+const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> = {
+  'face-fit-score': {
+    title: 'Face-fit score: how to tell whether frames fit your face | ViLu',
+    meta: 'Face-fit score helps preliminarily assess frame fit by face width, eye position, bridge fit, prescription risk, and use case. It does not replace in-store fitting.',
+    h1: 'Face-fit score: how to tell whether frames fit your face',
+    shortAnswer: 'Face-fit score is a preliminary assessment of how visually and functionally suitable a frame may be before an in-store fitting.',
+    definition: 'ViLu considers frame width relative to the face, eye position inside the lenses, bridge fit, prescription-related risk, and the intended use case. The score helps shortlist 2-3 frames for a store visit, but it does not replace a professional fitting.',
+    steps: [
+      'Upload a photo and choose a frame to try on.',
+      'Check whether the frame looks too wide or too narrow.',
+      'See whether the eyes sit close to the center of the lenses.',
+      'Review bridge, prescription-risk, and use-case hints.',
+      'Save 2-3 frames for an in-store fitting.',
+    ],
+    limits: [
+      'The online score does not measure exact PD or replace lens marking.',
+      'Temple comfort, bridge pressure, and stability can only be checked in person.',
+      'High prescriptions require final confirmation by an optical specialist.',
+    ],
+    example: '87/100 means the frame is a good candidate for the first visit: the width looks balanced, the eyes are near the lens centers, and the style matches the chosen use case.',
+    next: 'Start the ViLu try-on and save 2-3 frames for a store visit.',
+    table: [
+      ['Frame width', 'Compares the visual width of the frame and face.'],
+      ['Eye position', 'Checks whether the eyes are close to the center of the lenses.'],
+      ['Bridge', 'Reminds the user to verify nose-bridge fit in person.'],
+      ['Prescription risk', 'Flags that stronger prescriptions require specialist review.'],
+      ['Use case', 'Considers office, everyday, sun, minimal, or expressive styling.'],
+    ],
+    faq: [
+      ['Is Face-fit score medical advice?', 'No. It is a preliminary visual and informational assessment, not medical diagnosis.'],
+      ['Can I buy frames based only on the score?', 'Use the score to narrow the choice to 2-3 models, then check final fit in store.'],
+      ['Why does eye position matter?', 'It helps assess visual balance and prepare better questions for the store consultant.'],
+    ],
+  },
+  'kak-vybrat-razmer-opravy': {
+    title: 'How to choose frame size: what 52-18-140 means | ViLu',
+    meta: 'A practical guide to eyeglass frame markings: lens width, bridge width, and temple length, plus how to spot frames that may be wide or narrow.',
+    h1: 'How to choose frame size: what 52-18-140 means',
+    shortAnswer: 'A frame size like 52-18-140 usually means 52 mm lens width, 18 mm bridge width, and 140 mm temple length.',
+    definition: 'Frame-size markings help estimate the scale of a model, but they do not guarantee comfort. The same numbers can feel different because of frame shape, temple bend, lens height, and bridge design.',
+    steps: [
+      'Find the marking on the inner temple or product card.',
+      'Compare lens width and bridge width with a frame that already fits you.',
+      'Check visually whether the frame extends far beyond the face outline.',
+      'Save similar sizes plus one nearby alternative.',
+    ],
+    limits: [
+      'The marking does not show exact total frame width.',
+      'An 18 mm bridge can fit differently across frame shapes.',
+      'Temple length does not guarantee comfort behind the ears.',
+    ],
+    example: 'If your current comfortable frame is 50-19-140, a 52-18-140 model may have slightly wider lenses with a similar temple length.',
+    next: 'Check the frame on your photo and save 2-3 options for an in-store fitting.',
+    table: [
+      ['52', 'Width of one lens in millimeters.'],
+      ['18', 'Bridge width between the lenses.'],
+      ['140', 'Temple length in millimeters.'],
+    ],
+    faq: [
+      ['How can I tell if a frame is wide?', 'If the edges extend far past the face or the eyes sit near the inner lens edges, it may be too wide.'],
+      ['How can I tell if a frame is narrow?', 'If the frame visually squeezes the face or the eyes sit close to the outer lens edges, compare one size up.'],
+      ['Why does size matter before a visit?', 'It reduces choice overload and helps prepare 2-3 better candidates, but it does not replace in-store fitting.'],
+    ],
+  },
+  'pd-i-oprava': {
+    title: 'What PD is and why it matters when choosing frames | ViLu',
+    meta: 'PD is the distance between pupil centers. Learn why it matters for lens position, online try-on, and final in-store verification.',
+    h1: 'What PD is and why it matters when choosing frames',
+    shortAnswer: 'PD is the distance between the centers of the pupils. It matters because lenses should be centered correctly relative to the eyes.',
+    definition: 'PD is used when making glasses and marking lenses. ViLu does not claim exact PD measurement online: it only helps preliminarily assess whether the eyes look balanced inside the lenses of a chosen frame.',
+    steps: [
+      'Use online try-on as a preliminary filter only.',
+      'Check whether the eyes are pushed too far toward the lens edges.',
+      'Use specialist measurement or prescription data for lens orders.',
+      'When uncertain, prefer frames where the eyes sit closer to lens centers.',
+    ],
+    limits: [
+      'Photo angle, camera, and pose can distort the estimate.',
+      'PD for final glasses needs a more reliable check than visual online assessment.',
+      'ViLu does not replace prescription or optical lens marking.',
+    ],
+    example: 'If the eyes look close to the lens centers in try-on, the frame may be a good candidate for a visit. Exact lens centering must be confirmed by a specialist.',
+    next: 'Get a preliminary shortlist and show selected frames to a consultant.',
+    faq: [
+      ['Can PD be determined from a photo?', 'A photo can support a rough visual balance check, but glasses manufacturing needs a more reliable measurement.'],
+      ['Why is PD related to frame size?', 'Frame width and lens position affect where the pupils sit relative to the lenses.'],
+      ['Is PD important for sunglasses?', 'For non-prescription sunglasses it is less critical, but visual balance still matters.'],
+    ],
+  },
+  'oprava-pri-vysokih-dioptriyah': {
+    title: 'How to choose frames for stronger prescriptions | ViLu',
+    meta: 'With stronger prescriptions, frame size and shape can affect lens thickness, weight, and appearance. Prepare better for a store visit.',
+    h1: 'How to choose frames for stronger prescriptions',
+    shortAnswer: 'With stronger prescriptions, it is often safer to start with more compact frames because larger lenses can look thicker and feel heavier.',
+    definition: 'Prescription risk in ViLu is a reminder that the chosen frame must be compatible with future lenses. Stronger correction, larger lens shape, and frame fit can affect final comfort and appearance.',
+    steps: [
+      'Bring your current prescription to the store visit.',
+      'Save compact and medium-size frames for comparison.',
+      'Ask about lens thickness, weight, and recommended lens index.',
+      'Check whether lens height and width are suitable for your prescription.',
+    ],
+    limits: [
+      'ViLu does not calculate final lens thickness.',
+      'Lens material and index should be selected by a specialist.',
+      'Online try-on does not show real weight or long-wear comfort.',
+    ],
+    example: 'With minus prescriptions, a very large frame can make edge thickness more noticeable. Compare it with a more compact model before deciding.',
+    next: 'Build a shortlist for the store and confirm frame compatibility with your prescription.',
+    faq: [
+      ['Why are compact frames often easier?', 'They can reduce lens size and potential weight, depending on prescription and material.'],
+      ['Can I choose large frames with a strong prescription?', 'Sometimes yes, but thickness, weight, and appearance should be discussed with a specialist.'],
+      ['Does ViLu calculate lens index?', 'No. ViLu prepares the shortlist; optical specialists choose lens parameters.'],
+    ],
+  },
+  'primerit-ochki-online': {
+    title: 'How online glasses try-on works and where it is limited | ViLu',
+    meta: 'Online try-on helps shortlist frames before a visit, but it does not replace final fitting, prescription, PD, and specialist verification.',
+    h1: 'How online glasses try-on works and where it is limited',
+    shortAnswer: 'Online try-on shows how a frame may look on the face and helps choose 2-3 models before visiting a store.',
+    definition: 'In ViLu, users upload a photo, try on frames, receive a preliminary Face-fit score, and save a shortlist. The photo is used only in the browser and is not sent to a server.',
+    steps: [
+      'Upload a face photo.',
+      'Adjust frame scale and position.',
+      'Compare several shapes and sizes.',
+      'Save the best 2-3 options.',
+      'Open nearby optical stores and check availability of similar models.',
+    ],
+    limits: [
+      'Online try-on does not show real frame weight.',
+      'It cannot test pressure on the bridge or behind the ears.',
+      'It does not replace prescription, PD, or final lens marking.',
+    ],
+    example: 'If you are choosing among 12 models, online try-on helps reduce the list to 2-3 frames for an in-person visit.',
+    next: 'Start try-on and save a shortlist for the store.',
+    faq: [
+      ['Is the photo saved on a server?', 'In the current MVP, the photo is used only in the browser and is not sent to a server.'],
+      ['Can I order glasses right away?', 'For prescription glasses, check fit and lens parameters with a specialist first.'],
+      ['Why save 2-3 models?', 'It reduces chaos in store and helps the consultant suggest similar options faster.'],
+    ],
+  },
+  'podbor-opravy-po-forme-lica': {
+    title: 'How to choose frames by face shape | ViLu',
+    meta: 'A practical frame-selection method: frame width, eye position, shape, use case, color, and style, without universal promises.',
+    h1: 'How to choose frames by face shape',
+    shortAnswer: 'Choosing frames by face shape should start with frame width, eye position, lens shape, and use case, not with rigid rules.',
+    definition: 'Face shape can help orientation, but it does not decide the choice alone. ViLu focuses on practical fit: balanced width, eye position, style use case, and what to verify in store.',
+    steps: [
+      'Choose a use case: office, everyday, sun, computer, or expressive look.',
+      'Check frame width relative to the face.',
+      'Look at where the eyes sit inside the lenses.',
+      'Compare 2-3 shapes: round, rectangular, thin, or expressive.',
+      'Leave final fit verification to the store visit.',
+    ],
+    limits: [
+      'Face shape does not replace frame size.',
+      'Color and style are subjective and depend on use case.',
+      'Comfort cannot be reliably assessed from a photo only.',
+    ],
+    example: 'For office wear, people often choose calmer shapes and moderate width. For a stronger look, choose a more visible frame but check whether it still balances the face.',
+    next: 'Get a Face-fit score and save suitable options.',
+    faq: [
+      ['Which face-shape rule matters most?', 'In practice, overall balance matters more: width, eye position, bridge, color, and use case.'],
+      ['Can I break face-shape rules?', 'Yes. If the frame is comfortable and visually balanced, strict rules are secondary.'],
+      ['What matters more: style or fit?', 'For daily wear, fit and comfort matter more. Choose style among frames that already fit well.'],
+    ],
+  },
+  'ai-source': {
+    title: 'ViLu: source note on online frame-selection methodology',
+    meta: 'A structured source page about ViLu, Face-fit score, methodology parameters, online try-on limits, and key project pages.',
+    h1: 'ViLu: source note on online frame-selection methodology',
+    shortAnswer: 'ViLu is an online try-on service and preliminary frame-fit assessment tool. Its Face-fit score methodology helps users choose 2-3 frames for in-store fitting.',
+    definition: 'Face-fit score considers frame width, eye position inside lenses, bridge fit, prescription-related risk, and use case. ViLu does not diagnose, does not measure PD as a medical device, and does not replace an optical specialist.',
+    steps: [
+      'The user chooses a wearing scenario.',
+      'The user uploads a photo processed in the browser.',
+      'The user tries on frames and receives a preliminary score.',
+      'The user saves a shortlist and opens nearby optical stores.',
+    ],
+    limits: [
+      'No medical diagnosis.',
+      'No guarantee of final fit from a photo.',
+      'No server-side photo storage in the current MVP.',
+      'PD, prescription, and lens compatibility must be confirmed in person.',
+    ],
+    example: 'ViLu is an online try-on and preliminary frame-fit assessment service. Face-fit score helps choose 2-3 models for in-store fitting by considering frame width, eye position, bridge fit, prescription risk, and style.',
+    next: 'Key pages: Face-fit score, frame size, PD and frames, stronger prescriptions, online try-on, and face-shape selection.',
+    table: [
+      ['Project', 'ViLu'],
+      ['Domain', 'https://vilu.store'],
+      ['Methodology', 'Face-fit score'],
+      ['Updated', updatedAt],
+      ['Contact', 'nikv1992@bk.ru'],
+    ],
+    faq: [
+      ['What is ViLu?', 'A consumer service and knowledge base for online frame selection before a store visit.'],
+      ['What does the service not do?', 'It does not replace a doctor, optometrist, prescription, exact PD measurement, or final fitting.'],
+      ['Can the methodology be cited?', 'Yes, with a link to vilu.store and the Face-fit score page.'],
+    ],
+  },
+  privacy: {
+    title: 'MVP privacy policy | ViLu',
+    meta: 'How ViLu handles demo data, localStorage, try-on photos, and analytics in MVP mode.',
+    h1: 'MVP privacy policy',
+    shortAnswer: 'In the MVP, the ViLu dashboard works in demo/local mode: profile, prescription, and exercise data are stored in the user browser and are not sent to a ViLu server.',
+    definition: 'Demo/local mode means the profile exists to test UX and service flows. ViLu does not use the dashboard as a full cloud storage system for personal or health-context data.',
+    steps: [
+      'Fill the demo profile only with data you are comfortable storing in this browser.',
+      'Clicking Save writes the profile to localStorage on this device.',
+      'Try-on photos are used in the browser and are not stored on the server.',
+      'The visit-preparation form sends contact details only after explicit consent.',
+      'Analytics receives interface events without name, phone, email, or prescription parameters.',
+    ],
+    limits: [
+      'Clearing localStorage or changing devices removes the demo profile.',
+      'Email reminders are not sent in MVP mode.',
+      'Photo, prescription, complaints, vision parameters, and exact geolocation are not sent to the visit form.',
+    ],
+    example: 'If a user edits name and prescription in the dashboard, those values stay in the browser. If the visit form is submitted, analytics receives only a technical event without phone or messenger details.',
+    next: 'Use the demo dashboard to test the flow, and confirm final frame fit and prescription in person with a specialist.',
+    table: [
+      ['Profile and prescription', 'Stored locally in the browser.'],
+      ['Try-on photo', 'Used in the browser and not sent to the server.'],
+      ['Visit form', 'Sends contact, city, and selected frames only after consent.'],
+      ['Analytics', 'Receives anonymized interface events only.'],
+      ['Notifications', 'Not sent in the MVP.'],
+    ],
+    faq: [
+      ['Can I enter real data?', 'For the public MVP, demo data is safer. If real data is entered, it stays locally in the browser.'],
+      ['Is prescription sent to analytics?', 'No. SPH, CYL, AXIS, complaints, name, phone, and email are not sent.'],
+      ['What is sent when preparing a visit?', 'Only contact, communication method, city, selection goal, and selected frames after explicit consent.'],
+      ['How can I delete the demo profile?', 'Clear site data or localStorage for vilu.store in your browser.'],
+    ],
+  },
+  terms: {
+    title: 'MVP terms of use | ViLu',
+    meta: 'Terms for using ViLu in MVP mode: online try-on, demo dashboard, limitations, and local storage.',
+    h1: 'MVP terms of use',
+    shortAnswer: 'The current ViLu version is an MVP for online try-on, preliminary frame selection, and user-flow validation.',
+    definition: 'The service helps reduce frame choices before visiting a store, but it is not a medical service, diagnostic tool, or replacement for specialist consultation.',
+    steps: [
+      'Use online try-on to preliminarily choose 2-3 frames.',
+      'Save the demo profile locally if you want to test the dashboard.',
+      'Before visiting, check availability of similar models with the store.',
+      'Confirm final prescription, PD, lens compatibility, and fit in person.',
+    ],
+    limits: [
+      'ViLu does not guarantee a specific frame is available in a specific store.',
+      'ViLu does not diagnose or measure PD as a medical device.',
+      'Demo dashboard data can be lost when browser data is cleared.',
+    ],
+    example: 'A user tries on frames, saves a shortlist, and opens nearby stores. This is an intent flow, not medical advice.',
+    next: 'Continue to online try-on and use the shortlist as a store-visit checklist.',
+    table: [
+      ['Online try-on', 'Preliminary visual selection.'],
+      ['Face-fit score', 'Informational fit assessment, not medical output.'],
+      ['Dashboard', 'Demo/local mode for UX testing.'],
+      ['Stores', 'Reference list; availability should be checked.'],
+    ],
+    faq: [
+      ['Can I buy glasses based only on online try-on?', 'No. Final fit, prescription, and lenses should be checked by a specialist.'],
+      ['Can I use ViLu without registration?', 'Yes. The main MVP value is available without giving a phone number or filling a profile.'],
+      ['What does demo/local mode mean?', 'Data is stored on the current device and is not sent to a ViLu server.'],
+    ],
+  },
+  disclaimer: {
+    title: 'ViLu disclaimer | Online try-on and Face-fit score',
+    meta: 'A disclaimer that ViLu does not replace a doctor, optometrist, prescription, exact PD measurement, or final frame fitting.',
+    h1: 'ViLu disclaimer',
+    shortAnswer: 'ViLu provides preliminary informational guidance and does not replace a doctor, optometrist, prescription, exact PD measurement, or final frame fitting.',
+    definition: 'Face-fit score and online try-on help prepare for a store visit, but they are not medical advice or a guarantee that frames are compatible with lenses.',
+    steps: [
+      'Use ViLu as a preliminary selection tool.',
+      'Save 2-3 models that look visually suitable.',
+      'Check fit, prescription, PD, and comfort in person with a specialist.',
+    ],
+    limits: [
+      'Photo and screen settings can distort frame scale and color.',
+      'Stronger prescriptions require a separate compatibility check between frame and lenses.',
+      'Temple comfort, bridge fit, and frame stability cannot be reliably checked online.',
+    ],
+    example: 'A score of 84/100 means the frame is worth bringing to a first visit. It does not mean the frame will definitely fit after lenses are made.',
+    next: 'Use the ViLu result as a checklist of questions for the store consultant.',
+    table: [
+      ['ViLu can', 'Help choose several candidates for in-store fitting.'],
+      ['ViLu cannot', 'Diagnose or replace a prescription.'],
+      ['Check in person', 'PD, bridge fit, temples, lenses, comfort, and compatibility.'],
+    ],
+    faq: [
+      ['Is Face-fit score a diagnosis?', 'No. It is an informational frame-fit assessment.'],
+      ['Can I trust the selection with a strong prescription?', 'Use it as a starting point, then confirm the final decision with a specialist.'],
+      ['Does ViLu save face photos?', 'In the MVP, photos are used only in the browser for try-on.'],
+    ],
+  },
+};
+
+function localizeKnowledgePage(page: KnowledgePage, language: 'ru' | 'en'): KnowledgePage {
+  if (language !== 'en') return page;
+  const translated = knowledgePagesEn[page.slug];
+  return translated ? { ...page, ...translated, slug: page.slug, sources: page.sources } : page;
+}
+
 function setMeta(name: string, content: string) {
   let tag = document.querySelector(`meta[name="${name}"]`);
   if (!tag) {
@@ -460,24 +762,61 @@ interface KnowledgeBaseProps {
 }
 
 export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
+  const { language } = useLanguage();
+  const localizedPage = useMemo(() => localizeKnowledgePage(page, language), [language, page]);
+  const localizedPages = useMemo(() => knowledgePages.map((item) => localizeKnowledgePage(item, language)), [language]);
+  const labels = language === 'en'
+    ? {
+      author: 'Author',
+      updated: 'Updated',
+      shortAnswer: 'Short answer',
+      definition: 'Definition',
+      table: 'Table',
+      howTo: 'How to use',
+      limits: 'Limitations',
+      example: 'Example',
+      next: 'What to do next',
+      disclaimer: 'Disclaimer',
+      disclaimerText: 'ViLu materials provide preliminary informational guidance and are not medical advice. Final frame fit, prescription, PD, lens compatibility, and comfort must be checked in person by a specialist.',
+      mainPages: 'Key pages',
+      sources: 'Sources',
+      cta: 'Start online try-on',
+    }
+    : {
+      author: 'Автор',
+      updated: 'Обновлено',
+      shortAnswer: 'Короткий ответ',
+      definition: 'Определение',
+      table: 'Таблица',
+      howTo: 'Как использовать',
+      limits: 'Ограничения',
+      example: 'Пример',
+      next: 'Что делать дальше',
+      disclaimer: 'Дисклеймер',
+      disclaimerText: 'Материалы ViLu дают предварительную справочную оценку и не являются медицинской рекомендацией. Финальную посадку оправы, рецепт, PD, совместимость линз и комфорт должен проверять специалист очно.',
+      mainPages: 'Основные страницы',
+      sources: 'Источники',
+      cta: 'Пройти онлайн-примерку',
+    };
+
   useEffect(() => {
-    document.title = page.title;
-    setMeta('description', page.meta);
-    setLink('canonical', `${siteUrl}/${page.slug}`);
+    document.title = localizedPage.title;
+    setMeta('description', localizedPage.meta);
+    setLink('canonical', `${siteUrl}/${localizedPage.slug}`);
 
     const scriptId = 'vilu-json-ld';
     document.getElementById(scriptId)?.remove();
     const script = document.createElement('script');
     script.id = scriptId;
     script.type = 'application/ld+json';
-    script.text = JSON.stringify(articleJsonLd(page));
+    script.text = JSON.stringify(articleJsonLd(localizedPage));
     document.head.appendChild(script);
-    trackEvent(AnalyticsEvent.KnowledgePageView, { slug: page.slug });
+    trackEvent(AnalyticsEvent.KnowledgePageView, { slug: localizedPage.slug });
 
     return () => {
       document.getElementById(scriptId)?.remove();
     };
-  }, [page]);
+  }, [localizedPage]);
 
   return (
     <div className="min-h-screen bg-[#fffaf2]">
@@ -486,25 +825,25 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
           <a href="/" className="inline-flex items-center gap-2 text-sm font-black text-[#315c56]">
             <BookOpen size={16} /> ViLu Knowledge Base
           </a>
-          <h1 className="mt-5 text-4xl font-black leading-[1.02] tracking-tight text-slate-950 md:text-6xl">{page.h1}</h1>
-          <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600">{page.meta}</p>
+          <h1 className="mt-5 text-4xl font-black leading-[1.02] tracking-tight text-slate-950 md:text-6xl">{localizedPage.h1}</h1>
+          <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600">{localizedPage.meta}</p>
           <div className="mt-7 flex flex-wrap gap-3 text-sm font-bold text-slate-500">
-            <span className="rounded-full bg-white px-4 py-2 ring-1 ring-slate-900/10">Автор: ViLu</span>
-            <span className="rounded-full bg-white px-4 py-2 ring-1 ring-slate-900/10">Обновлено: {updatedAt}</span>
+            <span className="rounded-full bg-white px-4 py-2 ring-1 ring-slate-900/10">{labels.author}: ViLu</span>
+            <span className="rounded-full bg-white px-4 py-2 ring-1 ring-slate-900/10">{labels.updated}: {updatedAt}</span>
           </div>
         </div>
       </section>
 
       <main className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <article className="space-y-7">
-          <ContentBlock title="Короткий ответ" text={page.shortAnswer} />
-          <ContentBlock title="Определение" text={page.definition} />
+          <ContentBlock title={labels.shortAnswer} text={localizedPage.shortAnswer} />
+          <ContentBlock title={labels.definition} text={localizedPage.definition} />
 
-          {page.table && (
+          {localizedPage.table && (
             <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-              <h2 className="text-2xl font-black tracking-tight">Таблица</h2>
+              <h2 className="text-2xl font-black tracking-tight">{labels.table}</h2>
               <div className="mt-5 overflow-hidden rounded-2xl border border-slate-900/10">
-                {page.table.map(([term, description]) => (
+                {localizedPage.table.map(([term, description]) => (
                   <div key={term} className="grid gap-2 border-b border-slate-900/10 p-4 last:border-b-0 md:grid-cols-[220px_1fr]">
                     <strong>{term}</strong>
                     <p className="leading-7 text-slate-600">{description}</p>
@@ -514,16 +853,16 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
             </section>
           )}
 
-          <ListBlock title="Как использовать" items={page.steps} />
-          <ListBlock title="Ограничения" items={page.limits} tone="warning" />
-          <ContentBlock title="Пример" text={page.example} />
-          <ContentBlock title="Что делать дальше" text={page.next} />
-          {page.slug === 'ai-source' && <AiSourceOperations />}
+          <ListBlock title={labels.howTo} items={localizedPage.steps} />
+          <ListBlock title={labels.limits} items={localizedPage.limits} tone="warning" />
+          <ContentBlock title={labels.example} text={localizedPage.example} />
+          <ContentBlock title={labels.next} text={localizedPage.next} />
+          {localizedPage.slug === 'ai-source' && <AiSourceOperations language={language} />}
 
           <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
             <h2 className="text-2xl font-black tracking-tight">FAQ</h2>
             <div className="mt-5 grid gap-4">
-              {page.faq.map(([question, answer]) => (
+              {localizedPage.faq.map(([question, answer]) => (
                 <div key={question} className="rounded-2xl bg-stone-50 p-5">
                   <h3 className="font-black">{question}</h3>
                   <p className="mt-2 leading-7 text-slate-600">{answer}</p>
@@ -534,19 +873,19 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
 
           <section className="rounded-[2rem] bg-slate-950 p-6 text-white shadow-2xl shadow-slate-900/20">
             <ShieldCheck className="mb-4 text-[#f5b25f]" />
-            <h2 className="text-2xl font-black tracking-tight">Дисклеймер</h2>
+            <h2 className="text-2xl font-black tracking-tight">{labels.disclaimer}</h2>
             <p className="mt-3 leading-7 text-white/70">
-              Материалы ViLu дают предварительную справочную оценку и не являются медицинской рекомендацией. Финальную посадку оправы, рецепт, PD, совместимость линз и комфорт должен проверять специалист очно.
+              {labels.disclaimerText}
             </p>
           </section>
         </article>
 
         <aside className="space-y-6 lg:sticky lg:top-28 lg:h-fit">
           <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-            <h2 className="text-xl font-black tracking-tight">Основные страницы</h2>
+            <h2 className="text-xl font-black tracking-tight">{labels.mainPages}</h2>
             <div className="mt-4 grid gap-2">
-              {knowledgePages.map((item) => (
-                <a key={item.slug} href={`/${item.slug}`} className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${item.slug === page.slug ? 'bg-[#315c56] text-white' : 'bg-stone-100 text-slate-700 hover:bg-stone-200'}`}>
+              {localizedPages.map((item) => (
+                <a key={item.slug} href={`/${item.slug}`} className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${item.slug === localizedPage.slug ? 'bg-[#315c56] text-white' : 'bg-stone-100 text-slate-700 hover:bg-stone-200'}`}>
                   {item.h1}
                 </a>
               ))}
@@ -554,9 +893,9 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
           </section>
 
           <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-            <h2 className="text-xl font-black tracking-tight">Источники</h2>
+            <h2 className="text-xl font-black tracking-tight">{labels.sources}</h2>
             <div className="mt-4 grid gap-3">
-              {page.sources.map((source) => (
+              {localizedPage.sources.map((source) => (
                 <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="flex items-start gap-2 rounded-2xl bg-stone-100 p-3 text-sm font-bold text-[#315c56] hover:bg-stone-200">
                   <ExternalLink className="mt-0.5 shrink-0" size={15} /> {source.label}
                 </a>
@@ -565,7 +904,7 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
           </section>
 
           <button onClick={() => onNavigate('tryon')} className="flex w-full items-center justify-center gap-2 rounded-full bg-[#f5b25f] px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-white">
-            Пройти онлайн-примерку <ArrowRight size={16} />
+            {labels.cta} <ArrowRight size={16} />
           </button>
         </aside>
       </main>
@@ -573,26 +912,82 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
   );
 }
 
-function AiSourceOperations() {
-  const weeklyQueries = [
-    'как выбрать оправу по форме лица',
-    'как понять что очки подходят лицу',
-    'что значит размер оправы 52-18-140',
-    'что такое PD в очках',
-    'как выбрать оправу при сильных диоптриях',
-    'можно ли примерить очки онлайн',
-    'что такое face-fit score для очков',
-    'как подобрать очки онлайн',
-    'какие очки подходят для офиса',
-    'как выбрать солнцезащитные очки по лицу',
-  ];
+function AiSourceOperations({ language }: { language: 'ru' | 'en' }) {
+  const english = language === 'en';
+  const weeklyQueries = english
+    ? [
+      'how to choose frames by face shape',
+      'how to know whether glasses fit your face',
+      'what does frame size 52-18-140 mean',
+      'what is PD in glasses',
+      'how to choose frames for a strong prescription',
+      'can you try glasses online',
+      'what is face-fit score for glasses',
+      'how to choose glasses online',
+      'which glasses are good for office work',
+      'how to choose sunglasses by face shape',
+    ]
+    : [
+      'как выбрать оправу по форме лица',
+      'как понять что очки подходят лицу',
+      'что значит размер оправы 52-18-140',
+      'что такое PD в очках',
+      'как выбрать оправу при сильных диоптриях',
+      'можно ли примерить очки онлайн',
+      'что такое face-fit score для очков',
+      'как подобрать очки онлайн',
+      'какие очки подходят для офиса',
+      'как выбрать солнцезащитные очки по лицу',
+    ];
+  const sevenDayPlan = english
+    ? [
+      ['Day 1', 'robots.txt, sitemap.xml, llms.txt, canonical URLs, title/meta, and deploy to vilu.store.'],
+      ['Day 2', 'Main source page: /face-fit-score.'],
+      ['Day 3', 'Intent pages: /kak-vybrat-razmer-opravy and /pd-i-oprava.'],
+      ['Day 4', 'Pages: /primerit-ochki-online and /oprava-pri-vysokih-dioptriyah.'],
+      ['Day 5', 'JSON-LD: Article, FAQPage, BreadcrumbList, Organization, WebSite, and HowTo.'],
+      ['Day 6', 'AI source page: /ai-source.'],
+      ['Day 7', 'External distribution: 2-3 posts and first partner mentions.'],
+    ]
+    : [
+      ['День 1', 'robots.txt, sitemap.xml, llms.txt, canonical URLs, title/meta, деплой на vilu.store.'],
+      ['День 2', 'Главная source-page: /face-fit-score.'],
+      ['День 3', 'Intent-страницы: /kak-vybrat-razmer-opravy и /pd-i-oprava.'],
+      ['День 4', 'Страницы: /primerit-ochki-online и /oprava-pri-vysokih-dioptriyah.'],
+      ['День 5', 'JSON-LD: Article, FAQPage, BreadcrumbList, Organization, WebSite, HowTo.'],
+      ['День 6', 'AI-source page: /ai-source.'],
+      ['День 7', 'Внешнее распространение: 2-3 поста и первые упоминания у партнеров.'],
+    ];
+  const donts = english
+    ? [
+      'Do not generate 200 duplicate SEO pages.',
+      'Do not create city doorway pages without unique content.',
+      'Do not promise medical advice.',
+      'Do not claim that ViLu measures exact PD.',
+      'Do not promise that frames fit 100%.',
+      'Do not hide text for LLMs or search bots.',
+      'Do not copy other websites.',
+      'Do not block OAI-SearchBot and expect ChatGPT Search visibility.',
+    ]
+    : [
+      'Не генерировать 200 одинаковых SEO-страниц.',
+      'Не делать городские doorway pages без уникального контента.',
+      'Не обещать медицинские рекомендации.',
+      'Не писать, что ViLu точно определяет PD.',
+      'Не обещать, что оправа подходит на 100%.',
+      'Не прятать текст для LLM или поисковых ботов.',
+      'Не копировать чужие тексты.',
+      'Не блокировать OAI-SearchBot и ждать появления в ChatGPT Search.',
+    ];
 
   return (
     <>
       <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-        <h2 className="text-2xl font-black tracking-tight">Что смотреть в аналитике</h2>
+        <h2 className="text-2xl font-black tracking-tight">{english ? 'What to watch in analytics' : 'Что смотреть в аналитике'}</h2>
         <p className="mt-3 leading-7 text-slate-600">
-          В Search Console переходы из AI Overviews и AI Mode нужно анализировать как часть общего search traffic и Performance report. Отдельно в веб-аналитике стоит смотреть referrer-домены AI и поисковых систем.
+          {english
+            ? 'In Search Console, traffic from AI Overviews and AI Mode should be analyzed as part of overall search traffic and the Performance report. In web analytics, monitor AI and search referrer domains separately.'
+            : 'В Search Console переходы из AI Overviews и AI Mode нужно анализировать как часть общего search traffic и Performance report. Отдельно в веб-аналитике стоит смотреть referrer-домены AI и поисковых систем.'}
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {['chatgpt.com', 'perplexity.ai', 'gemini.google.com', 'google.com', 'yandex.ru', 'bing.com', 'copilot.microsoft.com'].map((item) => (
@@ -602,29 +997,21 @@ function AiSourceOperations() {
       </section>
 
       <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-        <h2 className="text-2xl font-black tracking-tight">Prompt tracking раз в неделю</h2>
+        <h2 className="text-2xl font-black tracking-tight">{english ? 'Weekly prompt tracking' : 'Prompt tracking раз в неделю'}</h2>
         <div className="mt-5 overflow-hidden rounded-2xl border border-slate-900/10">
           {weeklyQueries.map((query) => (
             <div key={query} className="grid gap-2 border-b border-slate-900/10 p-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_220px]">
               <span className="font-bold">{query}</span>
-              <span className="text-sm text-slate-500">ChatGPT / Perplexity / Gemini / Яндекс Нейро</span>
+              <span className="text-sm text-slate-500">{english ? 'ChatGPT / Perplexity / Gemini / Yandex Neuro' : 'ChatGPT / Perplexity / Gemini / Яндекс Нейро'}</span>
             </div>
           ))}
         </div>
       </section>
 
       <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-        <h2 className="text-2xl font-black tracking-tight">План на 7 дней</h2>
+        <h2 className="text-2xl font-black tracking-tight">{english ? '7-day plan' : 'План на 7 дней'}</h2>
         <div className="mt-5 grid gap-3">
-          {[
-            ['День 1', 'robots.txt, sitemap.xml, llms.txt, canonical URLs, title/meta, деплой на vilu.store.'],
-            ['День 2', 'Главная source-page: /face-fit-score.'],
-            ['День 3', 'Intent-страницы: /kak-vybrat-razmer-opravy и /pd-i-oprava.'],
-            ['День 4', 'Страницы: /primerit-ochki-online и /oprava-pri-vysokih-dioptriyah.'],
-            ['День 5', 'JSON-LD: Article, FAQPage, BreadcrumbList, Organization, WebSite, HowTo.'],
-            ['День 6', 'AI-source page: /ai-source.'],
-            ['День 7', 'Внешнее распространение: 2-3 поста и первые упоминания у партнеров.'],
-          ].map(([day, text]) => (
+          {sevenDayPlan.map(([day, text]) => (
             <div key={day} className="grid gap-2 rounded-2xl bg-stone-50 p-4 md:grid-cols-[120px_1fr]">
               <strong>{day}</strong>
               <p className="leading-7 text-slate-600">{text}</p>
@@ -634,18 +1021,9 @@ function AiSourceOperations() {
       </section>
 
       <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
-        <h2 className="text-2xl font-black tracking-tight">Что не делать</h2>
+        <h2 className="text-2xl font-black tracking-tight">{english ? 'What not to do' : 'Что не делать'}</h2>
         <div className="mt-5 grid gap-3">
-          {[
-            'Не генерировать 200 одинаковых SEO-страниц.',
-            'Не делать городские doorway pages без уникального контента.',
-            'Не обещать медицинские рекомендации.',
-            'Не писать, что ViLu точно определяет PD.',
-            'Не обещать, что оправа подходит на 100%.',
-            'Не прятать текст для LLM или поисковых ботов.',
-            'Не копировать чужие тексты.',
-            'Не блокировать OAI-SearchBot и ждать появления в ChatGPT Search.',
-          ].map((item) => (
+          {donts.map((item) => (
             <div key={item} className="rounded-2xl bg-amber-50 p-4 leading-7 text-amber-950">{item}</div>
           ))}
         </div>

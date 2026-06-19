@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
+const textNodeSources = new WeakMap<Text, string>();
+
 const textTranslations: Record<string, string> = {
   'Онлайн-примерка': 'Online try-on',
   'Каталог': 'Catalog',
@@ -30,6 +32,24 @@ const textTranslations: Record<string, string> = {
   'Подбор линз по рецепту': 'Prescription lens selection',
   'Доставка и самовывоз': 'Delivery and pickup',
   'Методология подбора оправ, которую можно процитировать': 'A frame-fitting methodology that can be cited',
+  'Разбираем Face-fit score, размер оправы, PD, сильные диоптрии и ограничения онлайн-примерки простым языком.': 'We explain Face-fit score, frame size, PD, high prescriptions, and online try-on limits in plain language.',
+  'Размер оправы 52-18-140': 'Frame size 52-18-140',
+  'PD и выбор оправы': 'PD and frame choice',
+  'Сильные диоптрии': 'High prescriptions',
+  'Все модели': 'All models',
+  'Витрина': 'Showcase',
+  'ВИТРИНА': 'SHOWCASE',
+  'Хиты, которые хочется примерить первыми': 'Popular frames to try first',
+  'Линзы по подписке и личный кабинет зрения': 'Lens subscription and vision profile',
+  'Подписка помогает не вспоминать о покупке линз в последний момент: мы привозим запас вовремя, а в кабинете можно хранить рецепт и дату следующего осмотра.': 'The subscription removes last-minute lens purchases: we deliver supply on time, and the profile can store your prescription and next exam date.',
+  'Напоминания': 'Reminders',
+  'Осмотр, замена линз, повтор заказа.': 'Exam, lens replacement, repeat order.',
+  'Салоны рядом': 'Nearby stores',
+  'Выберите удобную точку для примерки.': 'Choose a convenient store for fitting.',
+  'ПОДПИСКА МЕСЯЦА': 'MONTHLY SUBSCRIPTION',
+  'Подписка месяца': 'Monthly subscription',
+  'ОТ': 'FROM',
+  'от': 'from',
   'Каталог + подбор': 'Catalog + fitting',
   'Выберите оправы, проверьте посадку и идите в салон с коротким списком.': 'Choose frames, check the fit, and visit a store with a short list.',
   'Каталог работает как лаборатория подбора: сохраните 2-3 модели, получите ориентир по стилю и откройте ближайшие оптики для финальной примерки.': 'The catalog works like a fitting lab: save 2-3 models, get style guidance, and open nearby optical stores for the final try-on.',
@@ -74,6 +94,12 @@ const textTranslations: Record<string, string> = {
   'Линзы и покрытия подбираются по вашему рецепту.': 'Lenses and coatings are selected according to your prescription.',
   'Можно отложить модель и примерить в салоне.': 'You can save a model and try it in store.',
   'Возврат оправы в течение 14 дней.': 'Frame returns within 14 days.',
+  'Легкая прозрачная оправа из ацетата с антибликовым покрытием и мягкой посадкой для ежедневной работы за экраном.': 'Light transparent acetate frame with anti-reflective coating and a soft fit for daily screen work.',
+  'Графичная черная оправа с тонким профилем. Хорошо держит форму и подходит для сильных диоптрий.': 'A graphic black frame with a slim profile. Holds its shape well and works for higher prescriptions.',
+  'Солнцезащитные очки в теплом медовом оттенке с линзами UV400 и поляризацией для яркого города и отпуска.': 'Sunglasses in a warm honey tone with UV400 polarized lenses for bright city days and vacations.',
+  'Матовая стальная оправа с поляризацией, созданная для вождения и долгих прогулок без бликов.': 'Matte steel polarized frame made for driving and long glare-free walks.',
+  'Однодневные контактные линзы с высокой кислородопроницаемостью и увлажнением на весь день.': 'Daily contact lenses with high oxygen permeability and all-day hydration.',
+  'Месячные линзы для стабильного зрения, мягкой посадки и удобной подписки с доставкой.': 'Monthly lenses for stable vision, soft fit, and convenient delivery subscription.',
   'Store locator': 'Store locator',
   'Телефон уточняется': 'Phone to be confirmed',
   'Открыто': 'Open',
@@ -106,6 +132,45 @@ const textTranslations: Record<string, string> = {
   'Подтвердить': 'Confirm',
   'После подтверждения менеджер ViLu свяжется для уточнения рецепта и времени примерки.': 'After confirmation, a ViLu manager will contact you to clarify the prescription and fitting time.',
   'Анкета и рецепт': 'Profile and prescription',
+  'Ваш центр управления зрением.': 'Your vision management center.',
+  'Создайте demo-аккаунт, сохраните рецепт, контактные данные, график осмотров и проверьте тренажеры для глаз. Все данные сохраняются локально в браузере.': 'Create a demo account, save prescription details, contact data, exam schedule, and try eye exercises. Everything is stored locally in your browser.',
+  'Открыть demo-кабинет': 'Open demo profile',
+  'Создать demo-кабинет': 'Create demo profile',
+  'Войти': 'Sign in',
+  'Demo-режим можно открыть без реальных персональных данных. Профиль хранится только на этом устройстве.': 'Demo mode can be opened without real personal data. The profile is stored only on this device.',
+  'Рецепт': 'Prescription',
+  'Осмотры': 'Eye exams',
+  'Напоминания и история': 'Reminders and history',
+  'Тренажеры': 'Exercises',
+  'Фокус, пальминг, 20-20-20': 'Focus, palming, 20-20-20',
+  'Рекомендации': 'Recommendations',
+  'Подбор линз и оправ': 'Lens and frame selection',
+  'Кабинет зрения': 'Vision profile',
+  'Данные клиента': 'Client data',
+  'Demo-режим: данные анкеты и рецепта сохраняются только на этом устройстве.': 'Demo mode: profile and prescription data are stored only on this device.',
+  'ФИО': 'Full name',
+  'Дата рождения': 'Date of birth',
+  'Последний осмотр': 'Last exam',
+  'Следующий осмотр': 'Next exam',
+  'Особенности и жалобы': 'Notes and complaints',
+  'Упражнения для глаз': 'Eye exercises',
+  'Начать': 'Start',
+  'Инфографика зрения': 'Vision infographic',
+  'Сводка строится из рецепта, даты осмотра и регулярности упражнений.': 'The summary is built from prescription data, exam date, and exercise regularity.',
+  'Риск усталости': 'Eye strain risk',
+  'Привычка тренировок': 'Exercise habit',
+  'Заполненность рецепта': 'Prescription completeness',
+  'По вашим покупкам': 'Based on your purchases',
+  'Релевантные модели для примерки': 'Relevant models to try on',
+  'Подборка строится локально и учитывает только demo-историю в этом браузере.': 'The selection is built locally and uses only demo history in this browser.',
+  'Персональное предложение': 'Personal offer',
+  'Скидка 15% на вторую пару': '15% off a second pair',
+  'Добавьте солнцезащитные линзы к рабочей оправе и получите персональную скидку.': 'Add sun lenses to your work frame and get a personal discount.',
+  'Подобрать пару': 'Choose a pair',
+  'Узнать больше': 'Learn more',
+  'Политика конфиденциальности': 'Privacy policy',
+  'Условия': 'Terms',
+  'Дисклеймер': 'Disclaimer',
   'Demo-режим: данные анкеты и рецепта сохраняются только в вашем браузере и не отправляются на сервер.': 'Demo mode: profile and prescription data are saved only in your browser and are not sent to the server.',
   'Сохранить': 'Save',
   'Сохранено локально. Данные не отправлены на сервер.': 'Saved locally. Data was not sent to the server.',
@@ -184,6 +249,33 @@ const textTranslations: Record<string, string> = {
   'Челябинск': 'Chelyabinsk',
   'Пермь': 'Perm',
   'Воронеж': 'Voronezh',
+  'Амурск': 'Amursk',
+  'Ангарск': 'Angarsk',
+  'Белогорск': 'Belogorsk',
+  'Биробиджан': 'Birobidzhan',
+  'Благовещенск': 'Blagoveshchensk',
+  'Большой Камень': 'Bolshoy Kamen',
+  'Владивосток': 'Vladivostok',
+  'Иркутск': 'Irkutsk',
+  'Канск': 'Kansk',
+  'Комсомольск-на-Амуре': 'Komsomolsk-on-Amur',
+  'Краснокаменск': 'Krasnokamensk',
+  'Магадан': 'Magadan',
+  'Находка': 'Nakhodka',
+  'Нерюнгри': 'Neryungri',
+  'Свободный': 'Svobodny',
+  'Тайшет': 'Tayshet',
+  'Трудовое': 'Trudovoye',
+  'Улан-Удэ': 'Ulan-Ude',
+  'Усолье-Сибирское': 'Usolye-Sibirskoye',
+  'Уссурийск': 'Ussuriysk',
+  'Усть-Кут': 'Ust-Kut',
+  'Хабаровск': 'Khabarovsk',
+  'Чита': 'Chita',
+  'Якутск': 'Yakutsk',
+  'Городская оптика': 'City Optics',
+  'Оптика Профи': 'Optics Pro',
+  'Оптика на Ленина': 'Optics on Lenina',
   'Способ связи': 'Contact method',
   'Контакт': 'Contact',
   'Комментарий': 'Comment',
@@ -217,6 +309,23 @@ const textTranslations: Record<string, string> = {
   'центра Москвы': 'Moscow center',
   'Самостоятельный подбор': 'Self-service selection',
   'нет': 'none',
+  'из': 'of',
+  'км': 'km',
+  'Найдено:': 'Found:',
+  '152-ФЗ о персональных данных': 'Russian Personal Data Law 152-FZ',
+  'Прозрачный кристалл': 'Transparent crystal',
+  'Графитовый черный': 'Graphite black',
+  'Медовый': 'Honey',
+  'Матовая сталь': 'Matte steel',
+  'Пыльная роза': 'Dusty rose',
+  'Темная черепаха': 'Dark tortoise',
+  'ацетат': 'acetate',
+  'титан': 'titanium',
+  'металл': 'metal',
+  'Москва, Тверская ул., 18': 'Moscow, Tverskaya St., 18',
+  'Москва, Земляной Вал, 33, ТЦ Атриум': 'Moscow, Zemlyanoy Val, 33, Atrium mall',
+  'Москва, Кутузовский пр-т, 30': 'Moscow, Kutuzovsky Ave., 30',
+  'Москва, ул. Ленинская Слобода, 19': 'Moscow, Leninskaya Sloboda St., 19',
 };
 
 const placeholderTranslations: Record<string, string> = {
@@ -231,9 +340,12 @@ const textPatterns: Array<[RegExp, (match: RegExpMatchArray) => string]> = [
   [/^Найдено: (\d+)$/, (match) => `Found: ${match[1]}`],
   [/^(\d+) шт\.$/, (match) => `${match[1]} pcs.`],
   [/^(\d+) из (\d+)$/, (match) => `${match[1]} of ${match[2]}`],
+  [/^(\d+) дн\.$/, (match) => `${match[1]} days`],
+  [/^(\d+) сек\.$/, (match) => `${match[1]} sec.`],
   [/^Вариант (\d+)$/, (match) => `Option ${match[1]}`],
   [/^Оправа (\d+)$/, (match) => `Frame ${match[1]}`],
   [/^Сегодня открыто до (.+)$/, (match) => `Open today until ${match[1]}`],
+  [/^(.+) км from (.+)$/, (match) => `${match[1]} km from ${match[2]}`],
   [/^(.+) от (.+) - (.+)$/, (match) => `${match[1]} from ${match[2]} - ${match[3]}`],
   [/^Показываем оптики для города: (.+)\.$/, (match) => `Showing optical stores for: ${match[1]}.`],
   [/^(.+) от (ваше местоположение|центра Москвы)$/, (match) => `${match[1]} from ${translateValue(match[2])}`],
@@ -274,11 +386,11 @@ function translateDom(root: ParentNode, language: 'en' | 'ru') {
     const element = node.parentElement;
     if (!element) return;
     const currentText = node.textContent ?? '';
-    const storedSource = element.dataset.i18nSource;
+    const storedSource = textNodeSources.get(node);
     const original = storedSource && !(language === 'en' && hasCyrillic(currentText) && currentText !== storedSource)
       ? storedSource
       : currentText;
-    element.dataset.i18nSource = original;
+    textNodeSources.set(node, original);
     const nextText = language === 'en' ? translateValue(original) : original;
     if (node.textContent !== nextText) node.textContent = nextText;
   });
@@ -308,14 +420,34 @@ function translateDom(root: ParentNode, language: 'en' | 'ru') {
   });
 }
 
+function updateDefaultPageMeta(language: 'en' | 'ru') {
+  const knowledgeJsonLd = document.getElementById('vilu-json-ld');
+  if (knowledgeJsonLd) return;
+
+  const title = language === 'en'
+    ? 'ViLu - online frame selection and Face-fit score'
+    : 'ViLu - онлайн-подбор оправ и Face-fit score';
+  const description = language === 'en'
+    ? 'ViLu is an online glasses try-on, Face-fit score, and knowledge base for choosing frames by face, size, PD, and use case.'
+    : 'ViLu - онлайн-примерка очков, Face-fit score и knowledge base по выбору оправы по лицу, размеру, PD и сценарию носки.';
+
+  document.title = title;
+  const metaDescription = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+  if (metaDescription) metaDescription.content = description;
+}
+
 export function LanguageDomBridge() {
   const { language } = useLanguage();
 
   useEffect(() => {
+    updateDefaultPageMeta(language);
     translateDom(document.body, language);
 
     const observer = new MutationObserver(() => {
-      window.requestAnimationFrame(() => translateDom(document.body, language));
+      window.requestAnimationFrame(() => {
+        updateDefaultPageMeta(language);
+        translateDom(document.body, language);
+      });
     });
 
     observer.observe(document.body, {
