@@ -93,9 +93,9 @@ export function Home({ onNavigate }: HomeProps) {
                       <p className="mt-3 text-sm leading-6 text-white/72">Подходит для первого визита. Проверьте мост и ширину в салоне.</p>
                     </div>
                     <div className="rounded-[1.4rem] bg-white p-4 ring-1 ring-slate-900/5">
-                      <div className="flex items-center justify-between text-sm font-black">
+                      <div className="flex items-center justify-between gap-3 text-sm font-black">
                         <span>Сохранено</span>
-                        <span className="text-vilu-green">2 из 3</span>
+                        <span className="shrink-0 rounded-full bg-vilu-mist px-3 py-1 text-vilu-green">2/3</span>
                       </div>
                       <div className="mt-3 grid grid-cols-3 gap-2">
                         <span className="h-2 rounded-full bg-vilu-green" />
