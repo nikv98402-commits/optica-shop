@@ -175,10 +175,12 @@ export async function analyzeFacePhoto(photoUrl: string): Promise<FaceFitMeasure
     const confidence = confidenceFrom({ eyeDistanceRatio, faceWidthRatio, eyeLineTiltDeg, bridgeOffsetPct });
 
     const checks = [
-      `Глаза найдены, межзрачковая линия наклонена примерно на ${Math.abs(eyeLineTiltDeg).toFixed(1)} градуса.`,
-      `Рекомендуемый стартовый масштаб оправы: ${frameWidthHint}%.`,
+      Math.abs(eyeLineTiltDeg) <= 7
+        ? 'Глаза распознаны, линия взгляда подходит для примерки.'
+        : 'Голова немного наклонена, для точнее посадки лучше переснять фото.',
+      'ViLu предложил стартовый масштаб оправы по ширине лица.',
       Math.abs(bridgeOffsetPct) <= 6
-        ? 'Центр переносицы близко к центру глаз, можно оценивать посадку.'
+        ? 'Переносица близко к центру, можно оценивать посадку.'
         : 'Лицо немного повернуто или смещено, лучше загрузить фото строго анфас.',
     ];
 

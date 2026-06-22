@@ -148,12 +148,30 @@ function opticHoursLabel(hours: string) {
 
 function mediaPipeStatusText(measurement: FaceFitMeasurement) {
   if (measurement.status === 'loading') return 'Ищем глаза и переносицу, чтобы поставить оправу ближе к реальной посадке.';
-  if (measurement.status === 'ready') return 'Лицо найдено. Можно подстроить оправу автоматически и затем поправить вручную.';
+  if (measurement.status === 'ready') return 'Лицо найдено. ViLu может выровнять оправу по глазам и переносице.';
   if (measurement.status === 'no_face') return 'Лицо не найдено. Попробуйте фото анфас при хорошем освещении.';
   if (measurement.status === 'multiple_faces') return 'Найдено несколько лиц. Для примерки нужно одно лицо.';
   if (measurement.status === 'unsupported_photo') return 'Фото не открылось в браузере. Нужен JPEG, PNG или WebP.';
   if (measurement.status === 'error') return 'Автопосадка не загрузилась, базовая ручная примерка продолжает работать.';
   return 'Загрузите фото, чтобы ViLu нашел глаза и переносицу и предложил стартовую посадку оправы.';
+}
+
+function autoFitTitle(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) return 'Автопосадка готова';
+  if (measurement.status === 'ready') return 'Лицо найдено';
+  if (measurement.status === 'loading') return 'Анализируем фото';
+  if (measurement.status === 'no_face') return 'Нужно другое фото';
+  if (measurement.status === 'multiple_faces') return 'На фото несколько лиц';
+  if (measurement.status === 'unsupported_photo') return 'Формат не поддержан';
+  if (measurement.status === 'error') return 'Автопосадка недоступна';
+  return 'Автопосадка оправы';
+}
+
+function autoFitResultText(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) {
+    return 'Оправа выровнена по глазам и переносице. Теперь можно оценить общий баланс и сохранить модель в подбор.';
+  }
+  return mediaPipeStatusText(measurement);
 }
 
 function photoQualityLabel(measurement: FaceFitMeasurement) {
@@ -244,6 +262,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [frameY, setFrameY] = useState(43);
   const [faceFitMeasurement, setFaceFitMeasurement] = useState<FaceFitMeasurement>(FACE_FIT_IDLE);
   const [showLandmarks, setShowLandmarks] = useState(false);
+  const [autoFitApplied, setAutoFitApplied] = useState(false);
   const [failedFrameImages, setFailedFrameImages] = useState<Set<string>>(new Set());
   const [fitScoreFrameId, setFitScoreFrameId] = useState('');
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -264,6 +283,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
   const activeFrameHasImage = Boolean(activeFrame?.imageUrl) && !failedFrameImages.has(activeFrame.id);
   const fitScore = activeFrame && fitScoreFrameId === activeFrame.id ? getFitScore(activeFrame) : null;
+  const activeFrameScore = activeFrame ? getFitScore(activeFrame) : null;
 
   const nearbyOptics = useMemo(() => {
     const sourceLocation = userLocation ?? cityFallbacks['Москва'];
@@ -307,6 +327,8 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     setPhotoUrl(nextPhotoUrl);
     setPhotoAspectRatio(imageSize.width / imageSize.height);
     setFaceFitMeasurement({ ...FACE_FIT_IDLE, status: 'loading' });
+    setAutoFitApplied(false);
+    setShowLandmarks(false);
     trackEvent(AnalyticsEvent.PhotoUploaded, { source: 'tryon' });
     analyzeFacePhoto(nextPhotoUrl).then((measurement) => {
       setFaceFitMeasurement(measurement);
@@ -326,6 +348,8 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     setFrameScale(measurement.frameWidthHint);
     setFrameX(measurement.frameCenterX);
     setFrameY(measurement.frameCenterY);
+    setAutoFitApplied(true);
+    if (activeFrame) setFitScoreFrameId(activeFrame.id);
   };
 
   const toggleFrame = (frameId: string) => {
@@ -574,9 +598,12 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             <div className="mb-5 rounded-[1.75rem] bg-vilu-mist p-4 ring-1 ring-vilu-green/15 sm:p-5">
               <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Автопосадка оправы</p>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Умная примерка</p>
+                  <h3 className="mt-2 break-words text-2xl font-black tracking-tight text-vilu-ink">
+                    {autoFitTitle(faceFitMeasurement, autoFitApplied)}
+                  </h3>
                   <p className="mt-2 max-w-2xl text-sm font-bold leading-6 text-slate-700">
-                    {mediaPipeStatusText(faceFitMeasurement)}
+                    {autoFitResultText(faceFitMeasurement, autoFitApplied)}
                   </p>
                 </div>
                 <span className={`inline-flex w-fit shrink-0 rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
@@ -584,18 +611,26 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 </span>
               </div>
 
-              <div className="mt-4 grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-end">
-                <p className="min-w-0 text-xs leading-5 text-slate-500">
-                  Смотрите прямо, держите телефон на уровне глаз, лицо должно занимать 40-60% кадра.
-                </p>
-                <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="mt-4 grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-stretch">
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-white/75 p-4 ring-1 ring-white/60">
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Face-fit score</p>
+                    <p className="mt-2 text-3xl font-black tracking-tight text-vilu-green">{activeFrameScore?.total ?? '--'}</p>
+                    <p className="text-xs font-bold leading-5 text-slate-500">Предварительно, до проверки в салоне</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/75 p-4 text-xs leading-5 text-slate-600 ring-1 ring-white/60">
+                    <p className="font-black uppercase tracking-[0.12em] text-slate-400">Как снять фото</p>
+                    <p className="mt-2">Смотрите прямо, телефон на уровне глаз, лицо занимает 40-60% кадра.</p>
+                  </div>
+                </div>
+                <div className="grid min-w-0 content-start gap-2">
                   <button
                     type="button"
                     onClick={() => applyAutoFit()}
                     disabled={faceFitMeasurement.status !== 'ready'}
                     className="min-h-[46px] rounded-full bg-vilu-ink px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                   >
-                    Подстроить автоматически
+                    {autoFitApplied ? 'Подстроить еще раз' : 'Подстроить автоматически'}
                   </button>
                   <button
                     type="button"
@@ -650,7 +685,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   {showLandmarks && faceFitMeasurement.status === 'ready' && faceFitMeasurement.overlayPoints.map((point) => (
                     <span
                       key={point.id}
-                      className="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-vilu-amber ring-2 ring-white"
+                      className="pointer-events-none absolute h-2 w-2 rounded-full bg-vilu-amber/80 ring-2 ring-white/90"
                       style={{ left: `${point.x}%`, top: `${point.y}%`, transform: 'translate(-50%, -50%)' }}
                     />
                   ))}
