@@ -21,6 +21,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
+import { analyzeFacePhoto, type FaceFitMeasurement } from '../lib/faceFitEngine';
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
 
@@ -54,6 +55,18 @@ interface VisitLeadForm {
 
 const INTENT_KEY = 'visionlux_tryon_intent_events';
 const MAX_SELECTED_FRAMES = 3;
+const FACE_FIT_IDLE: FaceFitMeasurement = {
+  status: 'idle',
+  confidence: 0,
+  faceCount: 0,
+  eyeDistanceRatio: 0,
+  frameWidthHint: 66,
+  eyeLineTiltDeg: 0,
+  bridgeOffsetPct: 0,
+  overlayPoints: [],
+  checks: [],
+  limitations: [],
+};
 
 const fitGoals = [
   'Для офиса',
@@ -131,6 +144,15 @@ function opticHoursLabel(hours: string) {
   return closingTime ? `Сегодня открыто до ${closingTime}` : hours;
 }
 
+function mediaPipeStatusText(measurement: FaceFitMeasurement) {
+  if (measurement.status === 'loading') return 'MediaPipe анализирует ориентиры лица...';
+  if (measurement.status === 'ready') return `Лицо найдено. Доверие к измерению: ${measurement.confidence}/100.`;
+  if (measurement.status === 'no_face') return 'Лицо не найдено. Попробуйте фото анфас при хорошем освещении.';
+  if (measurement.status === 'multiple_faces') return 'Найдено несколько лиц. Для примерки нужно одно лицо.';
+  if (measurement.status === 'error') return 'MediaPipe не загрузился, базовая примерка продолжает работать.';
+  return 'Загрузите фото, чтобы включить экспериментальный анализ посадки.';
+}
+
 function routeQuery(optic: DirectoryOptic) {
   return encodeURIComponent(`${optic.name}, ${optic.address}`);
 }
@@ -194,6 +216,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [frameScale, setFrameScale] = useState(66);
   const [frameX, setFrameX] = useState(50);
   const [frameY, setFrameY] = useState(43);
+  const [faceFitMeasurement, setFaceFitMeasurement] = useState<FaceFitMeasurement>(FACE_FIT_IDLE);
   const [failedFrameImages, setFailedFrameImages] = useState<Set<string>>(new Set());
   const [fitScoreFrameId, setFitScoreFrameId] = useState('');
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -237,8 +260,22 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const handlePhoto = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setPhotoUrl(URL.createObjectURL(file));
+    const nextPhotoUrl = URL.createObjectURL(file);
+    setPhotoUrl(nextPhotoUrl);
+    setFaceFitMeasurement({ ...FACE_FIT_IDLE, status: 'loading' });
     trackEvent(AnalyticsEvent.PhotoUploaded, { source: 'tryon' });
+    analyzeFacePhoto(nextPhotoUrl).then((measurement) => {
+      setFaceFitMeasurement(measurement);
+      if (measurement.status === 'ready') {
+        setFrameScale(measurement.frameWidthHint);
+        setFrameX(Math.max(32, Math.min(68, 50 - measurement.bridgeOffsetPct * 0.2)));
+        trackEvent(AnalyticsEvent.FaceLandmarkerAnalyzed, {
+          status: measurement.status,
+          confidence: measurement.confidence,
+          face_count: measurement.faceCount,
+        });
+      }
+    });
   };
 
   const toggleFrame = (frameId: string) => {
@@ -484,6 +521,28 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <p>Фото используется только в вашем браузере для примерки и не отправляется на сервер.</p>
             </div>
 
+            <div className="mb-5 rounded-3xl bg-vilu-mist p-4 ring-1 ring-vilu-green/15">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">MediaPipe Face Landmarker</p>
+                  <p className="mt-2 text-sm font-bold leading-6 text-slate-700">{mediaPipeStatusText(faceFitMeasurement)}</p>
+                </div>
+                {faceFitMeasurement.status === 'ready' && (
+                  <div className="rounded-2xl bg-white px-4 py-3 text-center ring-1 ring-slate-900/5">
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Fit confidence</p>
+                    <p className="text-2xl font-black text-vilu-green">{faceFitMeasurement.confidence}</p>
+                  </div>
+                )}
+              </div>
+              {faceFitMeasurement.status !== 'idle' && (
+                <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-600 md:grid-cols-2">
+                  {faceFitMeasurement.checks.slice(0, 3).map((check) => (
+                    <p key={check} className="rounded-2xl bg-white/70 p-3">{check}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="relative flex aspect-[4/3] min-h-[320px] w-full items-center justify-center overflow-hidden rounded-[2rem] bg-stone-100 sm:min-h-[360px]">
               {photoUrl ? (
                 <img src={photoUrl} alt="Фото для примерки" className="absolute inset-0 h-full w-full object-contain" />
@@ -512,6 +571,14 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
                 />
               )}
+
+              {faceFitMeasurement.status === 'ready' && faceFitMeasurement.overlayPoints.map((point) => (
+                <span
+                  key={point.id}
+                  className="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-vilu-amber ring-2 ring-white"
+                  style={{ left: `${point.x}%`, top: `${point.y}%`, transform: 'translate(-50%, -50%)' }}
+                />
+              ))}
             </div>
 
             <div className="mt-6 grid min-w-0 gap-5 md:grid-cols-3">
