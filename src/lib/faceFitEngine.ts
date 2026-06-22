@@ -1,6 +1,6 @@
 import { FaceLandmarker, FilesetResolver, type NormalizedLandmark } from '@mediapipe/tasks-vision';
 
-export type FaceFitEngineStatus = 'idle' | 'loading' | 'ready' | 'no_face' | 'multiple_faces' | 'error';
+export type FaceFitEngineStatus = 'idle' | 'loading' | 'ready' | 'no_face' | 'multiple_faces' | 'unsupported_photo' | 'error';
 
 export interface FaceFitMeasurement {
   status: FaceFitEngineStatus;
@@ -45,6 +45,23 @@ function loadImage(src: string) {
     image.onerror = () => reject(new Error('Image failed to load'));
     image.src = src;
   });
+}
+
+export function unsupportedPhotoMeasurement(fileName?: string): FaceFitMeasurement {
+  const formatHint = fileName ? ` Файл: ${fileName}.` : '';
+
+  return {
+    status: 'unsupported_photo',
+    confidence: 0,
+    faceCount: 0,
+    eyeDistanceRatio: 0,
+    frameWidthHint: 66,
+    eyeLineTiltDeg: 0,
+    bridgeOffsetPct: 0,
+    overlayPoints: [],
+    checks: [`Не удалось открыть фото в браузере.${formatHint} Загрузите JPEG, PNG или WebP.`],
+    limitations: ['HEIC/HEIF с iPhone часто не отображается в Chrome без конвертации. Фото не отправляется на сервер ViLu.'],
+  };
 }
 
 function averagePoint(landmarks: NormalizedLandmark[], indexes: number[]) {
@@ -176,7 +193,11 @@ export async function analyzeFacePhoto(photoUrl: string): Promise<FaceFitMeasure
         'Финальную посадку, PD и совместимость линз должен подтвердить специалист в салоне.',
       ],
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Image failed to load') {
+      return unsupportedPhotoMeasurement();
+    }
+
     return {
       status: 'error',
       confidence: 0,

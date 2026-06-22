@@ -21,7 +21,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
-import { analyzeFacePhoto, type FaceFitMeasurement } from '../lib/faceFitEngine';
+import { analyzeFacePhoto, type FaceFitMeasurement, unsupportedPhotoMeasurement } from '../lib/faceFitEngine';
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
 
@@ -149,8 +149,23 @@ function mediaPipeStatusText(measurement: FaceFitMeasurement) {
   if (measurement.status === 'ready') return `Лицо найдено. Доверие к измерению: ${measurement.confidence}/100.`;
   if (measurement.status === 'no_face') return 'Лицо не найдено. Попробуйте фото анфас при хорошем освещении.';
   if (measurement.status === 'multiple_faces') return 'Найдено несколько лиц. Для примерки нужно одно лицо.';
+  if (measurement.status === 'unsupported_photo') return 'Фото не открылось в браузере. Нужен JPEG, PNG или WebP.';
   if (measurement.status === 'error') return 'MediaPipe не загрузился, базовая примерка продолжает работать.';
   return 'Загрузите фото, чтобы включить экспериментальный анализ посадки.';
+}
+
+function isLikelyUnsupportedPhoto(file: File) {
+  const fileName = file.name.toLowerCase();
+  return file.type === 'image/heic' || file.type === 'image/heif' || fileName.endsWith('.heic') || fileName.endsWith('.heif');
+}
+
+function canDecodeImage(url: string) {
+  return new Promise<boolean>((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(true);
+    image.onerror = () => resolve(false);
+    image.src = url;
+  });
 }
 
 function routeQuery(optic: DirectoryOptic) {
@@ -257,10 +272,25 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     setFailedFrameImages((current) => new Set(current).add(frameId));
   };
 
-  const handlePhoto = (event: ChangeEvent<HTMLInputElement>) => {
+  const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (isLikelyUnsupportedPhoto(file)) {
+      setPhotoUrl('');
+      setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
+      return;
+    }
+
     const nextPhotoUrl = URL.createObjectURL(file);
+    const canDecode = await canDecodeImage(nextPhotoUrl);
+    if (!canDecode) {
+      URL.revokeObjectURL(nextPhotoUrl);
+      setPhotoUrl('');
+      setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
+      return;
+    }
+
     setPhotoUrl(nextPhotoUrl);
     setFaceFitMeasurement({ ...FACE_FIT_IDLE, status: 'loading' });
     trackEvent(AnalyticsEvent.PhotoUploaded, { source: 'tryon' });
@@ -512,7 +542,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               </div>
               <label className="inline-flex max-w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-vilu-ink px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-vilu-green">
                 <Upload size={16} /> Загрузить фото
-                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhoto} className="hidden" />
               </label>
             </div>
 
