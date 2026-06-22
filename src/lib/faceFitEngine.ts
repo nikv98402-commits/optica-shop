@@ -8,6 +8,8 @@ export interface FaceFitMeasurement {
   faceCount: number;
   eyeDistanceRatio: number;
   frameWidthHint: number;
+  frameCenterX: number;
+  frameCenterY: number;
   eyeLineTiltDeg: number;
   bridgeOffsetPct: number;
   overlayPoints: Array<{ id: string; x: number; y: number }>;
@@ -56,6 +58,8 @@ export function unsupportedPhotoMeasurement(fileName?: string): FaceFitMeasureme
     faceCount: 0,
     eyeDistanceRatio: 0,
     frameWidthHint: 66,
+    frameCenterX: 50,
+    frameCenterY: 43,
     eyeLineTiltDeg: 0,
     bridgeOffsetPct: 0,
     overlayPoints: [],
@@ -119,6 +123,8 @@ export async function analyzeFacePhoto(photoUrl: string): Promise<FaceFitMeasure
         faceCount,
         eyeDistanceRatio: 0,
         frameWidthHint: 66,
+        frameCenterX: 50,
+        frameCenterY: 43,
         eyeLineTiltDeg: 0,
         bridgeOffsetPct: 0,
         overlayPoints: [],
@@ -134,6 +140,8 @@ export async function analyzeFacePhoto(photoUrl: string): Promise<FaceFitMeasure
         faceCount,
         eyeDistanceRatio: 0,
         frameWidthHint: 66,
+        frameCenterX: 50,
+        frameCenterY: 43,
         eyeLineTiltDeg: 0,
         bridgeOffsetPct: 0,
         overlayPoints: [],
@@ -159,7 +167,11 @@ export async function analyzeFacePhoto(photoUrl: string): Promise<FaceFitMeasure
     const eyeDistanceRatio = pointDistance(leftEye, rightEye);
     const eyeLineTiltDeg = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x) * (180 / Math.PI);
     const bridgeOffsetPct = (noseBridge.x - eyeMidpoint.x) * 100;
-    const frameWidthHint = Math.round(Math.min(82, Math.max(48, faceWidthRatio * 118)));
+    const frameWidthByFace = faceWidthRatio * 112;
+    const frameWidthByEyes = eyeDistanceRatio * 215;
+    const frameWidthHint = Math.round(Math.min(82, Math.max(42, frameWidthByFace * 0.55 + frameWidthByEyes * 0.45)));
+    const frameCenterX = Math.min(68, Math.max(32, eyeMidpoint.x * 100));
+    const frameCenterY = Math.min(62, Math.max(25, eyeMidpoint.y * 100 + 2.5));
     const confidence = confidenceFrom({ eyeDistanceRatio, faceWidthRatio, eyeLineTiltDeg, bridgeOffsetPct });
 
     const checks = [
@@ -176,6 +188,8 @@ export async function analyzeFacePhoto(photoUrl: string): Promise<FaceFitMeasure
       faceCount,
       eyeDistanceRatio: Number(eyeDistanceRatio.toFixed(3)),
       frameWidthHint,
+      frameCenterX: Number(frameCenterX.toFixed(1)),
+      frameCenterY: Number(frameCenterY.toFixed(1)),
       eyeLineTiltDeg: Number(eyeLineTiltDeg.toFixed(1)),
       bridgeOffsetPct: Number(bridgeOffsetPct.toFixed(1)),
       overlayPoints: [
@@ -204,6 +218,8 @@ export async function analyzeFacePhoto(photoUrl: string): Promise<FaceFitMeasure
       faceCount: 0,
       eyeDistanceRatio: 0,
       frameWidthHint: 66,
+      frameCenterX: 50,
+      frameCenterY: 43,
       eyeLineTiltDeg: 0,
       bridgeOffsetPct: 0,
       overlayPoints: [],

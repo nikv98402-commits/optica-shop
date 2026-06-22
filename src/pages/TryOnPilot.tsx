@@ -61,6 +61,8 @@ const FACE_FIT_IDLE: FaceFitMeasurement = {
   faceCount: 0,
   eyeDistanceRatio: 0,
   frameWidthHint: 66,
+  frameCenterX: 50,
+  frameCenterY: 43,
   eyeLineTiltDeg: 0,
   bridgeOffsetPct: 0,
   overlayPoints: [],
@@ -159,11 +161,11 @@ function isLikelyUnsupportedPhoto(file: File) {
   return file.type === 'image/heic' || file.type === 'image/heif' || fileName.endsWith('.heic') || fileName.endsWith('.heif');
 }
 
-function canDecodeImage(url: string) {
-  return new Promise<boolean>((resolve) => {
+function getDecodedImageSize(url: string) {
+  return new Promise<{ width: number; height: number } | null>((resolve) => {
     const image = new Image();
-    image.onload = () => resolve(true);
-    image.onerror = () => resolve(false);
+    image.onload = () => resolve({ width: image.naturalWidth || image.width, height: image.naturalHeight || image.height });
+    image.onerror = () => resolve(null);
     image.src = url;
   });
 }
@@ -228,6 +230,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [activeFrameId, setActiveFrameId] = useState(frames[0]?.id ?? '');
   const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState('');
+  const [photoAspectRatio, setPhotoAspectRatio] = useState(3 / 4);
   const [frameScale, setFrameScale] = useState(66);
   const [frameX, setFrameX] = useState(50);
   const [frameY, setFrameY] = useState(43);
@@ -283,8 +286,8 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     }
 
     const nextPhotoUrl = URL.createObjectURL(file);
-    const canDecode = await canDecodeImage(nextPhotoUrl);
-    if (!canDecode) {
+    const imageSize = await getDecodedImageSize(nextPhotoUrl);
+    if (!imageSize) {
       URL.revokeObjectURL(nextPhotoUrl);
       setPhotoUrl('');
       setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
@@ -292,13 +295,15 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     }
 
     setPhotoUrl(nextPhotoUrl);
+    setPhotoAspectRatio(imageSize.width / imageSize.height);
     setFaceFitMeasurement({ ...FACE_FIT_IDLE, status: 'loading' });
     trackEvent(AnalyticsEvent.PhotoUploaded, { source: 'tryon' });
     analyzeFacePhoto(nextPhotoUrl).then((measurement) => {
       setFaceFitMeasurement(measurement);
       if (measurement.status === 'ready') {
         setFrameScale(measurement.frameWidthHint);
-        setFrameX(Math.max(32, Math.min(68, 50 - measurement.bridgeOffsetPct * 0.2)));
+        setFrameX(measurement.frameCenterX);
+        setFrameY(measurement.frameCenterY);
         trackEvent(AnalyticsEvent.FaceLandmarkerAnalyzed, {
           status: measurement.status,
           confidence: measurement.confidence,
@@ -573,9 +578,44 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               )}
             </div>
 
-            <div className="relative flex aspect-[4/3] min-h-[320px] w-full items-center justify-center overflow-hidden rounded-[2rem] bg-stone-100 sm:min-h-[360px]">
+            <div className="relative flex aspect-[4/3] min-h-[320px] w-full items-center justify-center overflow-hidden rounded-[2rem] bg-stone-100 p-4 sm:min-h-[360px]">
               {photoUrl ? (
-                <img src={photoUrl} alt="Фото для примерки" className="absolute inset-0 h-full w-full object-contain" />
+                <div
+                  className="relative max-h-full max-w-full overflow-hidden rounded-[1.5rem] bg-white shadow-inner"
+                  style={{
+                    aspectRatio: photoAspectRatio,
+                    height: photoAspectRatio < 1 ? '100%' : undefined,
+                    width: photoAspectRatio >= 1 ? '100%' : undefined,
+                  }}
+                >
+                  <img src={photoUrl} alt="Фото для примерки" className="absolute inset-0 h-full w-full object-cover" />
+
+                  {activeFrame && activeFrameHasImage && (
+                    <img
+                      src={activeFrame.imageUrl}
+                      alt={frameLabel(activeFrame)}
+                      onError={() => markFrameImageFailed(activeFrame.id)}
+                      className="absolute object-contain drop-shadow-2xl"
+                      style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
+                    />
+                  )}
+
+                  {activeFrame && !activeFrameHasImage && (
+                    <FrameDrawing
+                      frame={activeFrame}
+                      className="absolute max-w-[92%]"
+                      style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
+                    />
+                  )}
+
+                  {faceFitMeasurement.status === 'ready' && faceFitMeasurement.overlayPoints.map((point) => (
+                    <span
+                      key={point.id}
+                      className="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-vilu-amber ring-2 ring-white"
+                      style={{ left: `${point.x}%`, top: `${point.y}%`, transform: 'translate(-50%, -50%)' }}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="max-w-md px-6 text-center">
                   <Camera className="mx-auto mb-5 text-vilu-green" size={44} />
@@ -583,32 +623,6 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   <p className="mt-2 text-sm leading-6 text-slate-500">После загрузки можно подвинуть оправу и оценить посадку.</p>
                 </div>
               )}
-
-              {activeFrame && activeFrameHasImage && (
-                <img
-                  src={activeFrame.imageUrl}
-                  alt={frameLabel(activeFrame)}
-                  onError={() => markFrameImageFailed(activeFrame.id)}
-                  className="absolute object-contain drop-shadow-2xl"
-                  style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
-                />
-              )}
-
-              {activeFrame && !activeFrameHasImage && (
-                <FrameDrawing
-                  frame={activeFrame}
-                  className="absolute max-w-[92%]"
-                  style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
-                />
-              )}
-
-              {faceFitMeasurement.status === 'ready' && faceFitMeasurement.overlayPoints.map((point) => (
-                <span
-                  key={point.id}
-                  className="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-vilu-amber ring-2 ring-white"
-                  style={{ left: `${point.x}%`, top: `${point.y}%`, transform: 'translate(-50%, -50%)' }}
-                />
-              ))}
             </div>
 
             <div className="mt-6 grid min-w-0 gap-5 md:grid-cols-3">
