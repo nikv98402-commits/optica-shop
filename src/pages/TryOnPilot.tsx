@@ -571,34 +571,34 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <p>Фото используется только в вашем браузере для примерки и не отправляется на сервер.</p>
             </div>
 
-            <div className="mb-5 rounded-3xl bg-vilu-mist p-4 ring-1 ring-vilu-green/15">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="mb-5 rounded-3xl bg-vilu-mist p-4 ring-1 ring-vilu-green/15 sm:p-5">
+              <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(260px,330px)] xl:items-start">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Автопосадка оправы</p>
-                    <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] ${photoQuality.className}`}>
-                      Качество фото: {photoQuality.label}
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Автопосадка оправы</p>
+                  <div className="mt-3 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start">
+                    <span className={`inline-flex w-fit max-w-full shrink-0 rounded-2xl px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
+                      Качество: {photoQuality.label}
                     </span>
+                    <p className="min-w-0 text-sm font-bold leading-6 text-slate-700">{mediaPipeStatusText(faceFitMeasurement)}</p>
                   </div>
-                  <p className="mt-2 text-sm font-bold leading-6 text-slate-700">{mediaPipeStatusText(faceFitMeasurement)}</p>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Смотрите прямо, держите телефон на уровне глаз, лицо должно занимать 40-60% кадра.
+                  <p className="mt-3 max-w-2xl text-xs leading-5 text-slate-500">
+                    Смотрите прямо. Телефон на уровне глаз. Лицо занимает 40-60% кадра.
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row lg:shrink-0">
+                <div className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-1">
                   <button
                     type="button"
                     onClick={() => applyAutoFit()}
                     disabled={faceFitMeasurement.status !== 'ready'}
-                    className="rounded-full bg-vilu-ink px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                    className="min-h-[48px] rounded-full bg-vilu-ink px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                   >
-                    Подстроить оправу автоматически
+                    Подстроить автоматически
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowLandmarks((current) => !current)}
                     disabled={faceFitMeasurement.status !== 'ready'}
-                    className="rounded-full bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                    className="min-h-[48px] rounded-full bg-white px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:text-slate-400"
                   >
                     {showLandmarks ? 'Скрыть ориентиры' : 'Показать ориентиры'}
                   </button>
