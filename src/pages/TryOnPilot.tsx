@@ -571,26 +571,29 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <p>Фото используется только в вашем браузере для примерки и не отправляется на сервер.</p>
             </div>
 
-            <div className="mb-5 rounded-3xl bg-vilu-mist p-4 ring-1 ring-vilu-green/15 sm:p-5">
-              <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(260px,330px)] xl:items-start">
+            <div className="mb-5 rounded-[1.75rem] bg-vilu-mist p-4 ring-1 ring-vilu-green/15 sm:p-5">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Автопосадка оправы</p>
-                  <div className="mt-3 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start">
-                    <span className={`inline-flex w-fit max-w-full shrink-0 rounded-2xl px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
-                      Качество: {photoQuality.label}
-                    </span>
-                    <p className="min-w-0 text-sm font-bold leading-6 text-slate-700">{mediaPipeStatusText(faceFitMeasurement)}</p>
-                  </div>
-                  <p className="mt-3 max-w-2xl text-xs leading-5 text-slate-500">
-                    Смотрите прямо. Телефон на уровне глаз. Лицо занимает 40-60% кадра.
+                  <p className="mt-2 max-w-2xl text-sm font-bold leading-6 text-slate-700">
+                    {mediaPipeStatusText(faceFitMeasurement)}
                   </p>
                 </div>
-                <div className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                <span className={`inline-flex w-fit shrink-0 rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
+                  Качество фото: {photoQuality.label}
+                </span>
+              </div>
+
+              <div className="mt-4 grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-end">
+                <p className="min-w-0 text-xs leading-5 text-slate-500">
+                  Смотрите прямо, держите телефон на уровне глаз, лицо должно занимать 40-60% кадра.
+                </p>
+                <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-1">
                   <button
                     type="button"
                     onClick={() => applyAutoFit()}
                     disabled={faceFitMeasurement.status !== 'ready'}
-                    className="min-h-[48px] rounded-full bg-vilu-ink px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                    className="min-h-[46px] rounded-full bg-vilu-ink px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                   >
                     Подстроить автоматически
                   </button>
@@ -598,16 +601,17 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     type="button"
                     onClick={() => setShowLandmarks((current) => !current)}
                     disabled={faceFitMeasurement.status !== 'ready'}
-                    className="min-h-[48px] rounded-full bg-white px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                    className="min-h-[46px] rounded-full bg-white px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:text-slate-400"
                   >
                     {showLandmarks ? 'Скрыть ориентиры' : 'Показать ориентиры'}
                   </button>
                 </div>
               </div>
+
               {faceFitMeasurement.status !== 'idle' && (
-                <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-600 md:grid-cols-2">
+                <div className="mt-4 grid gap-2 text-xs leading-5 text-slate-600 md:grid-cols-3">
                   {faceFitMeasurement.checks.slice(0, 3).map((check) => (
-                    <p key={check} className="rounded-2xl bg-white/70 p-3">{check}</p>
+                    <p key={check} className="min-w-0 rounded-2xl bg-white/75 p-3">{check}</p>
                   ))}
                 </div>
               )}
