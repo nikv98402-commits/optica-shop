@@ -147,13 +147,21 @@ function opticHoursLabel(hours: string) {
 }
 
 function mediaPipeStatusText(measurement: FaceFitMeasurement) {
-  if (measurement.status === 'loading') return 'MediaPipe анализирует ориентиры лица...';
-  if (measurement.status === 'ready') return `Лицо найдено. Доверие к измерению: ${measurement.confidence}/100.`;
+  if (measurement.status === 'loading') return 'Ищем глаза и переносицу, чтобы поставить оправу ближе к реальной посадке.';
+  if (measurement.status === 'ready') return 'Лицо найдено. Можно подстроить оправу автоматически и затем поправить вручную.';
   if (measurement.status === 'no_face') return 'Лицо не найдено. Попробуйте фото анфас при хорошем освещении.';
   if (measurement.status === 'multiple_faces') return 'Найдено несколько лиц. Для примерки нужно одно лицо.';
   if (measurement.status === 'unsupported_photo') return 'Фото не открылось в браузере. Нужен JPEG, PNG или WebP.';
-  if (measurement.status === 'error') return 'MediaPipe не загрузился, базовая примерка продолжает работать.';
-  return 'Загрузите фото, чтобы включить экспериментальный анализ посадки.';
+  if (measurement.status === 'error') return 'Автопосадка не загрузилась, базовая ручная примерка продолжает работать.';
+  return 'Загрузите фото, чтобы ViLu нашел глаза и переносицу и предложил стартовую посадку оправы.';
+}
+
+function photoQualityLabel(measurement: FaceFitMeasurement) {
+  if (measurement.status === 'loading') return { label: 'анализируем', className: 'bg-white text-slate-500' };
+  if (measurement.status !== 'ready') return { label: 'нужна проверка', className: 'bg-white text-amber-900' };
+  if (measurement.confidence >= 82) return { label: 'хорошее', className: 'bg-emerald-100 text-emerald-800' };
+  if (measurement.confidence >= 65) return { label: 'среднее', className: 'bg-amber-100 text-amber-900' };
+  return { label: 'лучше переснять', className: 'bg-rose-100 text-rose-800' };
 }
 
 function isLikelyUnsupportedPhoto(file: File) {
@@ -235,6 +243,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [frameX, setFrameX] = useState(50);
   const [frameY, setFrameY] = useState(43);
   const [faceFitMeasurement, setFaceFitMeasurement] = useState<FaceFitMeasurement>(FACE_FIT_IDLE);
+  const [showLandmarks, setShowLandmarks] = useState(false);
   const [failedFrameImages, setFailedFrameImages] = useState<Set<string>>(new Set());
   const [fitScoreFrameId, setFitScoreFrameId] = useState('');
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -270,6 +279,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   const canPrepareVisit = selectedFrames.length >= 2;
   const canSubmitVisitLead = canPrepareVisit && visitLeadForm.contact.trim().length >= 3 && visitLeadForm.consent;
+  const photoQuality = photoQualityLabel(faceFitMeasurement);
 
   const markFrameImageFailed = (frameId: string) => {
     setFailedFrameImages((current) => new Set(current).add(frameId));
@@ -301,9 +311,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     analyzeFacePhoto(nextPhotoUrl).then((measurement) => {
       setFaceFitMeasurement(measurement);
       if (measurement.status === 'ready') {
-        setFrameScale(measurement.frameWidthHint);
-        setFrameX(measurement.frameCenterX);
-        setFrameY(measurement.frameCenterY);
+        applyAutoFit(measurement);
         trackEvent(AnalyticsEvent.FaceLandmarkerAnalyzed, {
           status: measurement.status,
           confidence: measurement.confidence,
@@ -311,6 +319,13 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
         });
       }
     });
+  };
+
+  const applyAutoFit = (measurement = faceFitMeasurement) => {
+    if (measurement.status !== 'ready') return;
+    setFrameScale(measurement.frameWidthHint);
+    setFrameX(measurement.frameCenterX);
+    setFrameY(measurement.frameCenterY);
   };
 
   const toggleFrame = (frameId: string) => {
@@ -557,17 +572,37 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             </div>
 
             <div className="mb-5 rounded-3xl bg-vilu-mist p-4 ring-1 ring-vilu-green/15">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">MediaPipe Face Landmarker</p>
-                  <p className="mt-2 text-sm font-bold leading-6 text-slate-700">{mediaPipeStatusText(faceFitMeasurement)}</p>
-                </div>
-                {faceFitMeasurement.status === 'ready' && (
-                  <div className="rounded-2xl bg-white px-4 py-3 text-center ring-1 ring-slate-900/5">
-                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Fit confidence</p>
-                    <p className="text-2xl font-black text-vilu-green">{faceFitMeasurement.confidence}</p>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Автопосадка оправы</p>
+                    <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] ${photoQuality.className}`}>
+                      Качество фото: {photoQuality.label}
+                    </span>
                   </div>
-                )}
+                  <p className="mt-2 text-sm font-bold leading-6 text-slate-700">{mediaPipeStatusText(faceFitMeasurement)}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Смотрите прямо, держите телефон на уровне глаз, лицо должно занимать 40-60% кадра.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row lg:shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => applyAutoFit()}
+                    disabled={faceFitMeasurement.status !== 'ready'}
+                    className="rounded-full bg-vilu-ink px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                  >
+                    Подстроить оправу автоматически
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowLandmarks((current) => !current)}
+                    disabled={faceFitMeasurement.status !== 'ready'}
+                    className="rounded-full bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                  >
+                    {showLandmarks ? 'Скрыть ориентиры' : 'Показать ориентиры'}
+                  </button>
+                </div>
               </div>
               {faceFitMeasurement.status !== 'idle' && (
                 <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-600 md:grid-cols-2">
@@ -608,7 +643,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     />
                   )}
 
-                  {faceFitMeasurement.status === 'ready' && faceFitMeasurement.overlayPoints.map((point) => (
+                  {showLandmarks && faceFitMeasurement.status === 'ready' && faceFitMeasurement.overlayPoints.map((point) => (
                     <span
                       key={point.id}
                       className="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-vilu-amber ring-2 ring-white"
