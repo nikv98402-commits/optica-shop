@@ -3,6 +3,7 @@ import { reachGoal } from './metrika';
 export const AnalyticsEvent = {
   TryOnOpened: 'tryon_opened',
   PhotoUploaded: 'photo_uploaded',
+  FaceLandmarkerAnalyzed: 'face_landmarker_analyzed',
   FitScoreViewed: 'fit_score_viewed',
   FrameSaved: 'frame_saved',
   NearbyOpticsOpened: 'nearby_optics_opened',

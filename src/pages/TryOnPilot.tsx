@@ -21,6 +21,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
+import { analyzeFacePhoto, type FaceFitMeasurement, unsupportedPhotoMeasurement } from '../lib/faceFitEngine';
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
 
@@ -54,6 +55,20 @@ interface VisitLeadForm {
 
 const INTENT_KEY = 'visionlux_tryon_intent_events';
 const MAX_SELECTED_FRAMES = 3;
+const FACE_FIT_IDLE: FaceFitMeasurement = {
+  status: 'idle',
+  confidence: 0,
+  faceCount: 0,
+  eyeDistanceRatio: 0,
+  frameWidthHint: 66,
+  frameCenterX: 50,
+  frameCenterY: 43,
+  eyeLineTiltDeg: 0,
+  bridgeOffsetPct: 0,
+  overlayPoints: [],
+  checks: [],
+  limitations: [],
+};
 
 const fitGoals = [
   'Для офиса',
@@ -131,6 +146,56 @@ function opticHoursLabel(hours: string) {
   return closingTime ? `Сегодня открыто до ${closingTime}` : hours;
 }
 
+function mediaPipeStatusText(measurement: FaceFitMeasurement) {
+  if (measurement.status === 'loading') return 'Ищем глаза и переносицу, чтобы поставить оправу ближе к реальной посадке.';
+  if (measurement.status === 'ready') return 'Лицо найдено. ViLu может выровнять оправу по глазам и переносице.';
+  if (measurement.status === 'no_face') return 'Лицо не найдено. Попробуйте фото анфас при хорошем освещении.';
+  if (measurement.status === 'multiple_faces') return 'Найдено несколько лиц. Для примерки нужно одно лицо.';
+  if (measurement.status === 'unsupported_photo') return 'Фото не открылось в браузере. Нужен JPEG, PNG или WebP.';
+  if (measurement.status === 'error') return 'Автопосадка не загрузилась, базовая ручная примерка продолжает работать.';
+  return 'Загрузите фото, чтобы ViLu нашел глаза и переносицу и предложил стартовую посадку оправы.';
+}
+
+function autoFitTitle(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) return 'Автопосадка готова';
+  if (measurement.status === 'ready') return 'Лицо найдено';
+  if (measurement.status === 'loading') return 'Анализируем фото';
+  if (measurement.status === 'no_face') return 'Нужно другое фото';
+  if (measurement.status === 'multiple_faces') return 'На фото несколько лиц';
+  if (measurement.status === 'unsupported_photo') return 'Формат не поддержан';
+  if (measurement.status === 'error') return 'Автопосадка недоступна';
+  return 'Автопосадка оправы';
+}
+
+function autoFitResultText(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) {
+    return 'Оправа выровнена по глазам и переносице. Теперь можно оценить общий баланс и сохранить модель в подбор.';
+  }
+  return mediaPipeStatusText(measurement);
+}
+
+function photoQualityLabel(measurement: FaceFitMeasurement) {
+  if (measurement.status === 'loading') return { label: 'анализируем', className: 'bg-white text-slate-500' };
+  if (measurement.status !== 'ready') return { label: 'нужна проверка', className: 'bg-white text-amber-900' };
+  if (measurement.confidence >= 82) return { label: 'хорошее', className: 'bg-emerald-100 text-emerald-800' };
+  if (measurement.confidence >= 65) return { label: 'среднее', className: 'bg-amber-100 text-amber-900' };
+  return { label: 'лучше переснять', className: 'bg-rose-100 text-rose-800' };
+}
+
+function isLikelyUnsupportedPhoto(file: File) {
+  const fileName = file.name.toLowerCase();
+  return file.type === 'image/heic' || file.type === 'image/heif' || fileName.endsWith('.heic') || fileName.endsWith('.heif');
+}
+
+function getDecodedImageSize(url: string) {
+  return new Promise<{ width: number; height: number } | null>((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve({ width: image.naturalWidth || image.width, height: image.naturalHeight || image.height });
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
 function routeQuery(optic: DirectoryOptic) {
   return encodeURIComponent(`${optic.name}, ${optic.address}`);
 }
@@ -191,9 +256,13 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [activeFrameId, setActiveFrameId] = useState(frames[0]?.id ?? '');
   const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState('');
+  const [photoAspectRatio, setPhotoAspectRatio] = useState(3 / 4);
   const [frameScale, setFrameScale] = useState(66);
   const [frameX, setFrameX] = useState(50);
   const [frameY, setFrameY] = useState(43);
+  const [faceFitMeasurement, setFaceFitMeasurement] = useState<FaceFitMeasurement>(FACE_FIT_IDLE);
+  const [showLandmarks, setShowLandmarks] = useState(false);
+  const [autoFitApplied, setAutoFitApplied] = useState(false);
   const [failedFrameImages, setFailedFrameImages] = useState<Set<string>>(new Set());
   const [fitScoreFrameId, setFitScoreFrameId] = useState('');
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -214,6 +283,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
   const activeFrameHasImage = Boolean(activeFrame?.imageUrl) && !failedFrameImages.has(activeFrame.id);
   const fitScore = activeFrame && fitScoreFrameId === activeFrame.id ? getFitScore(activeFrame) : null;
+  const activeFrameScore = activeFrame ? getFitScore(activeFrame) : null;
 
   const nearbyOptics = useMemo(() => {
     const sourceLocation = userLocation ?? cityFallbacks['Москва'];
@@ -229,16 +299,57 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   const canPrepareVisit = selectedFrames.length >= 2;
   const canSubmitVisitLead = canPrepareVisit && visitLeadForm.contact.trim().length >= 3 && visitLeadForm.consent;
+  const photoQuality = photoQualityLabel(faceFitMeasurement);
 
   const markFrameImageFailed = (frameId: string) => {
     setFailedFrameImages((current) => new Set(current).add(frameId));
   };
 
-  const handlePhoto = (event: ChangeEvent<HTMLInputElement>) => {
+  const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setPhotoUrl(URL.createObjectURL(file));
+
+    if (isLikelyUnsupportedPhoto(file)) {
+      setPhotoUrl('');
+      setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
+      return;
+    }
+
+    const nextPhotoUrl = URL.createObjectURL(file);
+    const imageSize = await getDecodedImageSize(nextPhotoUrl);
+    if (!imageSize) {
+      URL.revokeObjectURL(nextPhotoUrl);
+      setPhotoUrl('');
+      setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
+      return;
+    }
+
+    setPhotoUrl(nextPhotoUrl);
+    setPhotoAspectRatio(imageSize.width / imageSize.height);
+    setFaceFitMeasurement({ ...FACE_FIT_IDLE, status: 'loading' });
+    setAutoFitApplied(false);
+    setShowLandmarks(false);
     trackEvent(AnalyticsEvent.PhotoUploaded, { source: 'tryon' });
+    analyzeFacePhoto(nextPhotoUrl).then((measurement) => {
+      setFaceFitMeasurement(measurement);
+      if (measurement.status === 'ready') {
+        applyAutoFit(measurement);
+        trackEvent(AnalyticsEvent.FaceLandmarkerAnalyzed, {
+          status: measurement.status,
+          confidence: measurement.confidence,
+          face_count: measurement.faceCount,
+        });
+      }
+    });
+  };
+
+  const applyAutoFit = (measurement = faceFitMeasurement) => {
+    if (measurement.status !== 'ready') return;
+    setFrameScale(measurement.frameWidthHint);
+    setFrameX(measurement.frameCenterX);
+    setFrameY(measurement.frameCenterY);
+    setAutoFitApplied(true);
+    if (activeFrame) setFitScoreFrameId(activeFrame.id);
   };
 
   const toggleFrame = (frameId: string) => {
@@ -475,7 +586,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               </div>
               <label className="inline-flex max-w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-vilu-ink px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-vilu-green">
                 <Upload size={16} /> Загрузить фото
-                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhoto} className="hidden" />
               </label>
             </div>
 
@@ -484,33 +595,107 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <p>Фото используется только в вашем браузере для примерки и не отправляется на сервер.</p>
             </div>
 
-            <div className="relative flex aspect-[4/3] min-h-[320px] w-full items-center justify-center overflow-hidden rounded-[2rem] bg-stone-100 sm:min-h-[360px]">
+            <div className="mb-5 rounded-[1.75rem] bg-vilu-mist p-4 ring-1 ring-vilu-green/15 sm:p-5">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Умная примерка</p>
+                  <h3 className="mt-2 break-words text-2xl font-black tracking-tight text-vilu-ink">
+                    {autoFitTitle(faceFitMeasurement, autoFitApplied)}
+                  </h3>
+                  <p className="mt-2 max-w-2xl text-sm font-bold leading-6 text-slate-700">
+                    {autoFitResultText(faceFitMeasurement, autoFitApplied)}
+                  </p>
+                </div>
+                <span className={`inline-flex w-fit shrink-0 rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
+                  Качество фото: {photoQuality.label}
+                </span>
+              </div>
+
+              <div className="mt-4 grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-stretch">
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-white/75 p-4 ring-1 ring-white/60">
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Face-fit score</p>
+                    <p className="mt-2 text-3xl font-black tracking-tight text-vilu-green">{activeFrameScore?.total ?? '--'}</p>
+                    <p className="text-xs font-bold leading-5 text-slate-500">Предварительно, до проверки в салоне</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/75 p-4 text-xs leading-5 text-slate-600 ring-1 ring-white/60">
+                    <p className="font-black uppercase tracking-[0.12em] text-slate-400">Как снять фото</p>
+                    <p className="mt-2">Смотрите прямо, телефон на уровне глаз, лицо занимает 40-60% кадра.</p>
+                  </div>
+                </div>
+                <div className="grid min-w-0 content-start gap-2">
+                  <button
+                    type="button"
+                    onClick={() => applyAutoFit()}
+                    disabled={faceFitMeasurement.status !== 'ready'}
+                    className="min-h-[46px] rounded-full bg-vilu-ink px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                  >
+                    {autoFitApplied ? 'Подстроить еще раз' : 'Подстроить автоматически'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowLandmarks((current) => !current)}
+                    disabled={faceFitMeasurement.status !== 'ready'}
+                    className="min-h-[46px] rounded-full bg-white px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                  >
+                    {showLandmarks ? 'Скрыть ориентиры' : 'Показать ориентиры'}
+                  </button>
+                </div>
+              </div>
+
+              {faceFitMeasurement.status !== 'idle' && (
+                <div className="mt-4 grid gap-2 text-xs leading-5 text-slate-600 md:grid-cols-3">
+                  {faceFitMeasurement.checks.slice(0, 3).map((check) => (
+                    <p key={check} className="min-w-0 rounded-2xl bg-white/75 p-3">{check}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="relative flex aspect-[4/3] min-h-[320px] w-full items-center justify-center overflow-hidden rounded-[2rem] bg-stone-100 p-4 sm:min-h-[360px]">
               {photoUrl ? (
-                <img src={photoUrl} alt="Фото для примерки" className="absolute inset-0 h-full w-full object-contain" />
+                <div
+                  className="relative max-h-full max-w-full overflow-hidden rounded-[1.5rem] bg-white shadow-inner"
+                  style={{
+                    aspectRatio: photoAspectRatio,
+                    height: photoAspectRatio < 1 ? '100%' : undefined,
+                    width: photoAspectRatio >= 1 ? '100%' : undefined,
+                  }}
+                >
+                  <img src={photoUrl} alt="Фото для примерки" className="absolute inset-0 h-full w-full object-cover" />
+
+                  {activeFrame && activeFrameHasImage && (
+                    <img
+                      src={activeFrame.imageUrl}
+                      alt={frameLabel(activeFrame)}
+                      onError={() => markFrameImageFailed(activeFrame.id)}
+                      className="absolute object-contain drop-shadow-2xl"
+                      style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
+                    />
+                  )}
+
+                  {activeFrame && !activeFrameHasImage && (
+                    <FrameDrawing
+                      frame={activeFrame}
+                      className="absolute max-w-[92%]"
+                      style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
+                    />
+                  )}
+
+                  {showLandmarks && faceFitMeasurement.status === 'ready' && faceFitMeasurement.overlayPoints.map((point) => (
+                    <span
+                      key={point.id}
+                      className="pointer-events-none absolute h-2 w-2 rounded-full bg-vilu-amber/80 ring-2 ring-white/90"
+                      style={{ left: `${point.x}%`, top: `${point.y}%`, transform: 'translate(-50%, -50%)' }}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="max-w-md px-6 text-center">
                   <Camera className="mx-auto mb-5 text-vilu-green" size={44} />
                   <p className="text-lg font-black">Загрузите фото лица</p>
                   <p className="mt-2 text-sm leading-6 text-slate-500">После загрузки можно подвинуть оправу и оценить посадку.</p>
                 </div>
-              )}
-
-              {activeFrame && activeFrameHasImage && (
-                <img
-                  src={activeFrame.imageUrl}
-                  alt={frameLabel(activeFrame)}
-                  onError={() => markFrameImageFailed(activeFrame.id)}
-                  className="absolute object-contain drop-shadow-2xl"
-                  style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
-                />
-              )}
-
-              {activeFrame && !activeFrameHasImage && (
-                <FrameDrawing
-                  frame={activeFrame}
-                  className="absolute max-w-[92%]"
-                  style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
-                />
               )}
             </div>
 
