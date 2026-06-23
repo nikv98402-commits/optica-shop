@@ -182,6 +182,32 @@ function photoQualityLabel(measurement: FaceFitMeasurement) {
   return { label: 'лучше переснять', className: 'bg-rose-100 text-rose-800' };
 }
 
+function autoFitChecklist(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready') {
+    return [
+      autoFitApplied ? 'Оправа уже выровнена по центру глаз.' : 'ViLu нашел глаза и переносицу на фото.',
+      `Рекомендуемый стартовый масштаб оправы: ${Math.round(measurement.frameWidthHint)}%.`,
+      Math.abs(measurement.eyeLineTiltDeg) <= 4
+        ? 'Линия глаз выглядит ровной для предварительной оценки.'
+        : 'Фото немного наклонено, в салоне лучше проверить посадку внимательнее.',
+    ];
+  }
+
+  if (measurement.status === 'loading') {
+    return ['Ищем глаза, переносицу и центр лица.', 'После анализа предложим стартовую посадку.', 'Ручная подстройка остается доступной.'];
+  }
+
+  if (measurement.status === 'idle') {
+    return ['Загрузите фото анфас.', 'Держите телефон на уровне глаз.', 'Лицо должно занимать 40-60% кадра.'];
+  }
+
+  return [
+    'Автопосадка не смогла уверенно оценить фото.',
+    'Ручная примерка продолжает работать.',
+    'Попробуйте JPEG, PNG или WebP при хорошем освещении.',
+  ];
+}
+
 function isLikelyUnsupportedPhoto(file: File) {
   const fileName = file.name.toLowerCase();
   return file.type === 'image/heic' || file.type === 'image/heif' || fileName.endsWith('.heic') || fileName.endsWith('.heif');
@@ -300,6 +326,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const canPrepareVisit = selectedFrames.length >= 2;
   const canSubmitVisitLead = canPrepareVisit && visitLeadForm.contact.trim().length >= 3 && visitLeadForm.consent;
   const photoQuality = photoQualityLabel(faceFitMeasurement);
+  const autoFitChecklistItems = autoFitChecklist(faceFitMeasurement, autoFitApplied);
 
   const markFrameImageFailed = (frameId: string) => {
     setFailedFrameImages((current) => new Set(current).add(frameId));
@@ -596,39 +623,49 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             </div>
 
             <div className="mb-5 rounded-[1.75rem] bg-vilu-mist p-4 ring-1 ring-vilu-green/15 sm:p-5">
-              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
                 <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Умная примерка</p>
-                  <h3 className="mt-2 break-words text-2xl font-black tracking-tight text-vilu-ink">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Автопосадка оправы</p>
+                    <span className={`inline-flex rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
+                      Качество фото: {photoQuality.label}
+                    </span>
+                  </div>
+                  <h3 className="mt-2 max-w-3xl break-words text-2xl font-black tracking-tight text-vilu-ink sm:text-3xl">
                     {autoFitTitle(faceFitMeasurement, autoFitApplied)}
                   </h3>
-                  <p className="mt-2 max-w-2xl text-sm font-bold leading-6 text-slate-700">
+
+                  <p className="mt-3 max-w-3xl text-sm font-bold leading-6 text-slate-700">
                     {autoFitResultText(faceFitMeasurement, autoFitApplied)}
                   </p>
-                </div>
-                <span className={`inline-flex w-fit shrink-0 rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
-                  Качество фото: {photoQuality.label}
-                </span>
-              </div>
 
-              <div className="mt-4 grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-stretch">
-                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-white/75 p-4 ring-1 ring-white/60">
-                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Face-fit score</p>
-                    <p className="mt-2 text-3xl font-black tracking-tight text-vilu-green">{activeFrameScore?.total ?? '--'}</p>
-                    <p className="text-xs font-bold leading-5 text-slate-500">Предварительно, до проверки в салоне</p>
+                  <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
+                    <div className="rounded-2xl bg-white/75 p-4 ring-1 ring-white/70">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Face-fit score</p>
+                      <p className="mt-2 text-3xl font-black tracking-tight text-vilu-green">{activeFrameScore?.total ?? '--'}</p>
+                      <p className="text-xs font-bold leading-5 text-slate-500">Предварительная оценка</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/75 p-4 ring-1 ring-white/70">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Как снять фото</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        Смотрите прямо. Телефон на уровне глаз. Лицо занимает 40-60% кадра.
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-2xl bg-white/75 p-4 text-xs leading-5 text-slate-600 ring-1 ring-white/60">
-                    <p className="font-black uppercase tracking-[0.12em] text-slate-400">Как снять фото</p>
-                    <p className="mt-2">Смотрите прямо, телефон на уровне глаз, лицо занимает 40-60% кадра.</p>
+
+                  <div className="mt-4 grid gap-2 text-xs leading-5 text-slate-600 xl:grid-cols-3">
+                    {autoFitChecklistItems.map((check) => (
+                      <p key={check} className="min-w-0 rounded-2xl bg-white/75 p-3 ring-1 ring-white/70">{check}</p>
+                    ))}
                   </div>
                 </div>
-                <div className="grid min-w-0 content-start gap-2">
+
+                <div className="mt-4 grid min-w-0 gap-2 border-t border-vilu-green/10 pt-4 md:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => applyAutoFit()}
                     disabled={faceFitMeasurement.status !== 'ready'}
-                    className="min-h-[46px] rounded-full bg-vilu-ink px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                    className="min-h-[48px] rounded-full bg-vilu-ink px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                   >
                     {autoFitApplied ? 'Подстроить еще раз' : 'Подстроить автоматически'}
                   </button>
@@ -636,20 +673,15 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     type="button"
                     onClick={() => setShowLandmarks((current) => !current)}
                     disabled={faceFitMeasurement.status !== 'ready'}
-                    className="min-h-[46px] rounded-full bg-white px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                    className="min-h-[48px] rounded-full bg-white px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:text-slate-400"
                   >
                     {showLandmarks ? 'Скрыть ориентиры' : 'Показать ориентиры'}
                   </button>
+                  <p className="px-1 pt-1 text-xs leading-5 text-slate-500 md:col-span-2">
+                    Ориентиры скрыты по умолчанию. Они нужны только для проверки, куда ViLu поставил оправу.
+                  </p>
                 </div>
               </div>
-
-              {faceFitMeasurement.status !== 'idle' && (
-                <div className="mt-4 grid gap-2 text-xs leading-5 text-slate-600 md:grid-cols-3">
-                  {faceFitMeasurement.checks.slice(0, 3).map((check) => (
-                    <p key={check} className="min-w-0 rounded-2xl bg-white/75 p-3">{check}</p>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div className="relative flex aspect-[4/3] min-h-[320px] w-full items-center justify-center overflow-hidden rounded-[2rem] bg-stone-100 p-4 sm:min-h-[360px]">
