@@ -152,6 +152,101 @@ The dashboard is demo/local until the legal and backend model is ready.
 - Never imply reminders are actually sent unless the backend exists.
 - Analytics events must not include PII, prescription data, complaints, or contact details.
 
+### Fit-Ready Try-On Layer
+
+The fit-ready layer is a calm fitting assistant, not a technical dashboard. It should help the user answer one question:
+
+> Can I take this frame to a store visit, and what should I check there?
+
+Required hierarchy on `/tryon`:
+
+1. Live try-on image and active frame.
+2. Placement controls.
+3. Primary action: `Оценить посадку`.
+4. Fit confidence result.
+5. Store visit checklist.
+6. Collapsible frame passport.
+7. Collapsible 3D readiness details.
+
+Do not show 3D model status, raw confidence, landmarks, or asset paths above the try-on canvas.
+
+#### Auto-Fit UI
+
+Use customer language:
+
+- Good: `Автопосадка оправы`, `Автопосадка готова`, `Качество фото: хорошее`.
+- Avoid: `MediaPipe`, `Face Landmarker`, `confidence`, `scaleVerified=false`, raw landmark terms.
+
+Landmarks are hidden by default. If shown, the toggle copy is `Показать ориентиры`, and the state must be clearly secondary.
+
+Photo quality labels:
+
+| State | Label | Tone |
+| --- | --- | --- |
+| Good | `Качество фото: хорошее` | green trust |
+| Medium | `Качество фото: среднее` | neutral or soft amber |
+| Poor | `Лучше переснять фото` | soft warning, not red |
+| Unsupported | `Нужен JPEG, PNG или WebP` | clear helper text |
+
+#### Fit Confidence Card
+
+This is the first visible result after evaluation. It should be compact, calm, and action-oriented.
+
+Required structure:
+
+1. `Подходит для первого визита: X/100`.
+2. Confidence badge: `Высокая уверенность`, `Средняя уверенность`, or `Нужна очная проверка`.
+3. `Что выглядит хорошо`.
+4. `Что проверить в салоне`.
+5. Disclaimer: `Оценка предварительная и не заменяет финальную посадку в салоне.`
+
+Forbidden:
+
+- `точно подходит`
+- `1:1 посадка`
+- `измерили PD`
+- `медицинская точность`
+
+#### Frame Passport
+
+The passport is evidence, not the main experience. Default state is compact.
+
+Compact state:
+
+`Данные оправы · 49-19-140 · ацетат · посадка A`
+
+Expanded state:
+
+- Dimensions.
+- Bridge type.
+- RX caution.
+- What can be assessed online.
+- What must be checked in store.
+
+Keep dense numeric data in tables or definition rows. Do not put long explanations in narrow cards.
+
+#### 3D Readiness
+
+The first release is fallback-only. Missing GLB is a normal MVP state.
+
+Default copy:
+
+`3D-модель готовится. Сейчас оценка строится по паспорту оправы и фото-примерке.`
+
+Use neutral surfaces. Do not use red, error icons, or alarming copy for missing models.
+
+#### Mobile Fit-Ready Rules
+
+- One-column layout.
+- Try-on canvas first.
+- Result card below the canvas.
+- Technical panels collapsed by default.
+- No text block narrower than 260px.
+- Buttons use fixed height of 44-52px.
+- Button labels must fit at 320px viewport.
+- Sliders must not resize their parent containers.
+- Avoid side panels with long Russian copy on mobile.
+
 ## Motion
 
 - **Approach:** Minimal functional motion.
@@ -191,11 +286,14 @@ The dashboard is demo/local until the legal and backend model is ready.
 | 2026-06-18 | Keep Unbounded + Manrope but remove negative tracking | Preserves brand character while improving Cyrillic readability and professional polish. |
 | 2026-06-18 | Keep warm-neutral palette with green/amber anchors | Matches current product identity while reducing beige-heavy drift. |
 | 2026-06-18 | Require user-language copy for visit flow | Prevents internal implementation words from leaking into the customer experience. |
+| 2026-06-23 | Added fit-ready try-on layer rules | Prevents the new 3D/passport/score feature from becoming a debug-like technical panel. |
 
 ## Implementation Checklist
 
 - Read this file before visual changes.
 - Check new UI against product path: `подбор -> score -> сохранение -> салоны -> маршрут/контакт`.
 - Keep privacy/local-mode notices near data collection.
+- For fit-ready UI, keep 3D/passport details secondary and collapsed until needed.
+- Check `/tryon` at 320px and 390px before merging any fit-ready UI.
 - Run `npm run lint` and `npm run build` after UI changes.
 - When a new page is added, define its role in this design system before styling it.
