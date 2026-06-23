@@ -174,6 +174,22 @@ function autoFitResultText(measurement: FaceFitMeasurement, autoFitApplied: bool
   return mediaPipeStatusText(measurement);
 }
 
+function autoFitStageLabel(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) return 'Готово';
+  if (measurement.status === 'ready') return 'Можно подстроить';
+  if (measurement.status === 'loading') return 'Анализ фото';
+  if (measurement.status === 'idle') return 'Ждем фото';
+  return 'Ручной режим';
+}
+
+function autoFitStageClass(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) return 'bg-emerald-100 text-emerald-800';
+  if (measurement.status === 'ready') return 'bg-vilu-amber/25 text-vilu-ink';
+  if (measurement.status === 'loading') return 'bg-white text-slate-600';
+  if (measurement.status === 'idle') return 'bg-white text-slate-500';
+  return 'bg-rose-50 text-rose-800';
+}
+
 function photoQualityLabel(measurement: FaceFitMeasurement) {
   if (measurement.status === 'loading') return { label: 'анализируем', className: 'bg-white text-slate-500' };
   if (measurement.status !== 'ready') return { label: 'нужна проверка', className: 'bg-white text-amber-900' };
@@ -185,26 +201,43 @@ function photoQualityLabel(measurement: FaceFitMeasurement) {
 function autoFitChecklist(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
   if (measurement.status === 'ready') {
     return [
-      autoFitApplied ? 'Оправа уже выровнена по центру глаз.' : 'ViLu нашел глаза и переносицу на фото.',
-      `Рекомендуемый стартовый масштаб оправы: ${Math.round(measurement.frameWidthHint)}%.`,
-      Math.abs(measurement.eyeLineTiltDeg) <= 4
-        ? 'Линия глаз выглядит ровной для предварительной оценки.'
-        : 'Фото немного наклонено, в салоне лучше проверить посадку внимательнее.',
+      {
+        title: autoFitApplied ? 'Посадка применена' : 'Лицо найдено',
+        text: autoFitApplied ? 'Оправа стоит по центру глаз и переносице.' : 'ViLu нашел глаза, переносицу и центр лица.',
+      },
+      {
+        title: 'Масштаб',
+        text: `Стартовая ширина оправы: ${Math.round(measurement.frameWidthHint)}%.`,
+      },
+      {
+        title: 'Проверка фото',
+        text: Math.abs(measurement.eyeLineTiltDeg) <= 4
+          ? 'Линия глаз ровная для предварительной оценки.'
+          : 'Фото немного наклонено, посадку лучше перепроверить.',
+      },
     ];
   }
 
   if (measurement.status === 'loading') {
-    return ['Ищем глаза, переносицу и центр лица.', 'После анализа предложим стартовую посадку.', 'Ручная подстройка остается доступной.'];
+    return [
+      { title: 'Ищем ориентиры', text: 'Определяем глаза, переносицу и центр лица.' },
+      { title: 'Готовим посадку', text: 'После анализа предложим стартовую позицию оправы.' },
+      { title: 'Контроль вручную', text: 'Ручная подстройка остается доступной.' },
+    ];
   }
 
   if (measurement.status === 'idle') {
-    return ['Загрузите фото анфас.', 'Держите телефон на уровне глаз.', 'Лицо должно занимать 40-60% кадра.'];
+    return [
+      { title: 'Фото анфас', text: 'Смотрите прямо в камеру.' },
+      { title: 'Уровень глаз', text: 'Держите телефон на уровне глаз.' },
+      { title: 'Дистанция', text: 'Лицо занимает 40-60% кадра.' },
+    ];
   }
 
   return [
-    'Автопосадка не смогла уверенно оценить фото.',
-    'Ручная примерка продолжает работать.',
-    'Попробуйте JPEG, PNG или WebP при хорошем освещении.',
+    { title: 'Нужна проверка', text: 'Автопосадка не смогла уверенно оценить фото.' },
+    { title: 'Без блокировки', text: 'Ручная примерка продолжает работать.' },
+    { title: 'Что попробовать', text: 'Загрузите JPEG, PNG или WebP при хорошем свете.' },
   ];
 }
 
@@ -622,16 +655,20 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <p>Фото используется только в вашем браузере для примерки и не отправляется на сервер.</p>
             </div>
 
-            <div className="mb-5 rounded-[1.75rem] bg-vilu-mist p-4 ring-1 ring-vilu-green/15 sm:p-5">
-              <div className="min-w-0">
-                <div className="min-w-0">
+            <div className="mb-5 overflow-hidden rounded-[1.75rem] bg-vilu-mist ring-1 ring-vilu-green/15">
+              <div className="grid min-w-0 gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(260px,330px)]">
+                <div className="min-w-0 p-4 sm:p-5">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Автопосадка оправы</p>
+                    <span className={`inline-flex rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${autoFitStageClass(faceFitMeasurement, autoFitApplied)}`}>
+                      {autoFitStageLabel(faceFitMeasurement, autoFitApplied)}
+                    </span>
                     <span className={`inline-flex rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
-                      Качество фото: {photoQuality.label}
+                      Фото: {photoQuality.label}
                     </span>
                   </div>
-                  <h3 className="mt-2 max-w-3xl break-words text-2xl font-black tracking-tight text-vilu-ink sm:text-3xl">
+
+                  <h3 className="mt-3 max-w-3xl break-words text-2xl font-black tracking-tight text-vilu-ink sm:text-3xl">
                     {autoFitTitle(faceFitMeasurement, autoFitApplied)}
                   </h3>
 
@@ -639,28 +676,34 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     {autoFitResultText(faceFitMeasurement, autoFitApplied)}
                   </p>
 
-                  <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
-                    <div className="rounded-2xl bg-white/75 p-4 ring-1 ring-white/70">
-                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Face-fit score</p>
-                      <p className="mt-2 text-3xl font-black tracking-tight text-vilu-green">{activeFrameScore?.total ?? '--'}</p>
-                      <p className="text-xs font-bold leading-5 text-slate-500">Предварительная оценка</p>
-                    </div>
-                    <div className="rounded-2xl bg-white/75 p-4 ring-1 ring-white/70">
-                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Как снять фото</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        Смотрите прямо. Телефон на уровне глаз. Лицо занимает 40-60% кадра.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-2 text-xs leading-5 text-slate-600 xl:grid-cols-3">
+                  <div className="mt-4 grid min-w-0 gap-2 sm:grid-cols-3">
                     {autoFitChecklistItems.map((check) => (
-                      <p key={check} className="min-w-0 rounded-2xl bg-white/75 p-3 ring-1 ring-white/70">{check}</p>
+                      <div key={check.title} className="min-w-0 rounded-2xl bg-white/75 p-3 ring-1 ring-white/70">
+                        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">{check.title}</p>
+                        <p className="mt-1 text-xs font-bold leading-5 text-slate-600">{check.text}</p>
+                      </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="mt-4 grid min-w-0 gap-2 border-t border-vilu-green/10 pt-4 md:grid-cols-2">
+                <div className="grid min-w-0 content-between gap-3 border-t border-vilu-green/10 bg-white/35 p-4 sm:p-5 lg:border-l lg:border-t-0">
+                  <div className="grid gap-3">
+                    <div className="rounded-2xl bg-white/85 p-4 ring-1 ring-white/70">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Face-fit score</p>
+                      <p className="mt-2 text-4xl font-black tracking-tight text-vilu-green">{activeFrameScore?.total ?? '--'}</p>
+                      <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+                        {autoFitApplied ? 'Смотрим посадку после автоподстройки' : 'Предварительная оценка модели'}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-white/85 p-4 ring-1 ring-white/70">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Ограничение</p>
+                      <p className="mt-2 text-xs font-bold leading-5 text-slate-600">
+                        Это не медицинская проверка. Размер, PD, мост и комфорт подтверждаются в салоне.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid min-w-0 gap-2">
                   <button
                     type="button"
                     onClick={() => applyAutoFit()}
@@ -680,6 +723,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   <p className="px-1 pt-1 text-xs leading-5 text-slate-500 md:col-span-2">
                     Ориентиры скрыты по умолчанию. Они нужны только для проверки, куда ViLu поставил оправу.
                   </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -749,7 +793,14 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-clay">Face-fit score</p>
                   <h3 className="mt-2 break-words text-2xl font-black tracking-tight">Помощник выбора перед визитом</h3>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Оценка помогает выбрать оправы для салона. Финальную посадку проверяет консультант.</p>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                    Оценка помогает выбрать оправы для салона. Если автопосадка готова, учитываем центр глаз, переносицу и качество фото.
+                  </p>
+                  {autoFitApplied && (
+                    <p className="mt-3 inline-flex rounded-full bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 ring-1 ring-emerald-100">
+                      Автопосадка учтена в предварительной проверке
+                    </p>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -784,6 +835,12 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">
                       <strong>Что проверить в салоне: </strong>{fitScore.checks.join(' ')}
                     </div>
+                    {faceFitMeasurement.status === 'ready' && (
+                      <div className="mt-3 rounded-2xl bg-vilu-mist p-4 text-sm leading-6 text-slate-700">
+                        <strong>Что дала автопосадка: </strong>
+                        центр оправы {autoFitApplied ? 'поставлен' : 'можно поставить'} по глазам, стартовый масштаб {Math.round(faceFitMeasurement.frameWidthHint)}%, качество фото {photoQuality.label}.
+                      </div>
+                    )}
                     <button type="button" onClick={saveActiveFrame} className="mt-4 w-full rounded-full bg-vilu-amber px-5 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink transition hover:bg-vilu-amber/90">
                       Сохранить в подбор
                     </button>
