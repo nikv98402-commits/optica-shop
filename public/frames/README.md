@@ -13,8 +13,10 @@ public/frames/optic-001/vogue-vo5276-brown.png
 Use paths in `src/data/pilotOptics.ts` like:
 
 ```ts
-imageUrl: '/optica-shop/frames/optic-001/rayban-rb5228-black.png'
+imageUrl: '/frames/optic-001/rayban-rb5228-black.png'
 ```
+
+The production domain is deployed at the root URL `https://vilu.store/`, not under `/optica-shop/`.
 
 Image requirements for the pilot:
 

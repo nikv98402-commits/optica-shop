@@ -210,6 +210,14 @@ ViLu должен продвигаться не как очередная онл
 Для работы в Codex в репозиторий добавлен `AGENTS.md`.
 Codex должен использовать его как проектный контекст: стек, команды проверки, зоны продукта и правила изменений.
 
+## Документы для разработки
+
+- `docs/dev-quickstart.md` — быстрый старт, env, проверки, smoke-тест и Windows caveat.
+- `CONTRIBUTING.md` — правила веток, PR, privacy/analytics и try-on изменений.
+- `docs/tryon-qa-checklist.md` — обязательный чеклист для `/tryon` и MediaPipe/Face-fit изменений.
+- `CHANGELOG.md` — история релизных изменений.
+- `.env.example` — безопасный шаблон опциональных переменных окружения.
+
 ## Запуск локально
 
 ```bash
@@ -223,6 +231,12 @@ npm run dev
 npm run typecheck
 npm run build
 npm run lint
+```
+
+Если dev-сервер уже запущен, можно проверить ключевые маршруты:
+
+```bash
+npm run smoke
 ```
 
 ## Публикация
