@@ -20,6 +20,11 @@ export const AnalyticsEvent = {
   RecipeCompleted: 'recipe_completed',
   TryOnOpenedFromDashboard: 'tryon_opened_from_dashboard',
   KnowledgePageView: 'knowledge_page_view',
+  VisionCarePageOpened: 'vision_care_page_opened',
+  VisionCareTryOnClicked: 'vision_care_cta_tryon_clicked',
+  VisionCareFaceFitClicked: 'vision_care_cta_face_fit_clicked',
+  VisionCareWhoSourceClicked: 'vision_care_who_source_clicked',
+  VisitReadinessSectionViewed: 'visit_readiness_section_viewed',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvent)[keyof typeof AnalyticsEvent];

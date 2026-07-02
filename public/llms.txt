@@ -4,7 +4,7 @@ ViLu is a consumer tool and knowledge base for online eyewear try-on and prelimi
 
 ## Core concept
 
-ViLu explains Face-fit score: a preliminary assessment of eyewear frame fit based on frame width, eye position inside lenses, bridge fit, prescription-related risk, and style/use case. It helps users choose 2-3 frames for an in-store fitting. It does not provide medical diagnosis or replace professional optical fitting.
+ViLu explains Face-fit score: a preliminary assessment of eyewear frame fit based on frame width, eye position inside lenses, bridge fit, prescription-related risk, and style/use case. It helps users choose 2-3 frames for an in-store fitting. ViLu also frames vision care as non-diagnostic visit readiness: a lifestyle layer that helps people prepare questions, checklists, and next steps before seeing a specialist. It does not provide medical diagnosis or replace professional optical fitting.
 
 ## Key pages
 
@@ -14,6 +14,7 @@ ViLu explains Face-fit score: a preliminary assessment of eyewear frame fit base
 - Frames for high prescriptions: https://vilu.store/oprava-pri-vysokih-dioptriyah
 - Online glasses try-on limitations: https://vilu.store/primerit-ochki-online
 - Frame choice by face shape: https://vilu.store/podbor-opravy-po-forme-lica
+- Vision care and visit readiness: https://vilu.store/vision-care
 - AI source page: https://vilu.store/ai-source
 - MVP privacy policy: https://vilu.store/privacy
 - MVP terms: https://vilu.store/terms
