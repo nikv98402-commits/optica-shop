@@ -54,6 +54,7 @@ export const pilotFrames: PilotFrame[] = [
     size: '49-19-140',
     material: 'ацетат',
     inStock: true,
+    imageUrl: '/frames/vilu-atelier/aurora-crystal-polaroid-real.png',
     frameColor: '#f4efe5',
     lensTone: 'rgba(255,255,255,0.24)',
   },

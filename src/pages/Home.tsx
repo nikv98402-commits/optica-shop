@@ -59,7 +59,7 @@ export function Home({ onNavigate }: HomeProps) {
               <div className="rounded-[1.6rem] bg-vilu-paper p-4 ring-1 ring-vilu-ink/10 sm:p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">ViLu try-on</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">ViLu примерка</p>
                     <p className="mt-1 text-2xl font-black text-vilu-ink">Фото → Score → Салон</p>
                   </div>
                   <div className="rounded-full bg-vilu-lime px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink">локально</div>
@@ -133,7 +133,7 @@ export function Home({ onNavigate }: HomeProps) {
       <section className="bg-vilu-paper px-6 py-16">
         <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-vilu-line bg-vilu-card p-6 shadow-sm md:grid-cols-[0.9fr_1.1fr] md:p-10">
           <div>
-            <p className="vilu-eyebrow">Vision care</p>
+            <p className="vilu-eyebrow">Забота о зрении</p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-vilu-ink md:text-5xl">Забота о зрении до визита в салон</h2>
           </div>
           <div>
@@ -162,9 +162,40 @@ export function Home({ onNavigate }: HomeProps) {
       </section>
 
       <section className="bg-vilu-paper px-6 py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] bg-vilu-ink p-6 text-vilu-paper shadow-2xl shadow-vilu-ink/20 md:grid-cols-[1fr_0.9fr] md:p-10">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-vilu-lime">ViLu Проверка зрения</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">Self-check перед очной проверкой</h2>
+            <p className="mt-5 max-w-3xl text-base font-semibold leading-8 text-vilu-paper/72">
+              Короткий сценарий без диагноза: зрительная нагрузка, детские признаки, сравнение глаз и Amsler-гайд. Ответы остаются в браузере, а результат помогает понять, стоит ли запланировать очную проверку.
+            </p>
+          </div>
+          <div className="rounded-[1.5rem] bg-vilu-paper/8 p-5 ring-1 ring-vilu-paper/12">
+            <div className="grid gap-3 text-sm font-bold text-vilu-paper/82">
+              {['Не измеряет диоптрии', 'Не ставит диагноз', 'Не отправляет ответы в аналитику'].map((label) => (
+                <div key={label} className="flex items-center gap-3 rounded-2xl bg-vilu-paper/8 p-4">
+                  <CheckCircle2 className="text-vilu-lime" size={18} />
+                  {label}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => {
+                trackEvent(AnalyticsEvent.EyeCheckOpened, { source: 'home_card' });
+                onNavigate('eyecheck');
+              }}
+              className="mt-5 w-full rounded-full bg-vilu-lime px-6 py-4 text-sm font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-card"
+            >
+              Пройти self-check
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-vilu-paper px-6 py-16">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
           <div>
-            <p className="vilu-eyebrow">ViLu Knowledge Base</p>
+            <p className="vilu-eyebrow">База знаний ViLu</p>
             <h2 className="mt-3 text-4xl font-black md:text-5xl">Методология подбора оправ, которую можно процитировать</h2>
             <p className="mt-5 text-base leading-8 vilu-muted">
               Разбираем Face-fit score, размер оправы, PD, сильные диоптрии и ограничения онлайн-примерки простым языком.
@@ -179,6 +210,7 @@ export function Home({ onNavigate }: HomeProps) {
               ['Онлайн-примерка', '/primerit-ochki-online'],
               ['Форма лица', '/podbor-opravy-po-forme-lica'],
               ['Забота о зрении', '/vision-care'],
+              ['Проверка зрения ViLu', '/eye-check'],
             ].map(([label, href]) => (
               <a key={href} href={href} className="rounded-2xl bg-vilu-card p-5 font-black text-vilu-ink ring-1 ring-vilu-line transition hover:bg-vilu-ink hover:text-vilu-lime">
                 {label}
@@ -223,7 +255,7 @@ export function Home({ onNavigate }: HomeProps) {
       <section id="care" className="bg-vilu-ink px-6 py-24 text-vilu-paper md:py-32">
         <div className="mx-auto grid max-w-7xl gap-12 md:grid-cols-[0.9fr_1.1fr] md:items-center">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.24em] text-vilu-lime">Vision Hub</p>
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-vilu-lime">Кабинет зрения ViLu</p>
             <h2 className="mt-4 text-4xl font-black md:text-6xl">Линзы по подписке и личный кабинет зрения</h2>
             <p className="mt-6 text-lg leading-8 text-vilu-paper/75">
               Подписка помогает не вспоминать о покупке линз в последний момент: мы привозим запас вовремя, а в кабинете можно хранить рецепт и дату следующего осмотра.

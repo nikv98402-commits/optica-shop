@@ -25,6 +25,13 @@ export const AnalyticsEvent = {
   VisionCareFaceFitClicked: 'vision_care_cta_face_fit_clicked',
   VisionCareWhoSourceClicked: 'vision_care_who_source_clicked',
   VisitReadinessSectionViewed: 'visit_readiness_section_viewed',
+  EyeCheckOpened: 'eye_check_opened',
+  EyeCheckFlowSelected: 'eye_check_flow_selected',
+  EyeCheckCompleted: 'eye_check_completed',
+  EyeCheckResultViewed: 'eye_check_result_viewed',
+  EyeCheckSavedLocal: 'eye_check_saved_local',
+  EyeCheckCtaTryOn: 'eye_check_cta_tryon',
+  EyeCheckCtaNearbyOptics: 'eye_check_cta_nearby_optics',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvent)[keyof typeof AnalyticsEvent];
@@ -44,6 +51,14 @@ const blockedParamPatterns = [
   /recipe/i,
   /prescription/i,
   /photo/i,
+  /answer/i,
+  /symptom/i,
+  /child/i,
+  /age/i,
+  /birth/i,
+  /diagnos/i,
+  /medical/i,
+  /health/i,
 ];
 
 function withoutSensitiveParams(params: SafeEventParams = {}) {

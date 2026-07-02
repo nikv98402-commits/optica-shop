@@ -314,6 +314,7 @@ export const knowledgePages: KnowledgePage[] = [
       'Заполняйте demo-профиль только теми данными, которые готовы хранить в этом браузере.',
       'Нажатие “Сохранить” записывает профиль в localStorage текущего устройства.',
       'Фото для примерки используется в браузере и не сохраняется на сервере.',
+      'Ответы ViLu Eye Check обрабатываются в браузере; в MVP не отправляется текст ответов или симптомы.',
       'Кнопка “Подготовить подбор к визиту” передает контакт и выбранные оправы только после чекбокса согласия.',
       'Аналитика получает только технические события без ФИО, телефона, email и параметров рецепта.',
     ],
@@ -327,6 +328,7 @@ export const knowledgePages: KnowledgePage[] = [
     table: [
       ['Анкета и рецепт', 'Сохраняются локально в браузере.'],
       ['Фото примерки', 'Используется для примерки в браузере и не отправляется на сервер.'],
+      ['ViLu Eye Check', 'Считает результат в браузере; можно сохранить только краткий итог локально.'],
       ['Форма визита', 'Передает только контакт, город и выбранные оправы после согласия.'],
       ['Аналитика', 'Получает только обезличенные события интерфейса.'],
       ['Уведомления', 'В MVP-версии не отправляются.'],
@@ -389,9 +391,11 @@ export const knowledgePages: KnowledgePage[] = [
       'Используйте ViLu как инструмент предварительного отбора.',
       'Сохраняйте 2–3 модели, которые визуально подходят.',
       'Проверяйте посадку, рецепт, PD и комфорт очно у специалиста.',
+      'Используйте ViLu Eye Check только как self-check перед очным визитом, а не как медицинский тест.',
     ],
     limits: [
       'Фото и экран устройства могут искажать масштаб и цвет оправы.',
+      'ViLu Eye Check не диагностирует заболевания, не измеряет остроту зрения и не заменяет осмотр.',
       'Высокие диоптрии требуют отдельной проверки совместимости оправы и линз.',
       'Комфорт дужек, моста и устойчивость оправы нельзя надежно проверить онлайн.',
     ],
@@ -400,6 +404,7 @@ export const knowledgePages: KnowledgePage[] = [
     table: [
       ['ViLu может', 'Помочь выбрать несколько вариантов для очной примерки.'],
       ['ViLu не может', 'Поставить диагноз или заменить рецепт.'],
+      ['ViLu Eye Check', 'Может подсказать, стоит ли запланировать очную проверку, но не является медицинским тестом.'],
       ['Проверять очно', 'PD, посадку моста, дужки, линзы, комфорт и совместимость.'],
     ],
     faq: [
@@ -661,6 +666,7 @@ const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> 
       'Fill the demo profile only with data you are comfortable storing in this browser.',
       'Clicking Save writes the profile to localStorage on this device.',
       'Try-on photos are used in the browser and are not stored on the server.',
+      'ViLu Eye Check answers are processed in the browser; the MVP does not send answer text or symptoms.',
       'The visit-preparation form sends contact details only after explicit consent.',
       'Analytics receives interface events without name, phone, email, or prescription parameters.',
     ],
@@ -674,6 +680,7 @@ const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> 
     table: [
       ['Profile and prescription', 'Stored locally in the browser.'],
       ['Try-on photo', 'Used in the browser and not sent to the server.'],
+      ['ViLu Eye Check', 'Calculates the result in the browser; only a short local summary can be saved.'],
       ['Visit form', 'Sends contact, city, and selected frames only after consent.'],
       ['Analytics', 'Receives anonymized interface events only.'],
       ['Notifications', 'Not sent in the MVP.'],
@@ -726,9 +733,11 @@ const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> 
       'Use ViLu as a preliminary selection tool.',
       'Save 2-3 models that look visually suitable.',
       'Check fit, prescription, PD, and comfort in person with a specialist.',
+      'Use ViLu Eye Check only as a self-check before an in-person visit, not as a medical test.',
     ],
     limits: [
       'Photo and screen settings can distort frame scale and color.',
+      'ViLu Eye Check does not diagnose conditions, measure visual acuity, or replace an examination.',
       'Stronger prescriptions require a separate compatibility check between frame and lenses.',
       'Temple comfort, bridge fit, and frame stability cannot be reliably checked online.',
     ],
@@ -737,6 +746,7 @@ const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> 
     table: [
       ['ViLu can', 'Help choose several candidates for in-store fitting.'],
       ['ViLu cannot', 'Diagnose or replace a prescription.'],
+      ['ViLu Eye Check', 'Can suggest whether an in-person check is worth planning, but is not a medical test.'],
       ['Check in person', 'PD, bridge fit, temples, lenses, comfort, and compatibility.'],
     ],
     faq: [
@@ -855,6 +865,7 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
       mainPages: 'Key pages',
       sources: 'Sources',
       cta: 'Start online try-on',
+      knowledgeBase: 'ViLu Knowledge Base',
     }
     : {
       author: 'Автор',
@@ -871,6 +882,7 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
       mainPages: 'Основные страницы',
       sources: 'Источники',
       cta: 'Пройти онлайн-примерку',
+      knowledgeBase: 'База знаний ViLu',
     };
 
   useEffect(() => {
@@ -914,7 +926,7 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
       <section className="border-b border-vilu-lime/10 bg-vilu-ink px-4 py-12 text-vilu-paper sm:px-6">
         <div className="mx-auto max-w-5xl">
           <a href="/" className="inline-flex items-center gap-2 text-sm font-black text-vilu-lime">
-            <BookOpen size={16} /> ViLu Knowledge Base
+            <BookOpen size={16} /> {labels.knowledgeBase}
           </a>
           <h1 className="mt-5 text-4xl font-black leading-[1.02] tracking-tight md:text-6xl">{localizedPage.h1}</h1>
           <p className="mt-6 max-w-3xl text-lg font-semibold leading-8 text-vilu-paper/70">{localizedPage.meta}</p>

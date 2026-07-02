@@ -3,18 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --vilu-ink: #08101f;
-  --vilu-paper: #fffaf2;
-  --vilu-cream: #f7f1e8;
-  --vilu-mist: #eef5f1;
-  --vilu-green: #315c56;
-  --vilu-amber: #f5b25f;
-  --vilu-clay: #9a6933;
-  --vilu-line: #e8dfd2;
+  --vilu-ink: #07110d;
+  --vilu-paper: #f8f3e8;
+  --vilu-cream: #fbf7ee;
+  --vilu-mist: #14231d;
+  --vilu-green: #2f6658;
+  --vilu-lime: #d8ef4f;
+  --vilu-clay: #6d5d36;
+  --vilu-line: rgba(7, 17, 13, 0.14);
+  --vilu-night: #07110d;
+  --vilu-foam: #eef5e7;
+  --vilu-card: #fffdf7;
+  --vilu-subtle: rgba(7, 17, 13, 0.06);
+  --vilu-muted-text: rgba(7, 17, 13, 0.62);
   --background: var(--vilu-paper);
   --foreground: var(--vilu-ink);
-  --card: #ffffff;
-  --muted: #f5f5f5;
+  --card: var(--vilu-card);
+  --muted: var(--vilu-subtle);
   color: var(--vilu-ink);
   background: var(--vilu-paper);
   font-family: 'Manrope', system-ui, sans-serif;
@@ -32,7 +37,9 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: var(--vilu-paper);
+  background:
+    radial-gradient(circle at 88% 0%, rgba(47, 102, 88, 0.12), transparent 28%),
+    linear-gradient(180deg, #07110d 0%, #0c1712 34rem, #f8f3e8 34rem, #f8f3e8 100%);
   overflow-x: hidden;
 }
 
@@ -44,6 +51,141 @@ body {
 h1, h2, h3, .font-black {
   font-family: 'Unbounded', 'Manrope', system-ui, sans-serif;
   font-feature-settings: "kern" 1, "liga" 1;
+}
+
+.kinetic-surface {
+  background:
+    radial-gradient(circle at 82% 10%, rgba(47, 102, 88, 0.13), transparent 30%),
+    linear-gradient(180deg, #07110d 0%, #0b1511 46rem, #f8f3e8 46rem, #f8f3e8 100%);
+}
+
+.kinetic-card {
+  border: 1px solid rgba(7, 18, 11, 0.12);
+  background: rgba(255, 253, 247, 0.92);
+  box-shadow: 0 24px 70px rgba(7, 18, 11, 0.12);
+}
+
+.kinetic-dark-card {
+  border: 1px solid rgba(248, 243, 232, 0.12);
+  background: #07110d;
+  color: #f7ffe8;
+  box-shadow: 0 24px 70px rgba(7, 18, 11, 0.3);
+}
+
+.kinetic-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 239, 79, 0.38);
+  background: rgba(216, 239, 79, 0.13);
+  color: var(--vilu-lime);
+  padding: 0.55rem 0.85rem;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.kinetic-headline {
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+}
+
+.kinetic-cta {
+  background: var(--vilu-lime);
+  color: var(--vilu-ink);
+  box-shadow: 0 16px 34px rgba(216, 239, 79, 0.2);
+}
+
+.vilu-card {
+  border: 1px solid var(--vilu-line);
+  background: var(--vilu-card);
+  box-shadow: 0 18px 50px rgba(7, 17, 13, 0.08);
+}
+
+.vilu-card-soft {
+  border: 1px solid var(--vilu-line);
+  background: var(--vilu-cream);
+}
+
+.vilu-card-dark {
+  border: 1px solid rgba(248, 243, 232, 0.12);
+  background: var(--vilu-ink);
+  color: var(--vilu-paper);
+}
+
+.vilu-muted {
+  color: var(--vilu-muted-text);
+}
+
+.vilu-muted-on-dark {
+  color: rgba(248, 243, 232, 0.72);
+}
+
+.vilu-eyebrow {
+  color: var(--vilu-green);
+  font-size: 0.75rem;
+  font-weight: 950;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.vilu-primary-button,
+.vilu-dark-button,
+.vilu-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.vilu-primary-button {
+  background: var(--vilu-lime);
+  color: var(--vilu-ink);
+}
+
+.vilu-primary-button:hover {
+  transform: translateY(-1px);
+  background: var(--vilu-card);
+}
+
+.vilu-dark-button {
+  background: var(--vilu-ink);
+  color: var(--vilu-paper);
+}
+
+.vilu-dark-button:hover {
+  transform: translateY(-1px);
+  background: var(--vilu-green);
+}
+
+.vilu-secondary-button {
+  border: 1px solid rgba(7, 17, 13, 0.16);
+  background: transparent;
+  color: var(--vilu-ink);
+}
+
+.vilu-secondary-button:hover {
+  transform: translateY(-1px);
+  background: var(--vilu-ink);
+  color: var(--vilu-paper);
+}
+
+.vilu-chip {
+  border-radius: 999px;
+  background: rgba(7, 17, 13, 0.07);
+  color: rgba(7, 17, 13, 0.72);
+}
+
+.vilu-chip-active {
+  background: var(--vilu-lime);
+  color: var(--vilu-ink);
 }
 
 /* Apple-style buttons and interactions */
