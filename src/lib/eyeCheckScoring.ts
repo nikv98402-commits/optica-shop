@@ -89,6 +89,26 @@ function answerReason(answer: EyeCheckAnswer) {
   return '';
 }
 
+function maxFlowScore(flow: EyeCheckFlow) {
+  return flow.questions.reduce((sum, question) => {
+    const maxOptionScore = Math.max(0, ...(question.options ?? []).map((option) => option.score));
+    return sum + maxOptionScore;
+  }, 0);
+}
+
+function calculateAttentionIndex(flow: EyeCheckFlow, totalScore: number, riskLevel: EyeCheckRiskLevel) {
+  const maxScore = maxFlowScore(flow);
+  const normalizedScore = maxScore > 0 ? totalScore / maxScore : 0;
+  const riskLift = {
+    info: 0,
+    'check-soon': 10,
+    'do-not-delay': 20,
+    urgent: 30,
+  } satisfies Record<EyeCheckRiskLevel, number>;
+
+  return Math.min(99, Math.max(0, Math.round(normalizedScore * 69 + riskLift[riskLevel])));
+}
+
 export function calculateEyeCheckResult(flow: EyeCheckFlow, answers: EyeCheckAnswer[]): EyeCheckResult {
   const totalScore = answers.reduce((sum, answer) => sum + answer.score, 0);
   const redFlagAnswers = answers.filter((answer) => answer.redFlag);
@@ -111,6 +131,7 @@ export function calculateEyeCheckResult(flow: EyeCheckFlow, answers: EyeCheckAns
   return {
     flowId: flow.id,
     totalScore,
+    attentionIndex: calculateAttentionIndex(flow, totalScore, riskLevel),
     riskLevel,
     title: copy.title,
     summary: copy.summary,

@@ -71,7 +71,7 @@ export function EyeCheckResultCard({
         </div>
         <div className={`rounded-[1.5rem] p-5 text-center ${dark ? 'bg-vilu-paper/10' : 'bg-vilu-paper'}`}>
           <p className={`text-xs font-black uppercase tracking-[0.18em] ${dark ? 'text-vilu-lime' : 'text-vilu-green'}`}>{copy.index}</p>
-          <p className="mt-2 text-6xl font-black leading-none">{Math.min(99, result.totalScore * 7 + 42)}</p>
+          <p className="mt-2 text-6xl font-black leading-none">{result.attentionIndex}</p>
           <p className={`mt-2 text-xs font-bold ${dark ? 'text-vilu-paper/56' : 'text-vilu-ink/50'}`}>{copy.nonMedical}</p>
         </div>
       </div>

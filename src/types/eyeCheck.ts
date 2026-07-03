@@ -43,6 +43,7 @@ export interface EyeCheckAnswer {
 export interface EyeCheckResult {
   flowId: EyeCheckFlowId;
   totalScore: number;
+  attentionIndex: number;
   riskLevel: EyeCheckRiskLevel;
   title: string;
   summary: string;
