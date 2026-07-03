@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const textNodeSources = new WeakMap<Text, string>();
+const textNodeLastWrites = new WeakMap<Text, string>();
 
 const textTranslations: Record<string, string> = {
   'Онлайн-примерка': 'Online try-on',
@@ -458,10 +459,6 @@ const textPatterns: Array<[RegExp, (match: RegExpMatchArray) => string]> = [
   [/^(.+) от (ваше местоположение|центра Москвы)$/, (match) => `${match[1]} from ${translateValue(match[2])}`],
 ];
 
-function hasCyrillic(value: string) {
-  return /[А-Яа-яЁё]/.test(value);
-}
-
 function translateValue(value: string) {
   const trimmed = value.trim();
   const direct = textTranslations[trimmed];
@@ -494,11 +491,13 @@ function translateDom(root: ParentNode, language: 'en' | 'ru') {
     if (!element) return;
     const currentText = node.textContent ?? '';
     const storedSource = textNodeSources.get(node);
-    const original = storedSource && !(language === 'en' && hasCyrillic(currentText) && currentText !== storedSource)
+    const lastBridgeWrite = textNodeLastWrites.get(node);
+    const original = storedSource && currentText === lastBridgeWrite
       ? storedSource
       : currentText;
     textNodeSources.set(node, original);
     const nextText = language === 'en' ? translateValue(original) : original;
+    textNodeLastWrites.set(node, nextText);
     if (node.textContent !== nextText) node.textContent = nextText;
   });
 
