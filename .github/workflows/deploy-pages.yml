@@ -44,13 +44,21 @@ jobs:
       - name: Add static route entries for GitHub Pages
         run: |
           routes=(
+            tryon
+            eye-check
+            eyecheck
+            vision-check
             products
+            product
+            dashboard
+            checkout
             face-fit-score
             kak-vybrat-razmer-opravy
             pd-i-oprava
             oprava-pri-vysokih-dioptriyah
             primerit-ochki-online
             podbor-opravy-po-forme-lica
+            vision-care
             ai-source
             privacy
             terms
