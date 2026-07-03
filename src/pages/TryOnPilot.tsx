@@ -587,7 +587,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
         <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center">
           <div className="min-w-0">
             <p className="kinetic-label sm:text-sm">Пилот примерки</p>
-            <h1 className="kinetic-headline mt-4 max-w-full break-words text-5xl font-black leading-[0.9] text-vilu-paper sm:text-6xl md:text-7xl">
+            <h1 className="kinetic-headline mt-4 max-w-full break-words text-[clamp(3.25rem,15vw,5.2rem)] font-black leading-[0.9] text-vilu-paper md:text-7xl">
               Примерь. Оцени. Салон.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-vilu-paper/84">
@@ -597,7 +597,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <a href="#fit-goal" onClick={() => trackEvent(AnalyticsEvent.TryOnOpened, { source: 'tryon_hero' })} className="kinetic-cta inline-flex justify-center rounded-full px-7 py-4 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-vilu-card">
                 Начать примерку <ArrowRight className="ml-2" size={16} />
               </a>
-              <a href="#nearby-optics" className="inline-flex justify-center rounded-full bg-vilu-lime/12 px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-vilu-lime ring-1 ring-vilu-lime/45 transition hover:bg-vilu-lime hover:text-vilu-ink">
+              <a href="#nearby-optics" className="vilu-action-secondary-dark inline-flex justify-center rounded-full px-7 py-4 text-xs font-black uppercase tracking-[0.16em] transition">
                 Найти салон
               </a>
             </div>
@@ -656,7 +656,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             </div>
 
             <div className="mb-5 overflow-hidden rounded-[1.75rem] bg-vilu-paper ring-1 ring-vilu-ink/10">
-              <div className="grid min-w-0 gap-0 xl:grid-cols-[minmax(0,1fr)_minmax(280px,330px)]">
+              <div className="grid min-w-0 gap-0">
                 <div className="min-w-0 p-4 sm:p-5">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Автопосадка</p>
@@ -686,11 +686,11 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   </div>
                 </div>
 
-                <div className="grid min-w-0 content-between gap-3 border-t border-vilu-lime/20 bg-vilu-card/35 p-4 sm:p-5 xl:border-l xl:border-t-0">
-                  <div className="grid gap-3">
+                <div className="grid min-w-0 gap-4 border-t border-vilu-lime/20 bg-vilu-card/35 p-4 sm:p-5">
+                  <div className="grid gap-3 md:grid-cols-2">
                     <div className="rounded-2xl bg-vilu-card/85 p-4 ring-1 ring-vilu-ink/10">
                       <p className="text-[11px] font-black uppercase tracking-[0.14em] text-vilu-ink/42">Face-fit score</p>
-                      <p className="mt-2 text-4xl font-black tracking-tight text-vilu-green">{activeFrameScore?.total ?? '--'}</p>
+                      <p className="mt-2 text-4xl font-black tracking-tight text-vilu-ink">{activeFrameScore?.total ?? '--'}</p>
                       <p className="mt-1 text-xs font-bold leading-5 text-vilu-ink/55">
                         {autoFitApplied ? 'Смотрим посадку после автоподстройки' : 'Предварительная оценка модели'}
                       </p>
@@ -703,7 +703,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     </div>
                   </div>
 
-                  <div className="grid min-w-0 gap-2">
+                  <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                   <button
                     type="button"
                     onClick={() => applyAutoFit()}
@@ -720,7 +720,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   >
                     {showLandmarks ? 'Скрыть ориентиры' : 'Показать ориентиры'}
                   </button>
-                  <p className="px-1 pt-1 text-xs leading-5 text-vilu-ink/55 md:col-span-2">
+                  <p className="px-1 pt-1 text-xs leading-5 text-vilu-ink/65 sm:col-span-2">
                     Ориентиры скрыты по умолчанию. Они нужны только для проверки, куда ViLu поставил оправу.
                   </p>
                   </div>
