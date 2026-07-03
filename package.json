@@ -8,9 +8,11 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "smoke": "node scripts/smoke-routes.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.35",
     "@supabase/supabase-js": "^2.95.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.33.0",

@@ -21,6 +21,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
+import { analyzeFacePhoto, type FaceFitMeasurement, unsupportedPhotoMeasurement } from '../lib/faceFitEngine';
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
 
@@ -54,6 +55,20 @@ interface VisitLeadForm {
 
 const INTENT_KEY = 'visionlux_tryon_intent_events';
 const MAX_SELECTED_FRAMES = 3;
+const FACE_FIT_IDLE: FaceFitMeasurement = {
+  status: 'idle',
+  confidence: 0,
+  faceCount: 0,
+  eyeDistanceRatio: 0,
+  frameWidthHint: 66,
+  frameCenterX: 50,
+  frameCenterY: 43,
+  eyeLineTiltDeg: 0,
+  bridgeOffsetPct: 0,
+  overlayPoints: [],
+  checks: [],
+  limitations: [],
+};
 
 const fitGoals = [
   'Для офиса',
@@ -131,6 +146,115 @@ function opticHoursLabel(hours: string) {
   return closingTime ? `Сегодня открыто до ${closingTime}` : hours;
 }
 
+function mediaPipeStatusText(measurement: FaceFitMeasurement) {
+  if (measurement.status === 'loading') return 'Ищем глаза и переносицу, чтобы поставить оправу ближе к реальной посадке.';
+  if (measurement.status === 'ready') return 'Лицо найдено. ViLu может выровнять оправу по глазам и переносице.';
+  if (measurement.status === 'no_face') return 'Лицо не найдено. Попробуйте фото анфас при хорошем освещении.';
+  if (measurement.status === 'multiple_faces') return 'Найдено несколько лиц. Для примерки нужно одно лицо.';
+  if (measurement.status === 'unsupported_photo') return 'Фото не открылось в браузере. Нужен JPEG, PNG или WebP.';
+  if (measurement.status === 'error') return 'Автопосадка не загрузилась, базовая ручная примерка продолжает работать.';
+  return 'Загрузите фото, чтобы ViLu нашел глаза и переносицу и предложил стартовую посадку оправы.';
+}
+
+function autoFitTitle(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) return 'Автопосадка готова';
+  if (measurement.status === 'ready') return 'Лицо найдено';
+  if (measurement.status === 'loading') return 'Анализируем фото';
+  if (measurement.status === 'no_face') return 'Нужно другое фото';
+  if (measurement.status === 'multiple_faces') return 'На фото несколько лиц';
+  if (measurement.status === 'unsupported_photo') return 'Формат не поддержан';
+  if (measurement.status === 'error') return 'Автопосадка недоступна';
+  return 'Автопосадка оправы';
+}
+
+function autoFitResultText(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) {
+    return 'Оправа выровнена по глазам и переносице. Теперь можно оценить общий баланс и сохранить модель в подбор.';
+  }
+  return mediaPipeStatusText(measurement);
+}
+
+function autoFitStageLabel(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) return 'Готово';
+  if (measurement.status === 'ready') return 'Можно подстроить';
+  if (measurement.status === 'loading') return 'Анализ фото';
+  if (measurement.status === 'idle') return 'Ждем фото';
+  return 'Ручной режим';
+}
+
+function autoFitStageClass(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready' && autoFitApplied) return 'bg-vilu-lime text-vilu-ink';
+  if (measurement.status === 'ready') return 'bg-vilu-lime/20 text-vilu-ink ring-1 ring-vilu-lime/30';
+  if (measurement.status === 'loading') return 'bg-vilu-ink text-vilu-paper';
+  if (measurement.status === 'idle') return 'bg-vilu-paper text-vilu-ink/65 ring-1 ring-vilu-ink/10';
+  return 'bg-vilu-paper text-vilu-ink/72 ring-1 ring-vilu-ink/10';
+}
+
+function photoQualityLabel(measurement: FaceFitMeasurement) {
+  if (measurement.status === 'loading') return { label: 'анализируем', className: 'bg-vilu-ink text-vilu-paper' };
+  if (measurement.status !== 'ready') return { label: 'нужна проверка', className: 'bg-vilu-paper text-vilu-ink/72 ring-1 ring-vilu-ink/10' };
+  if (measurement.confidence >= 82) return { label: 'хорошее', className: 'bg-vilu-lime text-vilu-ink' };
+  if (measurement.confidence >= 65) return { label: 'среднее', className: 'bg-vilu-lime/20 text-vilu-ink ring-1 ring-vilu-lime/30' };
+  return { label: 'лучше переснять', className: 'bg-vilu-paper text-vilu-ink/72 ring-1 ring-vilu-ink/10' };
+}
+
+function autoFitChecklist(measurement: FaceFitMeasurement, autoFitApplied: boolean) {
+  if (measurement.status === 'ready') {
+    return [
+      {
+        title: autoFitApplied ? 'Посадка применена' : 'Лицо найдено',
+        text: autoFitApplied ? 'Оправа стоит по центру глаз и переносице.' : 'ViLu нашел глаза, переносицу и центр лица.',
+      },
+      {
+        title: 'Масштаб',
+        text: `Стартовая ширина оправы: ${Math.round(measurement.frameWidthHint)}%.`,
+      },
+      {
+        title: 'Проверка фото',
+        text: Math.abs(measurement.eyeLineTiltDeg) <= 4
+          ? 'Линия глаз ровная для предварительной оценки.'
+          : 'Фото немного наклонено, посадку лучше перепроверить.',
+      },
+    ];
+  }
+
+  if (measurement.status === 'loading') {
+    return [
+      { title: 'Ищем ориентиры', text: 'Определяем глаза, переносицу и центр лица.' },
+      { title: 'Готовим посадку', text: 'После анализа предложим стартовую позицию оправы.' },
+      { title: 'Контроль вручную', text: 'Ручная подстройка остается доступной.' },
+    ];
+  }
+
+  if (measurement.status === 'idle') {
+    return [
+      { title: 'Фото анфас', text: 'Смотрите прямо в камеру.' },
+      { title: 'Уровень глаз', text: 'Держите телефон на уровне глаз.' },
+      { title: 'Дистанция', text: 'Лицо занимает 40-60% кадра.' },
+    ];
+  }
+
+  return [
+    { title: 'Нужна проверка', text: 'Автопосадка не смогла уверенно оценить фото.' },
+    { title: 'Без блокировки', text: 'Ручная примерка продолжает работать.' },
+    { title: 'Что попробовать', text: 'Загрузите JPEG, PNG или WebP при хорошем свете.' },
+  ];
+}
+
+function isLikelyUnsupportedPhoto(file: File) {
+  const fileName = file.name.toLowerCase();
+  return file.type === 'image/heic' || file.type === 'image/heif' || fileName.endsWith('.heic') || fileName.endsWith('.heif');
+}
+
+function getDecodedImageSize(url: string) {
+  return new Promise<{ width: number; height: number } | null>((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve({ width: image.naturalWidth || image.width, height: image.naturalHeight || image.height });
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
 function routeQuery(optic: DirectoryOptic) {
   return encodeURIComponent(`${optic.name}, ${optic.address}`);
 }
@@ -191,9 +315,13 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [activeFrameId, setActiveFrameId] = useState(frames[0]?.id ?? '');
   const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState('');
+  const [photoAspectRatio, setPhotoAspectRatio] = useState(3 / 4);
   const [frameScale, setFrameScale] = useState(66);
   const [frameX, setFrameX] = useState(50);
   const [frameY, setFrameY] = useState(43);
+  const [faceFitMeasurement, setFaceFitMeasurement] = useState<FaceFitMeasurement>(FACE_FIT_IDLE);
+  const [showLandmarks, setShowLandmarks] = useState(false);
+  const [autoFitApplied, setAutoFitApplied] = useState(false);
   const [failedFrameImages, setFailedFrameImages] = useState<Set<string>>(new Set());
   const [fitScoreFrameId, setFitScoreFrameId] = useState('');
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -214,6 +342,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
   const activeFrameHasImage = Boolean(activeFrame?.imageUrl) && !failedFrameImages.has(activeFrame.id);
   const fitScore = activeFrame && fitScoreFrameId === activeFrame.id ? getFitScore(activeFrame) : null;
+  const activeFrameScore = activeFrame ? getFitScore(activeFrame) : null;
 
   const nearbyOptics = useMemo(() => {
     const sourceLocation = userLocation ?? cityFallbacks['Москва'];
@@ -229,16 +358,58 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   const canPrepareVisit = selectedFrames.length >= 2;
   const canSubmitVisitLead = canPrepareVisit && visitLeadForm.contact.trim().length >= 3 && visitLeadForm.consent;
+  const photoQuality = photoQualityLabel(faceFitMeasurement);
+  const autoFitChecklistItems = autoFitChecklist(faceFitMeasurement, autoFitApplied);
 
   const markFrameImageFailed = (frameId: string) => {
     setFailedFrameImages((current) => new Set(current).add(frameId));
   };
 
-  const handlePhoto = (event: ChangeEvent<HTMLInputElement>) => {
+  const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setPhotoUrl(URL.createObjectURL(file));
+
+    if (isLikelyUnsupportedPhoto(file)) {
+      setPhotoUrl('');
+      setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
+      return;
+    }
+
+    const nextPhotoUrl = URL.createObjectURL(file);
+    const imageSize = await getDecodedImageSize(nextPhotoUrl);
+    if (!imageSize) {
+      URL.revokeObjectURL(nextPhotoUrl);
+      setPhotoUrl('');
+      setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
+      return;
+    }
+
+    setPhotoUrl(nextPhotoUrl);
+    setPhotoAspectRatio(imageSize.width / imageSize.height);
+    setFaceFitMeasurement({ ...FACE_FIT_IDLE, status: 'loading' });
+    setAutoFitApplied(false);
+    setShowLandmarks(false);
     trackEvent(AnalyticsEvent.PhotoUploaded, { source: 'tryon' });
+    analyzeFacePhoto(nextPhotoUrl).then((measurement) => {
+      setFaceFitMeasurement(measurement);
+      if (measurement.status === 'ready') {
+        applyAutoFit(measurement);
+        trackEvent(AnalyticsEvent.FaceLandmarkerAnalyzed, {
+          status: measurement.status,
+          confidence: measurement.confidence,
+          face_count: measurement.faceCount,
+        });
+      }
+    });
+  };
+
+  const applyAutoFit = (measurement = faceFitMeasurement) => {
+    if (measurement.status !== 'ready') return;
+    setFrameScale(measurement.frameWidthHint);
+    setFrameX(measurement.frameCenterX);
+    setFrameY(measurement.frameCenterY);
+    setAutoFitApplied(true);
+    if (activeFrame) setFitScoreFrameId(activeFrame.id);
   };
 
   const toggleFrame = (frameId: string) => {
@@ -412,46 +583,46 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-vilu-paper">
-      <section className="w-full overflow-x-hidden border-b border-slate-900/10 bg-vilu-cream px-4 py-10 sm:px-6 sm:py-12">
+      <section className="w-full overflow-x-hidden border-b border-vilu-paper/10 bg-vilu-ink px-4 py-10 text-vilu-paper sm:px-6 sm:py-12">
         <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center">
           <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-clay sm:text-sm">Try-On Pilot</p>
-            <h1 className="mt-4 max-w-full break-words text-4xl font-black leading-[1.06] text-vilu-ink sm:text-5xl md:text-6xl">
-              Подберите очки онлайн и найдите, где примерить похожие рядом
+            <p className="kinetic-label sm:text-sm">Пилот примерки</p>
+            <h1 className="kinetic-headline mt-4 max-w-full break-words text-5xl font-black leading-[0.9] text-vilu-paper sm:text-6xl md:text-7xl">
+              Примерь. Оцени. Салон.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-vilu-paper/84">
               Загрузите фото, выберите 2-3 подходящих стиля и получите список ближайших оптик для финальной примерки.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="#fit-goal" onClick={() => trackEvent(AnalyticsEvent.TryOnOpened, { source: 'tryon_hero' })} className="inline-flex justify-center rounded-full bg-vilu-ink px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-vilu-green">
-                Начать подбор <ArrowRight className="ml-2" size={16} />
+              <a href="#fit-goal" onClick={() => trackEvent(AnalyticsEvent.TryOnOpened, { source: 'tryon_hero' })} className="kinetic-cta inline-flex justify-center rounded-full px-7 py-4 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-vilu-card">
+                Начать примерку <ArrowRight className="ml-2" size={16} />
               </a>
-              <a href="#nearby-optics" className="inline-flex justify-center rounded-full bg-white px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50">
-                Оптики после подбора
+              <a href="#nearby-optics" className="inline-flex justify-center rounded-full bg-vilu-lime/12 px-7 py-4 text-xs font-black uppercase tracking-[0.16em] text-vilu-lime ring-1 ring-vilu-lime/45 transition hover:bg-vilu-lime hover:text-vilu-ink">
+                Найти салон
               </a>
             </div>
           </div>
 
-          <div className="min-w-0 rounded-[2rem] bg-vilu-ink p-5 text-white shadow-2xl shadow-slate-900/20 sm:rounded-[2.5rem] sm:p-6">
+          <div className="min-w-0 rounded-[2rem] border border-vilu-lime/35 bg-vilu-mist p-5 text-vilu-paper shadow-2xl shadow-vilu-ink/30 sm:rounded-[2.5rem] sm:p-6">
             <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               {['Примерил', 'Оценил посадку', 'Сохранил 2-3 оправы', 'Открыл маршрут или контакт'].map((label, index) => (
-                <div key={label} className="min-w-0 rounded-2xl bg-white/10 p-5">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-vilu-amber text-sm font-black text-vilu-ink">{index + 1}</span>
-                  <p className="mt-4 font-black">{label}</p>
+                <div key={label} className="min-w-0 rounded-2xl bg-vilu-paper/8 p-5 ring-1 ring-vilu-lime/35">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-vilu-lime text-sm font-black text-vilu-ink">{index + 1}</span>
+                  <p className="mt-4 font-black text-vilu-paper">{label}</p>
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-sm leading-6 text-white/60">
+            <p className="mt-6 text-sm leading-6 text-vilu-paper/65">
               Список оптик появляется после персонального подбора, чтобы пользователь шел в салон уже с коротким чеклистом.
             </p>
           </div>
         </div>
       </section>
 
-      <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+      <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 px-4 py-10 sm:px-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <main className="min-w-0 space-y-8">
-          <section id="fit-goal" className="rounded-[2.5rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5 md:p-8">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-clay">Цель подбора</p>
+          <section id="fit-goal" className="rounded-[2.5rem] bg-vilu-ink p-6 text-vilu-paper shadow-sm ring-1 ring-vilu-paper/10 md:p-8">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-paper/65">Сценарий подбора</p>
             <h2 className="mt-2 break-words text-3xl font-black tracking-tight">Выберите сценарий</h2>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {fitGoals.map((goal) => (
@@ -459,7 +630,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   key={goal}
                   type="button"
                   onClick={() => setSelectedGoal(goal)}
-                  className={`rounded-2xl px-5 py-4 text-left text-sm font-black transition ${selectedGoal === goal ? 'bg-vilu-green text-white' : 'bg-stone-100 text-slate-700 hover:bg-stone-200'}`}
+                  className={`rounded-2xl px-5 py-4 text-left text-sm font-black transition ${selectedGoal === goal ? 'bg-vilu-card text-vilu-ink shadow-sm' : 'bg-vilu-paper/10 text-vilu-paper/75 hover:bg-vilu-paper hover:text-vilu-ink'}`}
                 >
                   {goal}
                 </button>
@@ -467,50 +638,140 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] bg-white p-5 shadow-sm ring-1 ring-slate-900/5 md:p-7">
+          <section className="rounded-[2.5rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-ink/10 md:p-7">
             <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-clay">Примерка</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Примерка</p>
                 <h2 className="mt-2 break-words text-3xl font-black tracking-tight">{activeFrame ? frameLabel(activeFrame) : 'Выберите оправу'}</h2>
               </div>
-              <label className="inline-flex max-w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-vilu-ink px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-vilu-green">
+              <label className="inline-flex max-w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-vilu-ink px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-vilu-lime transition hover:bg-vilu-lime hover:text-vilu-ink">
                 <Upload size={16} /> Загрузить фото
-                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhoto} className="hidden" />
               </label>
             </div>
 
-            <div className="mb-5 flex gap-3 rounded-3xl bg-blue-50 p-4 text-sm leading-6 text-blue-950">
+            <div className="mb-5 flex gap-3 rounded-3xl bg-vilu-lime/10 p-4 text-sm leading-6 text-vilu-ink ring-1 ring-vilu-lime/20">
               <ShieldCheck className="mt-0.5 shrink-0" size={20} />
               <p>Фото используется только в вашем браузере для примерки и не отправляется на сервер.</p>
             </div>
 
-            <div className="relative flex aspect-[4/3] min-h-[320px] w-full items-center justify-center overflow-hidden rounded-[2rem] bg-stone-100 sm:min-h-[360px]">
+            <div className="mb-5 overflow-hidden rounded-[1.75rem] bg-vilu-paper ring-1 ring-vilu-ink/10">
+              <div className="grid min-w-0 gap-0 xl:grid-cols-[minmax(0,1fr)_minmax(280px,330px)]">
+                <div className="min-w-0 p-4 sm:p-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-green">Автопосадка</p>
+                    <span className={`inline-flex rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${autoFitStageClass(faceFitMeasurement, autoFitApplied)}`}>
+                      {autoFitStageLabel(faceFitMeasurement, autoFitApplied)}
+                    </span>
+                    <span className={`inline-flex rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
+                      Фото: {photoQuality.label}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-3 max-w-3xl break-words text-2xl font-black tracking-tight text-vilu-ink sm:text-3xl">
+                    {autoFitTitle(faceFitMeasurement, autoFitApplied)}
+                  </h3>
+
+                  <p className="mt-3 max-w-3xl text-sm font-bold leading-6 text-vilu-ink/72">
+                    {autoFitResultText(faceFitMeasurement, autoFitApplied)}
+                  </p>
+
+                  <div className="mt-4 grid min-w-0 gap-2 sm:grid-cols-3">
+                    {autoFitChecklistItems.map((check) => (
+                      <div key={check.title} className="min-w-0 rounded-2xl bg-vilu-card/75 p-3 ring-1 ring-vilu-ink/10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-vilu-ink/42">{check.title}</p>
+                        <p className="mt-1 text-xs font-bold leading-5 text-vilu-ink/65">{check.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid min-w-0 content-between gap-3 border-t border-vilu-lime/20 bg-vilu-card/35 p-4 sm:p-5 xl:border-l xl:border-t-0">
+                  <div className="grid gap-3">
+                    <div className="rounded-2xl bg-vilu-card/85 p-4 ring-1 ring-vilu-ink/10">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-vilu-ink/42">Face-fit score</p>
+                      <p className="mt-2 text-4xl font-black tracking-tight text-vilu-green">{activeFrameScore?.total ?? '--'}</p>
+                      <p className="mt-1 text-xs font-bold leading-5 text-vilu-ink/55">
+                        {autoFitApplied ? 'Смотрим посадку после автоподстройки' : 'Предварительная оценка модели'}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-vilu-card/85 p-4 ring-1 ring-vilu-ink/10">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-vilu-ink/42">Ограничение</p>
+                      <p className="mt-2 text-xs font-bold leading-5 text-vilu-ink/65">
+                        Это не медицинская проверка. Размер, PD, мост и комфорт подтверждаются в салоне.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid min-w-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => applyAutoFit()}
+                    disabled={faceFitMeasurement.status !== 'ready'}
+                    className="min-h-[48px] rounded-full bg-vilu-lime px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-vilu-ink transition hover:bg-vilu-card disabled:cursor-not-allowed disabled:bg-vilu-paper disabled:text-vilu-ink/62 disabled:ring-1 disabled:ring-vilu-ink/10"
+                  >
+                    {autoFitApplied ? 'Подстроить еще раз' : 'Подстроить автоматически'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowLandmarks((current) => !current)}
+                    disabled={faceFitMeasurement.status !== 'ready'}
+                    className="min-h-[48px] rounded-full bg-vilu-card px-4 py-3 text-center text-[11px] font-black uppercase tracking-[0.08em] text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-cream disabled:cursor-not-allowed disabled:bg-vilu-paper disabled:text-vilu-ink/58"
+                  >
+                    {showLandmarks ? 'Скрыть ориентиры' : 'Показать ориентиры'}
+                  </button>
+                  <p className="px-1 pt-1 text-xs leading-5 text-vilu-ink/55 md:col-span-2">
+                    Ориентиры скрыты по умолчанию. Они нужны только для проверки, куда ViLu поставил оправу.
+                  </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative flex aspect-[4/3] min-h-[320px] w-full items-center justify-center overflow-hidden rounded-[2rem] bg-vilu-ink p-4 sm:min-h-[360px]">
               {photoUrl ? (
-                <img src={photoUrl} alt="Фото для примерки" className="absolute inset-0 h-full w-full object-contain" />
+                <div
+                  className="relative max-h-full max-w-full overflow-hidden rounded-[1.5rem] bg-vilu-card shadow-inner"
+                  style={{
+                    aspectRatio: photoAspectRatio,
+                    height: photoAspectRatio < 1 ? '100%' : undefined,
+                    width: photoAspectRatio >= 1 ? '100%' : undefined,
+                  }}
+                >
+                  <img src={photoUrl} alt="Фото для примерки" className="absolute inset-0 h-full w-full object-cover" />
+
+                  {activeFrame && activeFrameHasImage && (
+                    <img
+                      src={activeFrame.imageUrl}
+                      alt={frameLabel(activeFrame)}
+                      onError={() => markFrameImageFailed(activeFrame.id)}
+                      className="absolute object-contain drop-shadow-2xl"
+                      style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
+                    />
+                  )}
+
+                  {activeFrame && !activeFrameHasImage && (
+                    <FrameDrawing
+                      frame={activeFrame}
+                      className="absolute max-w-[92%]"
+                      style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
+                    />
+                  )}
+
+                  {showLandmarks && faceFitMeasurement.status === 'ready' && faceFitMeasurement.overlayPoints.map((point) => (
+                    <span
+                      key={point.id}
+                      className="pointer-events-none absolute h-2 w-2 rounded-full bg-vilu-lime/80 ring-2 ring-white/90"
+                      style={{ left: `${point.x}%`, top: `${point.y}%`, transform: 'translate(-50%, -50%)' }}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="max-w-md px-6 text-center">
                   <Camera className="mx-auto mb-5 text-vilu-green" size={44} />
-                  <p className="text-lg font-black">Загрузите фото лица</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">После загрузки можно подвинуть оправу и оценить посадку.</p>
+                  <p className="text-lg font-black text-vilu-paper">Загрузите фото лица</p>
+                  <p className="mt-2 text-sm leading-6 text-vilu-paper/60">После загрузки можно подвинуть оправу и оценить посадку.</p>
                 </div>
-              )}
-
-              {activeFrame && activeFrameHasImage && (
-                <img
-                  src={activeFrame.imageUrl}
-                  alt={frameLabel(activeFrame)}
-                  onError={() => markFrameImageFailed(activeFrame.id)}
-                  className="absolute object-contain drop-shadow-2xl"
-                  style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
-                />
-              )}
-
-              {activeFrame && !activeFrameHasImage && (
-                <FrameDrawing
-                  frame={activeFrame}
-                  className="absolute max-w-[92%]"
-                  style={{ left: `${frameX}%`, top: `${frameY}%`, width: `${frameScale}%`, transform: 'translate(-50%, -50%)' }}
-                />
               )}
             </div>
 
@@ -519,20 +780,27 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 ['Масштаб', frameScale, setFrameScale, 42, 88],
                 ['Влево / вправо', frameX, setFrameX, 32, 68],
                 ['Выше / ниже', frameY, setFrameY, 25, 62],
-              ].map(([label, value, setter, min, max]) => (
-                <label key={label as string} className="rounded-3xl bg-stone-100 p-4">
-                  <span className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-slate-400"><SlidersHorizontal size={14} /> {label as string}</span>
-                  <input min={min as number} max={max as number} value={value as number} type="range" onChange={(event) => (setter as (next: number) => void)(Number(event.target.value))} className="w-full accent-vilu-green" />
+                ].map(([label, value, setter, min, max]) => (
+                <label key={label as string} className="rounded-3xl bg-vilu-paper p-4 ring-1 ring-vilu-ink/10">
+                  <span className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42"><SlidersHorizontal size={14} /> {label as string}</span>
+                  <input min={min as number} max={max as number} value={value as number} type="range" onChange={(event) => (setter as (next: number) => void)(Number(event.target.value))} className="w-full accent-vilu-lime" />
                 </label>
               ))}
             </div>
 
-            <div className="mt-6 rounded-[2rem] border border-slate-900/10 bg-vilu-cream p-5 md:p-6">
+            <div className="mt-6 rounded-[2rem] border border-vilu-paper/10 bg-vilu-ink p-5 text-vilu-paper md:p-6">
               <div className="flex min-w-0 flex-col justify-between gap-4 md:flex-row md:items-center">
                 <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-clay">Face-fit score</p>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-paper/65">Face-fit score</p>
                   <h3 className="mt-2 break-words text-2xl font-black tracking-tight">Помощник выбора перед визитом</h3>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Оценка помогает выбрать оправы для салона. Финальную посадку проверяет консультант.</p>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-vilu-paper/65">
+                    Оценка помогает выбрать оправы для салона. Если автопосадка готова, учитываем центр глаз, переносицу и качество фото.
+                  </p>
+                  {autoFitApplied && (
+                    <p className="mt-3 inline-flex rounded-full bg-vilu-lime/20 px-3 py-2 text-xs font-black text-vilu-ink ring-1 ring-vilu-lime/30">
+                      Автопосадка учтена в предварительной проверке
+                    </p>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -541,7 +809,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     setFitScoreFrameId(activeFrame.id);
                     trackEvent(AnalyticsEvent.FitScoreViewed, { frame_id: activeFrame.id, goal: selectedGoal });
                   }}
-                  className="rounded-full bg-vilu-ink px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-vilu-green"
+                  className="rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-card"
                 >
                   Оценить посадку
                 </button>
@@ -549,25 +817,31 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
               {fitScore && activeFrame && (
                 <div className="mt-5 grid gap-5 lg:grid-cols-[170px_1fr]">
-                  <div className="rounded-[1.5rem] bg-white p-5 text-center ring-1 ring-slate-900/5">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Скор</p>
+                  <div className="rounded-[1.5rem] bg-vilu-paper p-5 text-center text-vilu-ink ring-1 ring-vilu-paper/10">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/42">Скор</p>
                     <p className="mt-2 text-5xl font-black tracking-tight text-vilu-green">{fitScore.total}</p>
-                    <p className="text-sm font-black text-slate-500">из 100</p>
+                    <p className="text-sm font-black text-vilu-ink/55">из 100</p>
                   </div>
-                  <div className="rounded-[1.5rem] bg-white p-5 ring-1 ring-slate-900/5">
+                  <div className="rounded-[1.5rem] bg-vilu-paper p-5 text-vilu-ink ring-1 ring-vilu-paper/10">
                     <h4 className="break-words text-xl font-black tracking-tight">{fitScore.label}</h4>
                     <div className="mt-4 grid gap-3">
                       {fitScore.strengths.map((strength) => (
-                        <div key={strength} className="flex gap-3 text-sm leading-6 text-slate-600">
+                        <div key={strength} className="flex gap-3 text-sm leading-6 text-vilu-ink/65">
                           <CheckCircle2 className="mt-1 shrink-0 text-vilu-green" size={18} />
                           {strength}
                         </div>
                       ))}
                     </div>
-                    <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                    <div className="mt-4 rounded-2xl bg-vilu-lime/10 p-4 text-sm leading-6 text-vilu-ink ring-1 ring-vilu-lime/20">
                       <strong>Что проверить в салоне: </strong>{fitScore.checks.join(' ')}
                     </div>
-                    <button type="button" onClick={saveActiveFrame} className="mt-4 w-full rounded-full bg-vilu-amber px-5 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink transition hover:bg-vilu-amber/90">
+                    {faceFitMeasurement.status === 'ready' && (
+                      <div className="mt-3 rounded-2xl bg-vilu-mist p-4 text-sm leading-6 text-vilu-ink/72">
+                        <strong>Что дала автопосадка: </strong>
+                        центр оправы {autoFitApplied ? 'поставлен' : 'можно поставить'} по глазам, стартовый масштаб {Math.round(faceFitMeasurement.frameWidthHint)}%, качество фото {photoQuality.label}.
+                      </div>
+                    )}
+                    <button type="button" onClick={saveActiveFrame} className="mt-4 w-full rounded-full bg-vilu-lime px-5 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink transition hover:bg-vilu-card">
                       Сохранить в подбор
                     </button>
                   </div>
@@ -576,13 +850,13 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5 md:p-8">
+          <section className="rounded-[2.5rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10 md:p-8">
             <div className="mb-6 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-clay">Каталог пилота</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Каталог пилота</p>
                 <h2 className="mt-2 break-words text-3xl font-black tracking-tight">Примерьте 6 оправ и выберите до 3</h2>
               </div>
-              <p className="inline-flex min-w-[112px] items-center justify-center rounded-2xl bg-stone-100 px-4 py-3 text-sm font-black text-vilu-ink ring-1 ring-slate-900/5 sm:mt-7">
+              <p className="inline-flex min-w-[112px] items-center justify-center rounded-2xl bg-vilu-paper px-4 py-3 text-sm font-black text-vilu-ink ring-1 ring-vilu-ink/10 sm:mt-7">
                 {selectedFrameIds.length} из {MAX_SELECTED_FRAMES}
               </p>
             </div>
@@ -592,17 +866,17 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 const isActive = frame.id === activeFrame?.id;
                 const isSelected = selectedFrameIds.includes(frame.id);
                 return (
-                  <article key={frame.id} className={`rounded-[2rem] p-4 ring-1 transition ${isActive ? 'bg-vilu-mist ring-vilu-green/30' : 'bg-stone-50 ring-slate-900/5'}`}>
+                  <article key={frame.id} className={`rounded-[2rem] p-4 ring-1 transition ${isActive ? 'bg-vilu-lime/15 ring-vilu-lime/35' : 'bg-vilu-cream ring-vilu-ink/10'}`}>
                     <button type="button" onClick={() => setActiveFrameId(frame.id)} className="block w-full text-left">
-                      <div className="flex h-32 items-center justify-center rounded-[1.5rem] bg-white">
+                      <div className="flex h-32 items-center justify-center rounded-[1.5rem] bg-vilu-card">
                         <FrameThumb frame={frame} failedImages={failedFrameImages} onImageError={markFrameImageFailed} />
                       </div>
-                      <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-slate-400">{frame.brand}</p>
+                      <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/42">{frame.brand}</p>
                       <h3 className="mt-1 break-words text-xl font-black tracking-tight">{frame.model}</h3>
-                      <p className="mt-2 text-sm text-slate-500">{frame.category === 'sunglasses' ? 'Солнцезащитные' : 'Оправа'} - {frame.color} - {frame.size}</p>
+                      <p className="mt-2 text-sm text-vilu-ink/55">{frame.category === 'sunglasses' ? 'Солнцезащитные' : 'Оправа'} - {frame.color} - {frame.size}</p>
                       <p className="mt-3 text-lg font-black">{formatPrice(frame.price)}</p>
                     </button>
-                    <button type="button" onClick={() => toggleFrame(frame.id)} className={`mt-4 flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition ${isSelected ? 'bg-vilu-green text-white' : 'bg-vilu-amber text-vilu-ink hover:bg-vilu-amber/90'}`}>
+                    <button type="button" onClick={() => toggleFrame(frame.id)} className={`mt-4 flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition ${isSelected ? 'bg-vilu-ink text-vilu-paper' : 'bg-vilu-lime text-vilu-ink hover:bg-vilu-card'}`}>
                       {isSelected ? <><X size={15} /> Убрать</> : <><CheckCircle2 size={15} /> Выбрать</>}
                     </button>
                   </article>
@@ -612,118 +886,118 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           </section>
         </main>
 
-        <aside className="min-w-0 space-y-8 lg:sticky lg:top-28 lg:h-fit">
-          <section className="rounded-[2.5rem] bg-white p-7 shadow-sm ring-1 ring-slate-900/5">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-clay">Мой подбор</p>
+        <aside className="min-w-0 space-y-8 xl:sticky xl:top-28 xl:h-fit">
+          <section className="rounded-[2.5rem] bg-vilu-card p-7 shadow-sm ring-1 ring-vilu-ink/10">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-ink/55">Мой подбор</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight">Чеклист для визита</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-500">Сохраните 2-3 варианта, а затем выберите ближайшую оптику для финальной примерки.</p>
+            <p className="mt-3 text-sm leading-6 text-vilu-ink/55">Сохраните 2-3 варианта, а затем выберите ближайшую оптику для финальной примерки.</p>
 
             <div className="mt-6 grid gap-3">
               {selectedFrames.length > 0 ? selectedFrames.map((frame, index) => (
-                <div key={frame.id} className="rounded-3xl bg-stone-100 p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Вариант {index + 1}</p>
+                <div key={frame.id} className="rounded-3xl bg-vilu-paper p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Вариант {index + 1}</p>
                   <p className="mt-2 font-black">{frameLabel(frame)}</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">{frame.color} - {frameUseCase(frame, selectedGoal)}</p>
+                  <p className="mt-1 text-sm leading-6 text-vilu-ink/55">{frame.color} - {frameUseCase(frame, selectedGoal)}</p>
                 </div>
               )) : (
-                <div className="rounded-3xl bg-stone-100 p-5 text-sm leading-6 text-slate-500">Пока нет сохраненных оправ. Нажмите “Сохранить в подбор” после Face-fit score или выберите оправу в каталоге.</div>
+                <div className="rounded-3xl bg-vilu-paper p-5 text-sm leading-6 text-vilu-ink/55">Пока нет сохраненных оправ. Нажмите “Сохранить в подбор” после Face-fit score или выберите оправу в каталоге.</div>
               )}
             </div>
 
-            <a href="#nearby-optics" onClick={() => trackEvent(AnalyticsEvent.NearbyOpticsOpened, { method: 'selection_cta', selected_count: selectedFrames.length })} className={`mt-6 flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.14em] transition ${selectedFrames.length > 0 ? 'bg-vilu-ink text-white hover:bg-vilu-green' : 'pointer-events-none bg-slate-200 text-slate-400'}`}>
+            <a href="#nearby-optics" onClick={() => trackEvent(AnalyticsEvent.NearbyOpticsOpened, { method: 'selection_cta', selected_count: selectedFrames.length })} className={`mt-6 flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.14em] transition ${selectedFrames.length > 0 ? 'bg-vilu-lime text-vilu-ink hover:bg-vilu-card' : 'pointer-events-none bg-vilu-paper text-vilu-ink/58 ring-1 ring-vilu-ink/10'}`}>
               Найти оптику рядом <MapPinned size={16} />
             </a>
             <button
               type="button"
               onClick={openVisitLead}
               disabled={!canPrepareVisit}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-vilu-amber px-6 py-4 text-center text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-amber/90 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-6 py-4 text-center text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-card disabled:cursor-not-allowed disabled:bg-vilu-paper disabled:text-vilu-ink/58 disabled:ring-1 disabled:ring-vilu-ink/10"
             >
               Подготовить подбор к визиту <ArrowRight size={16} />
             </button>
-            <p className="mt-3 text-xs leading-5 text-slate-500">
+            <p className="mt-3 text-xs leading-5 text-vilu-ink/55">
               Контакт передается только после согласия. Фото, рецепт и точное местоположение не отправляются.
             </p>
             {visitLeadStatus && !isVisitLeadOpen && (
-              <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-xs leading-5 text-amber-950">{visitLeadStatus}</p>
+              <p className="mt-3 rounded-2xl bg-vilu-lime/10 p-3 text-xs leading-5 text-vilu-ink ring-1 ring-vilu-lime/20">{visitLeadStatus}</p>
             )}
           </section>
 
-          <section className="rounded-[2.5rem] bg-vilu-ink p-7 text-white shadow-2xl shadow-slate-900/20">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-amber">Готовность к визиту</p>
+          <section className="rounded-[2.5rem] bg-vilu-ink p-7 text-vilu-paper shadow-2xl shadow-vilu-ink/20">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-paper/65">Готовность к визиту</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight">{intentCount}</h2>
-            <p className="mt-3 text-sm leading-6 text-white/65">Сохраняем только локальные действия: маршрут, звонок, мессенджер или копирование подбора. Фото, рецепт и точное местоположение не сохраняются.</p>
+            <p className="mt-3 text-sm leading-6 text-vilu-paper/65">Сохраняем только локальные действия: маршрут, звонок, мессенджер или копирование подбора. Фото, рецепт и точное местоположение не сохраняются.</p>
           </section>
 
-          <button onClick={() => onNavigate?.('products')} className="w-full rounded-full bg-vilu-amber px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-vilu-ink transition hover:bg-white">
+          <button onClick={() => onNavigate?.('products')} className="w-full rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-vilu-ink transition hover:bg-vilu-card">
             Вернуться в магазин
           </button>
         </aside>
       </div>
 
-      <section id="nearby-optics" className="border-t border-slate-900/10 bg-vilu-mist px-4 py-12 sm:px-6">
+      <section id="nearby-optics" className="border-t border-vilu-paper/10 bg-vilu-ink px-4 py-12 text-vilu-paper sm:px-6">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-clay">Ближайшие оптики</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-paper/65">Ближайшие оптики</p>
               <h2 className="mt-3 break-words text-4xl font-black tracking-tight md:text-5xl">Показываем рядом после подбора</h2>
-              <p className="mt-5 text-base leading-8 text-slate-600">
+              <p className="mt-5 text-base leading-8 text-vilu-paper/65">
                 Чтобы показать ближайшие оптики, разрешите доступ к геолокации. Мы используем координаты только для сортировки оптик рядом и не сохраняем точное местоположение.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <button type="button" onClick={requestLocation} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-ink px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-vilu-green">
+                <button type="button" onClick={requestLocation} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-card">
                   <LocateFixed size={16} /> Показать рядом
                 </button>
                 <div className="flex flex-wrap gap-2">
                   {Object.keys(cityFallbacks).map((city) => (
-                    <button key={city} type="button" onClick={() => chooseCity(city)} className="rounded-full bg-white px-4 py-3 text-xs font-black text-slate-700 ring-1 ring-slate-900/10 transition hover:bg-stone-50">
+                    <button key={city} type="button" onClick={() => chooseCity(city)} className="rounded-full bg-vilu-card px-4 py-3 text-xs font-black text-vilu-ink/72 ring-1 ring-vilu-ink/10 transition hover:bg-vilu-cream">
                       {city}
                     </button>
                   ))}
                 </div>
               </div>
-              {geoStatus && <p className="mt-4 rounded-2xl bg-white/70 p-4 text-sm leading-6 text-slate-600">{geoStatus}</p>}
+              {geoStatus && <p className="mt-4 rounded-2xl bg-vilu-card/70 p-4 text-sm leading-6 text-vilu-ink/65">{geoStatus}</p>}
             </div>
 
             <div className="grid gap-4">
               {nearbyOptics.map(({ optic, distance }) => (
-                <article key={optic.id} className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-900/5">
+                <article key={optic.id} className="rounded-[2rem] bg-vilu-ink p-5 text-vilu-paper shadow-sm ring-1 ring-vilu-lime/20">
                   <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="break-words text-2xl font-black tracking-tight">{optic.name}</h3>
+                        <h3 className="break-words text-2xl font-black tracking-tight text-vilu-paper">{optic.name}</h3>
                         {optic.partnerStatus === 'partner' ? (
-                          <span className="rounded-full bg-vilu-green px-3 py-1 text-[11px] font-black text-white">Партнер ViLu</span>
+                          <span className="rounded-full bg-vilu-lime px-3 py-1 text-[11px] font-black text-vilu-ink">Партнер ViLu</span>
                         ) : (
-                          <span className="rounded-full bg-stone-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">Открытые источники</span>
+                          <span className="rounded-full bg-vilu-paper px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-vilu-ink">Открытые источники</span>
                         )}
                       </div>
-                      <p className="mt-2 flex gap-2 text-sm leading-6 text-slate-600"><MapPin className="mt-1 shrink-0" size={16} /> {formatDistance(distance, language)} от {userLocation?.label ?? 'центра Москвы'} - {optic.address}</p>
-                      <p className="mt-1 text-sm font-bold text-slate-500">{opticHoursLabel(optic.hours)}</p>
-                      <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm leading-6 text-amber-950">Перед визитом уточните наличие похожих моделей.</p>
+                      <p className="mt-2 flex gap-2 text-sm leading-6 text-vilu-paper/72"><MapPin className="mt-1 shrink-0 text-vilu-lime" size={16} /> {formatDistance(distance, language)} от {userLocation?.label ?? 'центра Москвы'} - {optic.address}</p>
+                      <p className="mt-1 text-sm font-bold text-vilu-paper/68">{opticHoursLabel(optic.hours)}</p>
+                      <p className="mt-3 rounded-2xl bg-vilu-lime p-3 text-sm font-black leading-6 text-vilu-ink ring-1 ring-vilu-lime">Перед визитом уточните наличие похожих моделей.</p>
                     </div>
                   </div>
 
                   <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-                    <button type="button" onClick={() => openRoute(optic)} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-ink px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:bg-vilu-green">
+                    <button type="button" onClick={() => openRoute(optic)} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-lime px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink transition hover:bg-vilu-card">
                       <RouteIcon size={15} /> Маршрут
                     </button>
                     {optic.phone ? (
-                      <a onClick={() => recordIntent(optic, 'call')} href={`tel:${optic.phone.replace(/\s/g, '')}`} className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 transition hover:bg-stone-200">
+                      <a onClick={() => recordIntent(optic, 'call')} href={`tel:${optic.phone.replace(/\s/g, '')}`} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-paper px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink transition hover:bg-vilu-cream">
                         <Phone size={15} /> Позвонить
                       </a>
                     ) : (
-                      <button type="button" disabled className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 opacity-45">
+                      <button type="button" disabled className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-full bg-vilu-paper/82 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink/70">
                         <Phone size={15} /> Позвонить
                       </button>
                     )}
-                    <button type="button" onClick={() => openWhatsApp(optic)} disabled={!optic.whatsapp} className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 transition hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-45">
+                    <button type="button" onClick={() => openWhatsApp(optic)} disabled={!optic.whatsapp} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-paper px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink transition hover:bg-vilu-cream disabled:cursor-not-allowed disabled:bg-vilu-paper/82 disabled:text-vilu-ink/70">
                       <MessageCircle size={15} /> WhatsApp
                     </button>
-                    <button type="button" onClick={() => openTelegram(optic)} disabled={!optic.telegram} className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-slate-800 transition hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-45">
+                    <button type="button" onClick={() => openTelegram(optic)} disabled={!optic.telegram} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-paper px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink transition hover:bg-vilu-cream disabled:cursor-not-allowed disabled:bg-vilu-paper/82 disabled:text-vilu-ink/70">
                       <Send size={15} /> Telegram
                     </button>
-                    <button type="button" onClick={() => copySelection(optic)} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-amber px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink transition hover:bg-vilu-amber/90">
+                    <button type="button" onClick={() => copySelection(optic)} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-lime px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink transition hover:bg-vilu-card">
                       <Copy size={15} /> {copiedOpticId === optic.id ? 'Скопировано' : 'Подбор'}
                     </button>
                   </div>
@@ -739,16 +1013,16 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-vilu-paper p-6 shadow-2xl ring-1 ring-white/20 md:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-clay">Подбор к визиту</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Подбор к визиту</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight text-vilu-ink">Подготовить подбор к визиту</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
+                <p className="mt-3 text-sm leading-6 text-vilu-ink/65">
                   Можно просто скопировать чеклист без контакта или подготовить заявку с удобным способом связи. Фото, рецепт и точные координаты не отправляются.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsVisitLeadOpen(false)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-100"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-vilu-card text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-paper"
                 aria-label="Закрыть форму"
               >
                 <X size={18} />
@@ -757,21 +1031,21 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
             <div className="mt-6 grid gap-3">
               {selectedFrames.map((frame, index) => (
-                <div key={frame.id} className="rounded-3xl bg-white p-4 ring-1 ring-slate-900/5">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Оправа {index + 1}</p>
+                <div key={frame.id} className="rounded-3xl bg-vilu-card p-4 ring-1 ring-vilu-ink/10">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Оправа {index + 1}</p>
                   <p className="mt-1 font-black text-vilu-ink">{frameLabel(frame)}</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">{frame.color} - {frameUseCase(frame, selectedGoal)}</p>
+                  <p className="mt-1 text-sm leading-6 text-vilu-ink/55">{frame.color} - {frameUseCase(frame, selectedGoal)}</p>
                 </div>
               ))}
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Город</span>
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Город</span>
                 <select
                   value={visitLeadForm.city}
                   onChange={(event) => setVisitLeadForm((current) => ({ ...current, city: event.target.value }))}
-                  className="mt-2 w-full rounded-2xl border border-slate-900/10 bg-white px-4 py-4 text-sm font-bold outline-none transition focus:border-vilu-green"
+                  className="mt-2 w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card px-4 py-4 text-sm font-bold outline-none transition focus:border-vilu-lime"
                 >
                   {Object.keys(cityFallbacks).map((city) => (
                     <option key={city} value={city}>{city}</option>
@@ -780,11 +1054,11 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               </label>
 
               <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Способ связи</span>
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Способ связи</span>
                 <select
                   value={visitLeadForm.contactMethod}
                   onChange={(event) => setVisitLeadForm((current) => ({ ...current, contactMethod: event.target.value as VisitLeadForm['contactMethod'] }))}
-                  className="mt-2 w-full rounded-2xl border border-slate-900/10 bg-white px-4 py-4 text-sm font-bold outline-none transition focus:border-vilu-green"
+                  className="mt-2 w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card px-4 py-4 text-sm font-bold outline-none transition focus:border-vilu-lime"
                 >
                   <option value="telegram">Telegram</option>
                   <option value="whatsapp">WhatsApp</option>
@@ -794,27 +1068,27 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             </div>
 
             <label className="mt-4 block">
-              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Контакт</span>
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Контакт</span>
               <input
                 value={visitLeadForm.contact}
                 onChange={(event) => setVisitLeadForm((current) => ({ ...current, contact: event.target.value }))}
                 placeholder="@username или +7 900 000-00-00"
-                className="mt-2 w-full rounded-2xl border border-slate-900/10 bg-white px-4 py-4 text-sm font-bold outline-none transition focus:border-vilu-green"
+                className="mt-2 w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card px-4 py-4 text-sm font-bold outline-none transition focus:border-vilu-lime"
               />
             </label>
 
             <label className="mt-4 block">
-              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Комментарий</span>
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Комментарий</span>
               <textarea
                 value={visitLeadForm.comment}
                 onChange={(event) => setVisitLeadForm((current) => ({ ...current, comment: event.target.value }))}
                 rows={3}
                 placeholder="Например: хочу примерить похожие прозрачные оправы в выходные"
-                className="mt-2 w-full rounded-2xl border border-slate-900/10 bg-white px-4 py-4 text-sm font-bold outline-none transition focus:border-vilu-green"
+                className="mt-2 w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card px-4 py-4 text-sm font-bold outline-none transition focus:border-vilu-lime"
               />
             </label>
 
-            <label className="mt-5 flex gap-3 rounded-3xl bg-white p-4 text-sm leading-6 text-slate-600 ring-1 ring-slate-900/5">
+            <label className="mt-5 flex gap-3 rounded-3xl bg-vilu-card p-4 text-sm leading-6 text-vilu-ink/65 ring-1 ring-vilu-ink/10">
               <input
                 type="checkbox"
                 checked={visitLeadForm.consent}
@@ -824,7 +1098,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                     trackEvent(AnalyticsEvent.ConsentChecked, { source: 'visit_lead' });
                   }
                 }}
-                className="mt-1 h-5 w-5 shrink-0 accent-vilu-green"
+                className="mt-1 h-5 w-5 shrink-0 accent-vilu-lime"
               />
               <span>
                 Согласен передать контакт и выбранные оправы для подготовки визита. Я понимаю, что фото, рецепт и параметры зрения не отправляются.{' '}
@@ -833,7 +1107,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             </label>
 
             {visitLeadStatus && (
-              <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">{visitLeadStatus}</p>
+              <p className="mt-4 rounded-2xl bg-vilu-lime/10 p-4 text-sm leading-6 text-vilu-ink ring-1 ring-vilu-lime/20">{visitLeadStatus}</p>
             )}
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -841,14 +1115,14 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 type="button"
                 onClick={submitVisitLead}
                 disabled={!canSubmitVisitLead}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-vilu-ink px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-vilu-green disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-vilu-ink px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-paper transition hover:bg-vilu-lime hover:text-vilu-ink disabled:cursor-not-allowed disabled:bg-vilu-ink/10 disabled:text-vilu-ink/42"
               >
                 {hasLeadForm() ? 'Открыть заявку' : 'Скопировать заявку'} <ArrowRight size={16} />
               </button>
               <button
                 type="button"
                 onClick={copyVisitSelection}
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink ring-1 ring-slate-900/10 transition hover:bg-stone-50"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-vilu-card px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-cream"
               >
                 Скопировать без контакта
               </button>
@@ -856,7 +1130,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             <button
               type="button"
               onClick={() => setIsVisitLeadOpen(false)}
-              className="mt-3 w-full text-center text-xs font-black uppercase tracking-[0.14em] text-slate-500 transition hover:text-vilu-ink"
+              className="mt-3 w-full text-center text-xs font-black uppercase tracking-[0.14em] text-vilu-ink/55 transition hover:text-vilu-ink"
             >
               Закрыть
             </button>

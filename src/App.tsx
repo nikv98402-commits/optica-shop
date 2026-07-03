@@ -8,11 +8,12 @@ import { ProductDetail } from './pages/ProductDetail';
 import { Checkout } from './pages/Checkout';
 import { Dashboard } from './pages/Dashboard';
 import { TryOnPilot } from './pages/TryOnPilot';
+import { EyeCheck } from './pages/EyeCheck';
 import { getKnowledgePage, KnowledgeBase } from './pages/KnowledgeBase';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 
-type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon';
+type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck';
 
 const pathPageMap: Record<string, Page> = {
   '': 'home',
@@ -21,6 +22,9 @@ const pathPageMap: Record<string, Page> = {
   dashboard: 'dashboard',
   cabinet: 'dashboard',
   tryon: 'tryon',
+  'eye-check': 'eyecheck',
+  eyecheck: 'eyecheck',
+  'vision-check': 'eyecheck',
 };
 
 function currentKnowledgeSlug() {
@@ -72,7 +76,7 @@ function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <div className="min-h-screen bg-stone-50 text-slate-950">
+        <div className="min-h-screen kinetic-surface text-vilu-ink">
           <LanguageDomBridge />
           <Navigation
             currentPage={currentPage}
@@ -102,6 +106,9 @@ function App() {
             )}
             {currentPage === 'tryon' && (
               <TryOnPilot onNavigate={handleNavigate} />
+            )}
+            {currentPage === 'eyecheck' && (
+              <EyeCheck onNavigate={handleNavigate} />
             )}
           </main>
 

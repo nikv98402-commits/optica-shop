@@ -221,6 +221,46 @@ export const knowledgePages: KnowledgePage[] = [
     ],
   },
   {
+    slug: 'vision-care',
+    title: 'Забота о зрении и подготовка к проверке зрения | ViLu',
+    meta: 'ViLu помогает подготовиться к проверке зрения и выбору очков: онлайн-примерка, Face-fit score, чеклист для визита и оптики рядом. Не заменяет консультацию специалиста.',
+    h1: 'Забота о зрении как часть обычной жизни',
+    shortAnswer: 'ViLu помогает людям выбрать оправы, подготовиться к проверке зрения и не откладывать визит в оптику. Сервис не ставит диагнозы и не заменяет специалиста.',
+    definition: 'Vision care в ViLu — это lifestyle-подход к регулярной заботе о зрении: примерить оправу, получить предварительный Face-fit score, собрать чеклист вопросов для салона и найти понятный следующий шаг для себя или близких.',
+    steps: [
+      'Начните с онлайн-примерки и выберите 2–3 оправы, которые стоит проверить очно.',
+      'Получите предварительный Face-fit score и подсказки по посадке оправы.',
+      'Сохраните чеклист: мост, ширина, положение глаз, рецепт и комфорт нужно подтвердить в салоне.',
+      'Откройте ближайшие оптики после подбора, а не до него.',
+      'Если зрение ухудшилось или появились тревожные симптомы, обратитесь к специалисту очно.',
+    ],
+    limits: [
+      'ViLu не диагностирует заболевания глаз и не назначает лечение.',
+      'ViLu не рассчитывает рецепт, PD или медицинские параметры зрения.',
+      'Питание, привычки и перерывы при работе за экраном можно использовать как справочную гигиену зрения, но не как обещание остановить ухудшение зрения.',
+      'Фото для примерки используется в браузере и не должно отправляться в аналитику или на сервер без отдельного согласия.',
+    ],
+    example: 'Пользователь замечает, что давно не проверял зрение, примеряет несколько оправ, получает Face-fit score, сохраняет 2–3 варианта и идет в салон уже с коротким списком вопросов.',
+    next: 'Начните с примерки, прочитайте про Face-fit score или откройте ближайшие оптики после сохранения подбора.',
+    table: [
+      ['Зачем это нужно', 'Сделать заботу о зрении понятной повседневной привычкой, а не разовым тревожным событием.'],
+      ['Что делает ViLu', 'Помогает выбрать оправы, подготовить чеклист и найти следующий шаг к очной проверке.'],
+      ['Что делает специалист', 'Проверяет зрение, рецепт, PD, совместимость линз, посадку и медицинские вопросы.'],
+      ['Для кого', 'Для людей, которые заботятся о своем зрении, зрении детей, родителей и близких.'],
+    ],
+    faq: [
+      ['Может ли ViLu диагностировать зрение?', 'Нет. ViLu дает справочную информацию и помогает подготовиться к визиту, но не диагностирует и не лечит.'],
+      ['Зачем проходить онлайн-примерку перед визитом?', 'Чтобы сократить выбор до 2–3 оправ и прийти в салон с понятным чеклистом.'],
+      ['Можно ли использовать ViLu для семьи?', 'Да, как lifestyle-помощник для подбора и напоминания о важности регулярной проверки. Полноценные семейные профили — будущая продуктовая возможность.'],
+      ['Что делать, если зрение ухудшилось?', 'Не пытайтесь решать это онлайн. Запишитесь на очную проверку к специалисту; ViLu может помочь подготовить вопросы и подобрать оправы.'],
+    ],
+    sources: [
+      { label: 'WHO: Blindness and vision impairment', url: 'https://www.who.int/ru/news-room/fact-sheets/detail/blindness-and-visual-impairment' },
+      { label: 'Wikipedia: Refractive error', url: 'https://en.wikipedia.org/wiki/Refractive_error' },
+      { label: 'Wikipedia: Corrective lens', url: 'https://en.wikipedia.org/wiki/Corrective_lens' },
+    ],
+  },
+  {
     slug: 'ai-source',
     title: 'ViLu: справка о методологии онлайн-подбора оправ',
     meta: 'Сухая справка о ViLu, Face-fit score, параметрах методологии, ограничениях онлайн-примерки и основных страницах проекта.',
@@ -274,6 +314,7 @@ export const knowledgePages: KnowledgePage[] = [
       'Заполняйте demo-профиль только теми данными, которые готовы хранить в этом браузере.',
       'Нажатие “Сохранить” записывает профиль в localStorage текущего устройства.',
       'Фото для примерки используется в браузере и не сохраняется на сервере.',
+      'Ответы ViLu Eye Check обрабатываются в браузере; в MVP не отправляется текст ответов или симптомы.',
       'Кнопка “Подготовить подбор к визиту” передает контакт и выбранные оправы только после чекбокса согласия.',
       'Аналитика получает только технические события без ФИО, телефона, email и параметров рецепта.',
     ],
@@ -287,6 +328,7 @@ export const knowledgePages: KnowledgePage[] = [
     table: [
       ['Анкета и рецепт', 'Сохраняются локально в браузере.'],
       ['Фото примерки', 'Используется для примерки в браузере и не отправляется на сервер.'],
+      ['ViLu Eye Check', 'Считает результат в браузере; можно сохранить только краткий итог локально.'],
       ['Форма визита', 'Передает только контакт, город и выбранные оправы после согласия.'],
       ['Аналитика', 'Получает только обезличенные события интерфейса.'],
       ['Уведомления', 'В MVP-версии не отправляются.'],
@@ -349,9 +391,11 @@ export const knowledgePages: KnowledgePage[] = [
       'Используйте ViLu как инструмент предварительного отбора.',
       'Сохраняйте 2–3 модели, которые визуально подходят.',
       'Проверяйте посадку, рецепт, PD и комфорт очно у специалиста.',
+      'Используйте ViLu Eye Check только как self-check перед очным визитом, а не как медицинский тест.',
     ],
     limits: [
       'Фото и экран устройства могут искажать масштаб и цвет оправы.',
+      'ViLu Eye Check не диагностирует заболевания, не измеряет остроту зрения и не заменяет осмотр.',
       'Высокие диоптрии требуют отдельной проверки совместимости оправы и линз.',
       'Комфорт дужек, моста и устойчивость оправы нельзя надежно проверить онлайн.',
     ],
@@ -360,6 +404,7 @@ export const knowledgePages: KnowledgePage[] = [
     table: [
       ['ViLu может', 'Помочь выбрать несколько вариантов для очной примерки.'],
       ['ViLu не может', 'Поставить диагноз или заменить рецепт.'],
+      ['ViLu Eye Check', 'Может подсказать, стоит ли запланировать очную проверку, но не является медицинским тестом.'],
       ['Проверять очно', 'PD, посадку моста, дужки, линзы, комфорт и совместимость.'],
     ],
     faq: [
@@ -544,6 +589,40 @@ const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> 
       ['What matters more: style or fit?', 'For daily wear, fit and comfort matter more. Choose style among frames that already fit well.'],
     ],
   },
+  'vision-care': {
+    title: 'Vision care and visit readiness | ViLu',
+    meta: 'ViLu helps people prepare for vision checks and eyewear decisions: online try-on, Face-fit score, visit checklist, and nearby optical stores. It does not replace specialist care.',
+    h1: 'Vision care as part of everyday life',
+    shortAnswer: 'ViLu helps people choose frames, prepare for an eye-care visit, and avoid postponing optical checks. It does not diagnose or replace a specialist.',
+    definition: 'Vision care in ViLu is a lifestyle approach to regular eye-care readiness: try on frames, get a preliminary Face-fit score, prepare questions for the store, and choose the next step for yourself or close family members.',
+    steps: [
+      'Start with online try-on and choose 2-3 frames worth checking in person.',
+      'Get a preliminary Face-fit score and fit hints.',
+      'Save a checklist: bridge, width, eye position, prescription, and comfort must be confirmed in store.',
+      'Open nearby optical stores after selection, not before it.',
+      'If vision has changed or symptoms feel concerning, seek in-person specialist advice.',
+    ],
+    limits: [
+      'ViLu does not diagnose eye disease or prescribe treatment.',
+      'ViLu does not calculate prescription, PD, or medical vision parameters.',
+      'Nutrition, habits, and screen breaks can be educational eye-care hygiene, not a promise to stop vision decline.',
+      'Try-on photos are used in the browser and should not be sent to analytics or servers without separate consent.',
+    ],
+    example: 'A user realizes they have not checked vision for a while, tries on several frames, gets a Face-fit score, saves 2-3 options, and visits a store with a short checklist.',
+    next: 'Start try-on, read about Face-fit score, or open nearby optical stores after saving a shortlist.',
+    table: [
+      ['Why it matters', 'Make vision care a clear everyday habit, not a one-off anxious event.'],
+      ['What ViLu does', 'Helps choose frames, prepare a checklist, and find the next step toward an in-person check.'],
+      ['What specialists do', 'Confirm vision, prescription, PD, lens compatibility, fit, and medical questions.'],
+      ['Who it is for', 'People who care about their own vision and the vision of children, parents, and close family.'],
+    ],
+    faq: [
+      ['Can ViLu diagnose vision?', 'No. ViLu provides informational guidance and visit preparation, not diagnosis or treatment.'],
+      ['Why use online try-on before a visit?', 'To narrow the choice to 2-3 frames and arrive at the store with a clear checklist.'],
+      ['Can ViLu be used for family care?', 'Yes, as a lifestyle helper for selection and regular-check awareness. Full family profiles are a future product direction.'],
+      ['What should I do if my vision changed?', 'Do not solve that online. Book an in-person check; ViLu can help prepare questions and frame options.'],
+    ],
+  },
   'ai-source': {
     title: 'ViLu: source note on online frame-selection methodology',
     meta: 'A structured source page about ViLu, Face-fit score, methodology parameters, online try-on limits, and key project pages.',
@@ -587,6 +666,7 @@ const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> 
       'Fill the demo profile only with data you are comfortable storing in this browser.',
       'Clicking Save writes the profile to localStorage on this device.',
       'Try-on photos are used in the browser and are not stored on the server.',
+      'ViLu Eye Check answers are processed in the browser; the MVP does not send answer text or symptoms.',
       'The visit-preparation form sends contact details only after explicit consent.',
       'Analytics receives interface events without name, phone, email, or prescription parameters.',
     ],
@@ -600,6 +680,7 @@ const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> 
     table: [
       ['Profile and prescription', 'Stored locally in the browser.'],
       ['Try-on photo', 'Used in the browser and not sent to the server.'],
+      ['ViLu Eye Check', 'Calculates the result in the browser; only a short local summary can be saved.'],
       ['Visit form', 'Sends contact, city, and selected frames only after consent.'],
       ['Analytics', 'Receives anonymized interface events only.'],
       ['Notifications', 'Not sent in the MVP.'],
@@ -652,9 +733,11 @@ const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> 
       'Use ViLu as a preliminary selection tool.',
       'Save 2-3 models that look visually suitable.',
       'Check fit, prescription, PD, and comfort in person with a specialist.',
+      'Use ViLu Eye Check only as a self-check before an in-person visit, not as a medical test.',
     ],
     limits: [
       'Photo and screen settings can distort frame scale and color.',
+      'ViLu Eye Check does not diagnose conditions, measure visual acuity, or replace an examination.',
       'Stronger prescriptions require a separate compatibility check between frame and lenses.',
       'Temple comfort, bridge fit, and frame stability cannot be reliably checked online.',
     ],
@@ -663,6 +746,7 @@ const knowledgePagesEn: Record<string, Omit<KnowledgePage, 'slug' | 'sources'>> 
     table: [
       ['ViLu can', 'Help choose several candidates for in-store fitting.'],
       ['ViLu cannot', 'Diagnose or replace a prescription.'],
+      ['ViLu Eye Check', 'Can suggest whether an in-person check is worth planning, but is not a medical test.'],
       ['Check in person', 'PD, bridge fit, temples, lenses, comfort, and compatibility.'],
     ],
     faq: [
@@ -781,6 +865,7 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
       mainPages: 'Key pages',
       sources: 'Sources',
       cta: 'Start online try-on',
+      knowledgeBase: 'ViLu Knowledge Base',
     }
     : {
       author: 'Автор',
@@ -797,6 +882,7 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
       mainPages: 'Основные страницы',
       sources: 'Источники',
       cta: 'Пройти онлайн-примерку',
+      knowledgeBase: 'База знаний ViLu',
     };
 
   useEffect(() => {
@@ -812,24 +898,41 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
     script.text = JSON.stringify(articleJsonLd(localizedPage));
     document.head.appendChild(script);
     trackEvent(AnalyticsEvent.KnowledgePageView, { slug: localizedPage.slug });
+    if (localizedPage.slug === 'vision-care') {
+      trackEvent(AnalyticsEvent.VisionCarePageOpened, { source: 'knowledge_base' });
+      trackEvent(AnalyticsEvent.VisitReadinessSectionViewed, { page: 'vision-care' });
+    }
 
     return () => {
       document.getElementById(scriptId)?.remove();
     };
   }, [localizedPage]);
 
+  const handleSourceClick = (sourceUrl: string) => {
+    if (localizedPage.slug === 'vision-care' && sourceUrl.includes('who.int')) {
+      trackEvent(AnalyticsEvent.VisionCareWhoSourceClicked, { source: 'vision-care' });
+    }
+  };
+
+  const handleTryOnCta = () => {
+    if (localizedPage.slug === 'vision-care') {
+      trackEvent(AnalyticsEvent.VisionCareTryOnClicked, { source: 'vision-care-sidebar' });
+    }
+    onNavigate('tryon');
+  };
+
   return (
-    <div className="min-h-screen bg-[#fffaf2]">
-      <section className="border-b border-slate-900/10 bg-[#f7f1e8] px-4 py-12 sm:px-6">
+    <div className="kinetic-surface min-h-screen">
+      <section className="border-b border-vilu-lime/10 bg-vilu-ink px-4 py-12 text-vilu-paper sm:px-6">
         <div className="mx-auto max-w-5xl">
-          <a href="/" className="inline-flex items-center gap-2 text-sm font-black text-[#315c56]">
-            <BookOpen size={16} /> ViLu Knowledge Base
+          <a href="/" className="inline-flex items-center gap-2 text-sm font-black text-vilu-lime">
+            <BookOpen size={16} /> {labels.knowledgeBase}
           </a>
-          <h1 className="mt-5 text-4xl font-black leading-[1.02] tracking-tight text-slate-950 md:text-6xl">{localizedPage.h1}</h1>
-          <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600">{localizedPage.meta}</p>
-          <div className="mt-7 flex flex-wrap gap-3 text-sm font-bold text-slate-500">
-            <span className="rounded-full bg-white px-4 py-2 ring-1 ring-slate-900/10">{labels.author}: ViLu</span>
-            <span className="rounded-full bg-white px-4 py-2 ring-1 ring-slate-900/10">{labels.updated}: {updatedAt}</span>
+          <h1 className="mt-5 text-4xl font-black leading-[1.02] tracking-tight md:text-6xl">{localizedPage.h1}</h1>
+          <p className="mt-6 max-w-3xl text-lg font-semibold leading-8 text-vilu-paper/70">{localizedPage.meta}</p>
+          <div className="mt-7 flex flex-wrap gap-3 text-sm font-bold text-vilu-paper/65">
+            <span className="rounded-full bg-vilu-paper/10 px-4 py-2 ring-1 ring-vilu-lime/15">{labels.author}: ViLu</span>
+            <span className="rounded-full bg-vilu-paper/10 px-4 py-2 ring-1 ring-vilu-lime/15">{labels.updated}: {updatedAt}</span>
           </div>
         </div>
       </section>
@@ -840,13 +943,13 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
           <ContentBlock title={labels.definition} text={localizedPage.definition} />
 
           {localizedPage.table && (
-            <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+            <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
               <h2 className="text-2xl font-black tracking-tight">{labels.table}</h2>
-              <div className="mt-5 overflow-hidden rounded-2xl border border-slate-900/10">
+              <div className="mt-5 overflow-hidden rounded-2xl border border-vilu-ink/10">
                 {localizedPage.table.map(([term, description]) => (
-                  <div key={term} className="grid gap-2 border-b border-slate-900/10 p-4 last:border-b-0 md:grid-cols-[220px_1fr]">
+                  <div key={term} className="grid gap-2 border-b border-vilu-ink/10 p-4 last:border-b-0 md:grid-cols-[220px_1fr]">
                     <strong>{term}</strong>
-                    <p className="leading-7 text-slate-600">{description}</p>
+                    <p className="leading-7 text-vilu-ink/65">{description}</p>
                   </div>
                 ))}
               </div>
@@ -859,51 +962,51 @@ export function KnowledgeBase({ page, onNavigate }: KnowledgeBaseProps) {
           <ContentBlock title={labels.next} text={localizedPage.next} />
           {localizedPage.slug === 'ai-source' && <AiSourceOperations language={language} />}
 
-          <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+          <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
             <h2 className="text-2xl font-black tracking-tight">FAQ</h2>
             <div className="mt-5 grid gap-4">
               {localizedPage.faq.map(([question, answer]) => (
-                <div key={question} className="rounded-2xl bg-stone-50 p-5">
+                <div key={question} className="rounded-2xl bg-vilu-paper p-5">
                   <h3 className="font-black">{question}</h3>
-                  <p className="mt-2 leading-7 text-slate-600">{answer}</p>
+                  <p className="mt-2 leading-7 text-vilu-ink/65">{answer}</p>
                 </div>
               ))}
             </div>
           </section>
 
-          <section className="rounded-[2rem] bg-slate-950 p-6 text-white shadow-2xl shadow-slate-900/20">
-            <ShieldCheck className="mb-4 text-[#f5b25f]" />
+          <section className="rounded-[2rem] bg-vilu-ink p-6 text-vilu-paper shadow-2xl shadow-vilu-ink/20 ring-1 ring-vilu-lime/20">
+            <ShieldCheck className="mb-4 text-vilu-lime" />
             <h2 className="text-2xl font-black tracking-tight">{labels.disclaimer}</h2>
-            <p className="mt-3 leading-7 text-white/70">
+            <p className="mt-3 leading-7 text-vilu-paper/70">
               {labels.disclaimerText}
             </p>
           </section>
         </article>
 
         <aside className="space-y-6 lg:sticky lg:top-28 lg:h-fit">
-          <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+          <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
             <h2 className="text-xl font-black tracking-tight">{labels.mainPages}</h2>
             <div className="mt-4 grid gap-2">
               {localizedPages.map((item) => (
-                <a key={item.slug} href={`/${item.slug}`} className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${item.slug === localizedPage.slug ? 'bg-[#315c56] text-white' : 'bg-stone-100 text-slate-700 hover:bg-stone-200'}`}>
+                <a key={item.slug} href={`/${item.slug}`} className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${item.slug === localizedPage.slug ? 'bg-vilu-ink text-vilu-lime' : 'bg-vilu-paper text-vilu-ink hover:bg-vilu-lime/30'}`}>
                   {item.h1}
                 </a>
               ))}
             </div>
           </section>
 
-          <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+          <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
             <h2 className="text-xl font-black tracking-tight">{labels.sources}</h2>
             <div className="mt-4 grid gap-3">
               {localizedPage.sources.map((source) => (
-                <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="flex items-start gap-2 rounded-2xl bg-stone-100 p-3 text-sm font-bold text-[#315c56] hover:bg-stone-200">
+                <a key={source.url} href={source.url} target="_blank" rel="noreferrer" onClick={() => handleSourceClick(source.url)} className="flex items-start gap-2 rounded-2xl bg-vilu-paper p-3 text-sm font-bold text-vilu-green hover:bg-vilu-lime/30">
                   <ExternalLink className="mt-0.5 shrink-0" size={15} /> {source.label}
                 </a>
               ))}
             </div>
           </section>
 
-          <button onClick={() => onNavigate('tryon')} className="flex w-full items-center justify-center gap-2 rounded-full bg-[#f5b25f] px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-white">
+          <button onClick={handleTryOnCta} className="flex w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper">
             {labels.cta} <ArrowRight size={16} />
           </button>
         </aside>
@@ -982,49 +1085,49 @@ function AiSourceOperations({ language }: { language: 'ru' | 'en' }) {
 
   return (
     <>
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+      <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
         <h2 className="text-2xl font-black tracking-tight">{english ? 'What to watch in analytics' : 'Что смотреть в аналитике'}</h2>
-        <p className="mt-3 leading-7 text-slate-600">
+        <p className="mt-3 leading-7 text-vilu-ink/65">
           {english
             ? 'In Search Console, traffic from AI Overviews and AI Mode should be analyzed as part of overall search traffic and the Performance report. In web analytics, monitor AI and search referrer domains separately.'
             : 'В Search Console переходы из AI Overviews и AI Mode нужно анализировать как часть общего search traffic и Performance report. Отдельно в веб-аналитике стоит смотреть referrer-домены AI и поисковых систем.'}
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {['chatgpt.com', 'perplexity.ai', 'gemini.google.com', 'google.com', 'yandex.ru', 'bing.com', 'copilot.microsoft.com'].map((item) => (
-            <div key={item} className="rounded-2xl bg-stone-100 p-4 font-bold text-slate-700">{item}</div>
+            <div key={item} className="rounded-2xl bg-vilu-paper p-4 font-bold text-vilu-ink">{item}</div>
           ))}
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+      <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
         <h2 className="text-2xl font-black tracking-tight">{english ? 'Weekly prompt tracking' : 'Prompt tracking раз в неделю'}</h2>
-        <div className="mt-5 overflow-hidden rounded-2xl border border-slate-900/10">
+        <div className="mt-5 overflow-hidden rounded-2xl border border-vilu-ink/10">
           {weeklyQueries.map((query) => (
-            <div key={query} className="grid gap-2 border-b border-slate-900/10 p-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_220px]">
+            <div key={query} className="grid gap-2 border-b border-vilu-ink/10 p-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_220px]">
               <span className="font-bold">{query}</span>
-              <span className="text-sm text-slate-500">{english ? 'ChatGPT / Perplexity / Gemini / Yandex Neuro' : 'ChatGPT / Perplexity / Gemini / Яндекс Нейро'}</span>
+              <span className="text-sm text-vilu-ink/55">{english ? 'ChatGPT / Perplexity / Gemini / Yandex Neuro' : 'ChatGPT / Perplexity / Gemini / Яндекс Нейро'}</span>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+      <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
         <h2 className="text-2xl font-black tracking-tight">{english ? '7-day plan' : 'План на 7 дней'}</h2>
         <div className="mt-5 grid gap-3">
           {sevenDayPlan.map(([day, text]) => (
-            <div key={day} className="grid gap-2 rounded-2xl bg-stone-50 p-4 md:grid-cols-[120px_1fr]">
+            <div key={day} className="grid gap-2 rounded-2xl bg-vilu-paper p-4 md:grid-cols-[120px_1fr]">
               <strong>{day}</strong>
-              <p className="leading-7 text-slate-600">{text}</p>
+              <p className="leading-7 text-vilu-ink/65">{text}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+      <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
         <h2 className="text-2xl font-black tracking-tight">{english ? 'What not to do' : 'Что не делать'}</h2>
         <div className="mt-5 grid gap-3">
           {donts.map((item) => (
-            <div key={item} className="rounded-2xl bg-amber-50 p-4 leading-7 text-amber-950">{item}</div>
+            <div key={item} className="rounded-2xl bg-vilu-lime/30 p-4 leading-7 text-vilu-ink">{item}</div>
           ))}
         </div>
       </section>
@@ -1034,21 +1137,21 @@ function AiSourceOperations({ language }: { language: 'ru' | 'en' }) {
 
 function ContentBlock({ title, text }: { title: string; text: string }) {
   return (
-    <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+    <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
       <h2 className="text-2xl font-black tracking-tight">{title}</h2>
-      <p className="mt-3 text-lg leading-8 text-slate-600">{text}</p>
+      <p className="mt-3 text-lg leading-8 text-vilu-ink/65">{text}</p>
     </section>
   );
 }
 
 function ListBlock({ title, items, tone = 'default' }: { title: string; items: string[]; tone?: 'default' | 'warning' }) {
   return (
-    <section className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
+    <section className="rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10">
       <h2 className="text-2xl font-black tracking-tight">{title}</h2>
       <div className="mt-5 grid gap-3">
         {items.map((item) => (
-          <div key={item} className={`flex gap-3 rounded-2xl p-4 ${tone === 'warning' ? 'bg-amber-50 text-amber-950' : 'bg-stone-50 text-slate-700'}`}>
-            <CheckCircle2 className="mt-1 shrink-0 text-[#315c56]" size={18} />
+          <div key={item} className={`flex gap-3 rounded-2xl p-4 ${tone === 'warning' ? 'bg-vilu-lime/30 text-vilu-ink' : 'bg-vilu-paper text-vilu-ink/75'}`}>
+            <CheckCircle2 className="mt-1 shrink-0 text-vilu-green" size={18} />
             <p className="leading-7">{item}</p>
           </div>
         ))}

@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ViLu Fit-Ready Design Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #08101f;
+      --paper: #fffaf2;
+      --cream: #f7f1e8;
+      --mist: #eef5f1;
+      --green: #315c56;
+      --amber: #f5b25f;
+      --clay: #9a6933;
+      --line: #e8dfd2;
+      --white: #ffffff;
+      --slate: #607086;
+      --soft: #f4f1ec;
+      --success: #15803d;
+      --warning: #92400e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Manrope", system-ui, sans-serif;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 36px 0 72px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Unbounded", "Manrope", system-ui, sans-serif;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    h1 { max-width: 850px; font-size: clamp(38px, 7vw, 82px); }
+    h2 { font-size: clamp(28px, 4vw, 46px); }
+    h3 { font-size: 18px; }
+    p { margin: 0; color: var(--slate); }
+
+    .eyebrow {
+      color: var(--clay);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .hero {
+      display: grid;
+      gap: 24px;
+      padding: 32px 0;
+    }
+
+    .hero p {
+      max-width: 680px;
+      font-size: 18px;
+    }
+
+    .surface {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+      gap: 24px;
+      align-items: start;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fbf8 100%);
+      box-shadow: 0 24px 70px rgb(8 16 31 / 0.08);
+    }
+
+    .canvas-card,
+    .rail-card,
+    .result-card,
+    .details-card {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--white);
+    }
+
+    .canvas-card {
+      padding: 24px;
+    }
+
+    .frame-title {
+      display: flex;
+      gap: 16px;
+      align-items: start;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .photo-stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 430px;
+      overflow: hidden;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 50% 40%, rgb(49 92 86 / 0.12), transparent 34%),
+        var(--soft);
+    }
+
+    .face {
+      position: relative;
+      width: min(320px, 78vw);
+      height: 380px;
+      border-radius: 48% 48% 42% 42%;
+      background: linear-gradient(180deg, #e9c8ad, #d6a283);
+      box-shadow: inset 0 0 0 1px rgb(8 16 31 / 0.08), 0 18px 40px rgb(8 16 31 / 0.12);
+    }
+
+    .hair {
+      position: absolute;
+      inset: -22px 34px auto;
+      height: 90px;
+      border-radius: 48% 48% 20% 20%;
+      background: #35251f;
+    }
+
+    .glasses {
+      position: absolute;
+      top: 135px;
+      left: 50%;
+      width: 252px;
+      height: 82px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+    }
+
+    .lens {
+      flex: 1;
+      height: 78px;
+      border: 9px solid #fff7ea;
+      border-radius: 38%;
+      background: rgb(255 255 255 / 0.2);
+      box-shadow: 0 12px 24px rgb(8 16 31 / 0.12);
+    }
+
+    .bridge {
+      width: 30px;
+      height: 10px;
+      border-radius: 999px;
+      background: #fff7ea;
+    }
+
+    .eyes {
+      position: absolute;
+      top: 158px;
+      left: 50%;
+      width: 170px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .eye {
+      width: 22px;
+      height: 10px;
+      border-radius: 999px;
+      background: #2d3943;
+    }
+
+    .nose {
+      position: absolute;
+      top: 188px;
+      left: 50%;
+      width: 26px;
+      height: 64px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      border-right: 3px solid rgb(8 16 31 / 0.18);
+    }
+
+    .mouth {
+      position: absolute;
+      left: 50%;
+      bottom: 82px;
+      width: 82px;
+      height: 18px;
+      transform: translateX(-50%);
+      border-bottom: 4px solid rgb(8 16 31 / 0.22);
+      border-radius: 50%;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .control {
+      min-height: 72px;
+      padding: 14px;
+      border-radius: 18px;
+      background: var(--soft);
+    }
+
+    .control strong {
+      display: block;
+      margin-bottom: 10px;
+      color: #94a3b8;
+      font-family: "Unbounded", "Manrope", system-ui, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .slider {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--green) 48%, #d8d8d8 48%);
+    }
+
+    .rail {
+      display: grid;
+      gap: 16px;
+    }
+
+    .rail-card,
+    .result-card,
+    .details-card {
+      padding: 20px;
+    }
+
+    .status {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--mist);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .score {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .score b {
+      font-family: "Unbounded", "Manrope", system-ui, sans-serif;
+      font-size: 54px;
+      line-height: 1;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .list div {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 10px;
+      color: var(--slate);
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--mist);
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 18px;
+      font-family: "Unbounded", "Manrope", system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .btn.primary { background: var(--ink); color: var(--white); }
+    .btn.secondary { background: var(--amber); }
+    .btn.ghost { background: var(--white); border: 1px solid var(--line); }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .details-card {
+      min-height: 130px;
+      background: var(--white);
+    }
+
+    .details-card p {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #eef4ff;
+      color: #1e3a8a;
+      font-size: 14px;
+    }
+
+    @media (max-width: 820px) {
+      main { width: min(100% - 20px, 720px); padding-top: 20px; }
+      .surface { grid-template-columns: 1fr; padding: 14px; border-radius: 24px; }
+      .canvas-card, .rail-card, .result-card, .details-card { border-radius: 20px; }
+      .canvas-card { padding: 14px; }
+      .photo-stage { min-height: 360px; }
+      .control-row { grid-template-columns: 1fr; }
+      .details-grid { grid-template-columns: 1fr; }
+      .frame-title { display: grid; }
+      .score b { font-size: 44px; }
+      .btn { width: 100%; letter-spacing: 0.04em; }
+    }
+
+    @media (max-width: 360px) {
+      h1 { font-size: 34px; }
+      .face { width: 260px; height: 330px; }
+      .glasses { width: 212px; top: 118px; }
+      .eyes { width: 144px; top: 140px; }
+      .nose { top: 164px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <span class="eyebrow">Fit-ready preview</span>
+      <h1>Посадка оправы без ощущения debug-интерфейса</h1>
+      <p>Фича показывает результат, чеклист для салона и аккуратно прячет технические данные. 3D-готовность и паспорт оправы помогают доверию, но не спорят с главным действием.</p>
+    </section>
+
+    <section class="surface" aria-label="Fit-ready try-on preview">
+      <div class="canvas-card">
+        <div class="frame-title">
+          <div>
+            <span class="eyebrow">ViLu Atelier</span>
+            <h2>Aurora Crystal</h2>
+          </div>
+          <span class="status">Автопосадка готова</span>
+        </div>
+
+        <div class="photo-stage" aria-label="Примерка оправы на фото">
+          <div class="face">
+            <div class="hair"></div>
+            <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+            <div class="glasses"><div class="lens"></div><div class="bridge"></div><div class="lens"></div></div>
+            <div class="nose"></div>
+            <div class="mouth"></div>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <div class="control"><strong>Масштаб</strong><div class="slider"></div></div>
+          <div class="control"><strong>Влево / вправо</strong><div class="slider"></div></div>
+          <div class="control"><strong>Выше / ниже</strong><div class="slider"></div></div>
+        </div>
+      </div>
+
+      <aside class="rail">
+        <div class="result-card">
+          <span class="status">Качество фото: хорошее</span>
+          <div class="score"><b>82</b><span>/100</span></div>
+          <h3>Подходит для первого визита</h3>
+          <p>Оценка предварительная. Финальную посадку проверяет консультант в салоне.</p>
+
+          <div class="list">
+            <div><span class="dot">✓</span><span>Ширина оправы выглядит сбалансированной.</span></div>
+            <div><span class="dot">✓</span><span>Глаза близко к центру линз.</span></div>
+            <div><span class="dot">!</span><span>Проверьте переносицу и комфорт дужек в салоне.</span></div>
+          </div>
+
+          <div class="actions">
+            <a class="btn primary" href="#">Сохранить в подбор</a>
+            <a class="btn secondary" href="#">Найти, где примерить</a>
+            <a class="btn ghost" href="#">Скопировать чеклист</a>
+          </div>
+        </div>
+
+        <div class="rail-card">
+          <span class="eyebrow">Точнее с хорошим фото</span>
+          <p>Смотрите прямо, телефон на уровне глаз, лицо занимает 40-60% кадра.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="details-grid" aria-label="Secondary fit-ready details">
+      <article class="details-card">
+        <span class="eyebrow">Данные оправы</span>
+        <h3>49-19-140 · ацетат · посадка A</h3>
+        <p>Паспорт раскрывается только когда пользователь хочет понять детали.</p>
+      </article>
+      <article class="details-card">
+        <span class="eyebrow">3D-готовность</span>
+        <h3>Модель готовится</h3>
+        <p>Нейтральное состояние без красных ошибок и технических путей.</p>
+      </article>
+      <article class="details-card">
+        <span class="eyebrow">Ориентиры</span>
+        <h3>Скрыты по умолчанию</h3>
+        <p>Точки можно показать вторичной кнопкой, но они не должны быть первым впечатлением.</p>
+      </article>
+    </section>
+
+    <div class="footer-note">
+      Проверка перед реализацией: открыть макет на 320px и убедиться, что кнопки не обрезаются, карточки идут в одну колонку, а технические детали остаются ниже результата.
+    </div>
+  </main>
+</body>
+</html>
