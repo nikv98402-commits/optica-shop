@@ -69,24 +69,26 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
     ];
     setAnswers(nextAnswers);
 
-    if (questionIndex >= flow.questions.length - 1) {
-      const nextResult = calculateEyeCheckResult(flow, nextAnswers);
-      setResult(nextResult);
-      setStarted(false);
-      trackEvent(AnalyticsEvent.EyeCheckCompleted, {
-        flow_id: flow.id,
-        risk_level: nextResult.riskLevel,
-        total_score: nextResult.totalScore,
-      });
-      trackEvent(AnalyticsEvent.EyeCheckResultViewed, {
-        flow_id: flow.id,
-        risk_level: nextResult.riskLevel,
-      });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
+    setQuestionIndex((currentIndex) => {
+      if (currentIndex >= flow.questions.length - 1) {
+        const nextResult = calculateEyeCheckResult(flow, nextAnswers);
+        setResult(nextResult);
+        setStarted(false);
+        trackEvent(AnalyticsEvent.EyeCheckCompleted, {
+          flow_id: flow.id,
+          risk_level: nextResult.riskLevel,
+          total_score: nextResult.totalScore,
+        });
+        trackEvent(AnalyticsEvent.EyeCheckResultViewed, {
+          flow_id: flow.id,
+          risk_level: nextResult.riskLevel,
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return currentIndex;
+      }
 
-    setQuestionIndex((index) => index + 1);
+      return currentIndex + 1;
+    });
   };
 
   const handleBack = () => {
@@ -162,6 +164,7 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
         {started && currentQuestion && (
           <div className="mt-8">
             <EyeCheckQuestionCard
+              key={`${flow.id}-${currentQuestion.id}`}
               flow={flow}
               question={currentQuestion}
               questionIndex={questionIndex}
