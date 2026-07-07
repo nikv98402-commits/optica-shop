@@ -10,6 +10,48 @@ export type EyeCheckRiskLevel =
   | 'do-not-delay'
   | 'urgent';
 
+export type VisionTrackerProfileType = 'self' | 'child' | 'family' | 'explore';
+export type VisionTrackerReason =
+  | 'screen-fatigue'
+  | 'time-to-check'
+  | 'child-concern'
+  | 'one-eye-worse'
+  | 'choose-glasses';
+export type VisionTrackerLastExam =
+  | 'less-six-months'
+  | 'six-twelve-months'
+  | 'more-one-year'
+  | 'more-two-years'
+  | 'unknown'
+  | 'never';
+
+export interface VisionTrackerOnboardingAnswers {
+  profileType?: VisionTrackerProfileType;
+  reason?: VisionTrackerReason;
+  lastExam?: VisionTrackerLastExam;
+}
+
+export interface VisionTrackerOnboardingOption {
+  value: VisionTrackerProfileType | VisionTrackerReason | VisionTrackerLastExam;
+  label: {
+    ru: string;
+    en: string;
+  };
+}
+
+export interface VisionTrackerOnboardingStep {
+  id: keyof VisionTrackerOnboardingAnswers;
+  title: {
+    ru: string;
+    en: string;
+  };
+  subtitle: {
+    ru: string;
+    en: string;
+  };
+  options: VisionTrackerOnboardingOption[];
+}
+
 export interface EyeCheckQuestion {
   id: string;
   text: string;

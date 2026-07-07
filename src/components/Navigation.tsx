@@ -29,7 +29,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
 
   const navItems = [
     { id: 'tryon', label: language === 'en' ? 'Online try-on' : 'Онлайн-примерка' },
-    { id: 'eyecheck', label: language === 'en' ? 'Eye Check' : 'Проверка зрения' },
+    { id: 'eyecheck', label: language === 'en' ? 'Vision Tracker' : 'Трекер зрения' },
     { id: 'products', label: language === 'en' ? 'Catalog' : 'Каталог' },
     { id: 'home', label: language === 'en' ? 'About' : 'О бренде' },
   ];

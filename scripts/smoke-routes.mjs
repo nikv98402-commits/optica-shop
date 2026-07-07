@@ -4,6 +4,7 @@ const checks = [
   { path: '/', type: 'html' },
   { path: '/products', type: 'html' },
   { path: '/tryon', type: 'html' },
+  { path: '/vision-tracker', type: 'html' },
   { path: '/face-fit-score', type: 'html' },
   { path: '/ai-source', type: 'html' },
   { path: '/privacy', type: 'html' },

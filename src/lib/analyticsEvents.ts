@@ -32,6 +32,11 @@ export const AnalyticsEvent = {
   EyeCheckSavedLocal: 'eye_check_saved_local',
   EyeCheckCtaTryOn: 'eye_check_cta_tryon',
   EyeCheckCtaNearbyOptics: 'eye_check_cta_nearby_optics',
+  VisionTrackerOpened: 'vision_tracker_opened',
+  VisionTrackerOnboardingStarted: 'vision_tracker_onboarding_started',
+  VisionTrackerOnboardingCompleted: 'vision_tracker_onboarding_completed',
+  VisionTrackerFlowRecommended: 'vision_tracker_flow_recommended',
+  VisionTrackerSavedLocal: 'vision_tracker_saved_local',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvent)[keyof typeof AnalyticsEvent];

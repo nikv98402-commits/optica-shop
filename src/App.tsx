@@ -25,6 +25,8 @@ const pathPageMap: Record<string, Page> = {
   'eye-check': 'eyecheck',
   eyecheck: 'eyecheck',
   'vision-check': 'eyecheck',
+  'vision-tracker': 'eyecheck',
+  visiontracker: 'eyecheck',
 };
 
 function currentKnowledgeSlug() {

@@ -4,13 +4,14 @@ import { EyeCheckFlowSelector } from '../components/eyecheck/EyeCheckFlowSelecto
 import { EyeCheckIntro } from '../components/eyecheck/EyeCheckIntro';
 import { EyeCheckQuestionCard } from '../components/eyecheck/EyeCheckQuestionCard';
 import { EyeCheckResultCard } from '../components/eyecheck/EyeCheckResultCard';
+import { VisionTrackerOnboarding } from '../components/eyecheck/VisionTrackerOnboarding';
 import { useLanguage } from '../contexts/LanguageContext';
 import { eyeCheckUiCopy, getEyeCheckFlowCopy } from '../data/eyeCheckCopy';
 import { eyeCheckFlows, getEyeCheckFlow } from '../data/eyeCheckFlows';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 import { calculateEyeCheckResult } from '../lib/eyeCheckScoring';
 import { saveEyeCheckResult } from '../lib/eyeCheckStorage';
-import type { EyeCheckAnswer, EyeCheckFlowId, EyeCheckResult } from '../types/eyeCheck';
+import type { EyeCheckAnswer, EyeCheckFlowId, EyeCheckResult, VisionTrackerOnboardingAnswers } from '../types/eyeCheck';
 
 interface EyeCheckProps {
   onNavigate: (page: string) => void;
@@ -25,6 +26,8 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
   const [answers, setAnswers] = useState<EyeCheckAnswer[]>([]);
   const [result, setResult] = useState<EyeCheckResult | null>(null);
   const [saved, setSaved] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [onboardingAnswers, setOnboardingAnswers] = useState<VisionTrackerOnboardingAnswers | null>(null);
 
   const flow = useMemo(() => getEyeCheckFlow(selectedFlowId), [selectedFlowId]);
   const flowText = getEyeCheckFlowCopy(flow, language);
@@ -32,12 +35,13 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
 
   useEffect(() => {
     trackEvent(AnalyticsEvent.EyeCheckOpened, { source: 'route' });
+    trackEvent(AnalyticsEvent.VisionTrackerOpened, { source: 'route' });
   }, []);
 
   useEffect(() => {
     document.title = language === 'en'
-      ? 'ViLu Eye Check | Self-check before an in-person eye check'
-      : 'ViLu Eye Check | Self-check перед очной проверкой';
+      ? 'ViLu Vision Tracker | Before an in-person eye check'
+      : 'ViLu Vision Tracker | Перед очной проверкой';
   }, [language]);
 
   const resetFlow = (nextFlowId = selectedFlowId) => {
@@ -47,6 +51,27 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
     setAnswers([]);
     setResult(null);
     setSaved(false);
+  };
+
+  const handleOnboardingStart = () => {
+    trackEvent(AnalyticsEvent.VisionTrackerOnboardingStarted, { source: 'vision_tracker' });
+  };
+
+  const handleOnboardingComplete = (
+    nextAnswers: VisionTrackerOnboardingAnswers,
+    recommendedFlowId: EyeCheckFlowId,
+  ) => {
+    setOnboardingAnswers(nextAnswers);
+    setOnboardingComplete(true);
+    resetFlow(recommendedFlowId);
+    trackEvent(AnalyticsEvent.VisionTrackerOnboardingCompleted, { status: 'complete' });
+    trackEvent(AnalyticsEvent.VisionTrackerFlowRecommended, { flow_id: recommendedFlowId });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOnboardingSkip = () => {
+    setOnboardingComplete(true);
+    trackEvent(AnalyticsEvent.VisionTrackerOnboardingCompleted, { status: 'skipped' });
   };
 
   const handleSelectFlow = (id: EyeCheckFlowId) => {
@@ -104,6 +129,10 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
       flow_id: result.flowId,
       risk_level: result.riskLevel,
     });
+    trackEvent(AnalyticsEvent.VisionTrackerSavedLocal, {
+      flow_id: result.flowId,
+      risk_level: result.riskLevel,
+    });
   };
 
   const handleTryOn = () => {
@@ -132,11 +161,30 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
           {copy.privacyNotice}
         </div>
 
-        <div className="mt-8">
-          <EyeCheckFlowSelector flows={eyeCheckFlows} selectedId={selectedFlowId} onSelect={handleSelectFlow} />
-        </div>
+        {!onboardingComplete && !started && !result && (
+          <VisionTrackerOnboarding
+            onStart={handleOnboardingStart}
+            onComplete={handleOnboardingComplete}
+            onSkip={handleOnboardingSkip}
+          />
+        )}
 
-        {!started && !result && (
+        {onboardingComplete && !started && !result && (
+          <div className="mt-8 rounded-[1.5rem] bg-vilu-card p-5 text-vilu-ink shadow-sm ring-1 ring-vilu-line">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">{copy.recommendationReady}</p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-vilu-ink/68">
+              {copy.recommendationText} {onboardingAnswers ? copy.chooseAnotherScenario : ''}
+            </p>
+          </div>
+        )}
+
+        {onboardingComplete && (
+          <div className="mt-8">
+            <EyeCheckFlowSelector flows={eyeCheckFlows} selectedId={selectedFlowId} onSelect={handleSelectFlow} />
+          </div>
+        )}
+
+        {onboardingComplete && !started && !result && (
           <section className="mt-8 rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-line md:p-8">
             <div className="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
               <div>
