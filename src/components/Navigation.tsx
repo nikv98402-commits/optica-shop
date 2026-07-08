@@ -28,10 +28,11 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
   };
 
   const navItems = [
-    { id: 'tryon', label: language === 'en' ? 'Online try-on' : 'Онлайн-примерка' },
-    { id: 'eyecheck', label: language === 'en' ? 'Vision Tracker' : 'Трекер зрения' },
-    { id: 'products', label: language === 'en' ? 'Catalog' : 'Каталог' },
-    { id: 'home', label: language === 'en' ? 'About' : 'О бренде' },
+    { id: 'tryon', route: 'tryon', label: language === 'en' ? 'Online try-on' : 'Онлайн-примерка' },
+    { id: 'eyecheck', route: 'eyecheck', label: language === 'en' ? 'Vision Tracker' : 'Трекер зрения' },
+    { id: 'products', route: 'products', label: language === 'en' ? 'Catalog' : 'Каталог' },
+    { id: 'visionaccess', route: 'vision-access', label: language === 'en' ? 'Mission' : 'Миссия' },
+    { id: 'home', route: 'home', label: language === 'en' ? 'About' : 'О бренде' },
   ];
 
   const labels = {
@@ -49,7 +50,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
 
         <div className="hidden items-center gap-8 md:flex">
           {navItems.map((item) => (
-            <button key={item.id} onClick={() => go(item.id)} className={`text-sm font-bold uppercase tracking-[0.18em] transition ${currentPage === item.id ? 'text-vilu-lime' : 'text-vilu-paper/58 hover:text-vilu-paper'}`}>{item.label}</button>
+            <button key={item.id} onClick={() => go(item.route)} className={`text-sm font-bold uppercase tracking-[0.18em] transition ${currentPage === item.id ? 'text-vilu-lime' : 'text-vilu-paper/58 hover:text-vilu-paper'}`}>{item.label}</button>
           ))}
           <button onClick={openStores} className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-vilu-paper/58 transition hover:text-vilu-paper"><MapPin size={16} /> {labels.stores}</button>
         </div>
@@ -77,9 +78,10 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
             <button onClick={() => go('tryon')} className="rounded-2xl bg-vilu-lime p-4 text-left font-bold text-vilu-ink">{navItems[0].label}</button>
             <button onClick={() => go('eyecheck')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[1].label}</button>
             <button onClick={() => go('products')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[2].label}</button>
+            <button onClick={() => go('vision-access')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[3].label}</button>
             <button onClick={openStores} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{language === 'en' ? 'Our stores' : 'Наши салоны'}</button>
             <button onClick={() => go('dashboard')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{labels.dashboard}</button>
-            <button onClick={() => go('home')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[3].label}</button>
+            <button onClick={() => go('home')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[4].label}</button>
             <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold uppercase text-vilu-ink">{labels.language}: {targetLanguageLabel}</button>
             {user && <button onClick={() => signOut()} className="rounded-2xl bg-vilu-lime p-4 text-left font-bold text-vilu-ink">{labels.signOut}</button>}
           </div>

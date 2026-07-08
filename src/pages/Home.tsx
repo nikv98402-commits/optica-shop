@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, CheckCircle2, Eye, MapPin, MapPinned, Route, Sparkles } from 'lucide-react';
+import { ArrowRight, CalendarDays, CheckCircle2, Eye, Handshake, MapPin, MapPinned, Route, Sparkles } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { demoProducts, formatPrice } from '../data/products';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
@@ -29,7 +29,12 @@ const homeHeroCopy = {
     photo: 'Фото',
     store: 'Салон',
     findStore: 'Найти салон после подбора',
-    proofItems: ['Проверка зрения в салонах', 'Подбор линз по рецепту', 'Доставка и самовывоз']
+    proofItems: ['Проверка зрения в салонах', 'Подбор линз по рецепту', 'Доставка и самовывоз'],
+    missionEyebrow: 'Миссия',
+    missionTitle: 'Vision Access Program',
+    missionBody: 'ViLu начинает с подбора очков и навигации к оптике. Долгосрочно мы хотим помогать расширять доступ к проверке зрения и очкам через партнеров.',
+    missionCta: 'Узнать о миссии',
+    missionTrust: ['Без донатов в MVP', 'Без диагноза', 'Партнерская модель доступа']
   },
   en: {
     label: 'Try. Score. Store.',
@@ -49,7 +54,12 @@ const homeHeroCopy = {
     photo: 'Photo',
     store: 'Store',
     findStore: 'Find a store after fitting',
-    proofItems: ['Eye checks in stores', 'Prescription lens selection', 'Delivery and pickup']
+    proofItems: ['Eye checks in stores', 'Prescription lens selection', 'Delivery and pickup'],
+    missionEyebrow: 'Mission',
+    missionTitle: 'Vision Access Program',
+    missionBody: 'ViLu starts with eyewear selection and routing to optical stores. Long term, we want to help expand access to eye checks and glasses through partners.',
+    missionCta: 'Learn about the mission',
+    missionTrust: ['No donations in MVP', 'No diagnosis', 'Partner access model']
   }
 } as const;
 
@@ -237,6 +247,40 @@ export function Home({ onNavigate }: HomeProps) {
               className="mt-5 w-full rounded-full bg-vilu-lime px-6 py-4 text-sm font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-card"
             >
               Пройти self-check
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-vilu-paper px-6 py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-vilu-line bg-vilu-card p-6 shadow-sm md:grid-cols-[0.9fr_1.1fr] md:p-10">
+          <div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-vilu-lime text-vilu-ink">
+              <Handshake size={22} />
+            </div>
+            <p className="vilu-eyebrow mt-6">{copy.missionEyebrow}</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-vilu-ink md:text-5xl">{copy.missionTitle}</h2>
+          </div>
+          <div>
+            <p className="text-base font-semibold leading-8 text-vilu-ink/72">
+              {copy.missionBody}
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {copy.missionTrust.map((item) => (
+                <div key={item} className="rounded-2xl bg-vilu-cream p-4 text-sm font-black text-vilu-ink ring-1 ring-vilu-line">
+                  <CheckCircle2 className="mb-2 text-vilu-lime" size={18} />
+                  {item}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => {
+                trackEvent(AnalyticsEvent.VisionAccessOpened, { source: 'home_mission_card' });
+                onNavigate('vision-access');
+              }}
+              className="mt-6 rounded-full bg-vilu-lime px-6 py-3 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper"
+            >
+              {copy.missionCta} <ArrowRight className="ml-2 inline" size={16} />
             </button>
           </div>
         </div>

@@ -37,6 +37,12 @@ export const AnalyticsEvent = {
   VisionTrackerOnboardingCompleted: 'vision_tracker_onboarding_completed',
   VisionTrackerFlowRecommended: 'vision_tracker_flow_recommended',
   VisionTrackerSavedLocal: 'vision_tracker_saved_local',
+  VisionAccessOpened: 'vision_access_opened',
+  VisionAccessWhoSourceClicked: 'vision_access_who_source_clicked',
+  VisionAccessPartnerCtaClicked: 'vision_access_partner_cta_clicked',
+  VisionAccessTrackerCtaClicked: 'vision_access_tracker_cta_clicked',
+  VisionAccessTryOnCtaClicked: 'vision_access_tryon_cta_clicked',
+  VisionAccessCounterViewed: 'vision_access_counter_viewed',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvent)[keyof typeof AnalyticsEvent];
@@ -49,6 +55,7 @@ const blockedParamPatterns = [
   /phone/i,
   /email/i,
   /password/i,
+  /donation/i,
   /sph/i,
   /cyl/i,
   /axis/i,

@@ -9,11 +9,12 @@ import { Checkout } from './pages/Checkout';
 import { Dashboard } from './pages/Dashboard';
 import { TryOnPilot } from './pages/TryOnPilot';
 import { EyeCheck } from './pages/EyeCheck';
+import { VisionAccess } from './pages/VisionAccess';
 import { getKnowledgePage, KnowledgeBase } from './pages/KnowledgeBase';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 
-type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck';
+type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess';
 
 const pathPageMap: Record<string, Page> = {
   '': 'home',
@@ -27,6 +28,9 @@ const pathPageMap: Record<string, Page> = {
   'vision-check': 'eyecheck',
   'vision-tracker': 'eyecheck',
   visiontracker: 'eyecheck',
+  'vision-access': 'visionaccess',
+  impact: 'visionaccess',
+  access: 'visionaccess',
 };
 
 function currentKnowledgeSlug() {
@@ -60,10 +64,11 @@ function App() {
     if (knowledgePage) {
       window.history.pushState({}, '', '/');
     }
+    const targetPage = pathPageMap[page] ?? (page as Page);
     if (page in pathPageMap) {
       window.history.pushState({}, '', page === 'home' ? '/' : `/${page}`);
     }
-    setCurrentPage(page as Page);
+    setCurrentPage(targetPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -111,6 +116,9 @@ function App() {
             )}
             {currentPage === 'eyecheck' && (
               <EyeCheck onNavigate={handleNavigate} />
+            )}
+            {currentPage === 'visionaccess' && (
+              <VisionAccess onNavigate={handleNavigate} />
             )}
           </main>
 
