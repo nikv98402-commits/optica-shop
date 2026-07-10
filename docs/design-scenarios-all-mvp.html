@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ViLu MVP Design Scenarios</title>
+    <style>
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: #0b1020;
+        color: #09111f;
+        font-family: Inter, Manrope, Arial, sans-serif;
+      }
+      .top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 16px 28px;
+        color: #fff;
+        background: rgba(11, 16, 32, .82);
+        border-bottom: 1px solid rgba(255,255,255,.12);
+        backdrop-filter: blur(18px);
+      }
+      .top strong { font-size: 22px; letter-spacing: -.04em; }
+      .top nav { display: flex; gap: 10px; flex-wrap: wrap; }
+      .top a {
+        color: #fff;
+        text-decoration: none;
+        border: 1px solid rgba(255,255,255,.18);
+        border-radius: 999px;
+        padding: 9px 14px;
+        font-size: 12px;
+        font-weight: 850;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .intro {
+        max-width: 1260px;
+        margin: 0 auto;
+        padding: 56px 24px 28px;
+        color: #fff;
+      }
+      .intro h1 {
+        max-width: 900px;
+        margin: 0 0 14px;
+        font-size: clamp(40px, 7vw, 92px);
+        line-height: .92;
+        letter-spacing: -.06em;
+      }
+      .intro p {
+        max-width: 860px;
+        margin: 0;
+        color: rgba(255,255,255,.7);
+        font-size: 18px;
+        line-height: 1.55;
+      }
+      .scenario {
+        max-width: 1500px;
+        margin: 28px auto 56px;
+        overflow: hidden;
+        border-radius: 36px;
+        border: 1px solid rgba(255,255,255,.18);
+        box-shadow: 0 34px 100px rgba(0,0,0,.38);
+      }
+      .scenario-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+        padding: 34px 38px;
+      }
+      .kicker {
+        display: inline-flex;
+        width: fit-content;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 11px;
+        font-weight: 950;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+      }
+      h2 {
+        margin: 14px 0 0;
+        font-size: clamp(42px, 6vw, 92px);
+        line-height: .9;
+        letter-spacing: -.06em;
+      }
+      .scenario-head p {
+        max-width: 720px;
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.55;
+      }
+      .screens {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        padding: 0 38px 38px;
+      }
+      .screen {
+        min-height: 410px;
+        overflow: hidden;
+        border-radius: 28px;
+        border: 1px solid rgba(0,0,0,.1);
+        padding: 22px;
+      }
+      .screen.wide { grid-column: span 2; }
+      .screen-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+      .screen-title span {
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+      }
+      .pill {
+        border-radius: 999px;
+        padding: 8px 11px;
+        font-size: 11px;
+        font-weight: 950;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        border-radius: 999px;
+        border: 0;
+        padding: 0 22px;
+        font-size: 13px;
+        font-weight: 950;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .ghost { background: transparent; border: 1px solid currentColor; }
+      .mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .mini-card { border-radius: 18px; padding: 15px; }
+      .mini-card strong { display: block; margin-bottom: 6px; font-size: 24px; letter-spacing: -.05em; }
+      .mini-card p { margin: 0; font-size: 13px; line-height: 1.35; }
+      .phone {
+        margin: 10px auto 0;
+        width: min(280px, 100%);
+        border-radius: 34px;
+        padding: 16px;
+        border: 8px solid currentColor;
+      }
+      .face {
+        height: 250px;
+        border-radius: 26px;
+        background:
+          radial-gradient(circle at 50% 42%, rgba(255,255,255,.95) 0 22%, transparent 23%),
+          linear-gradient(160deg, rgba(255,255,255,.85), rgba(255,255,255,.35));
+        position: relative;
+      }
+      .glasses {
+        position: absolute;
+        left: 50%;
+        top: 40%;
+        width: 180px;
+        height: 68px;
+        transform: translate(-50%, -50%);
+      }
+      .glasses::before,
+      .glasses::after {
+        content: "";
+        position: absolute;
+        width: 72px;
+        height: 50px;
+        border: 9px solid currentColor;
+        border-radius: 24px;
+      }
+      .glasses::before { left: 0; }
+      .glasses::after { right: 0; }
+      .bridge {
+        position: absolute;
+        left: 50%;
+        top: 25px;
+        width: 28px;
+        height: 9px;
+        border-radius: 999px;
+        background: currentColor;
+        transform: translateX(-50%);
+      }
+      .list { display: grid; gap: 10px; }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-radius: 16px;
+        padding: 13px 14px;
+      }
+      .row strong { font-size: 15px; }
+      .row span { font-size: 12px; opacity: .76; }
+      .frame-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .frame {
+        min-height: 132px;
+        border-radius: 20px;
+        padding: 14px;
+        position: relative;
+      }
+      .frame .glasses { width: 120px; height: 48px; top: 46%; }
+      .frame .glasses::before,
+      .frame .glasses::after {
+        width: 48px; height: 32px; border-width: 7px; border-radius: 17px;
+      }
+      .frame .bridge { top: 16px; width: 20px; height: 7px; }
+      .quote {
+        margin: 18px 0 0;
+        font-size: 26px;
+        line-height: 1.05;
+        letter-spacing: -.05em;
+        font-weight: 950;
+      }
+
+      /* A: Editorial Diagnostic */
+      .a { background: #f5f0e7; }
+      .a .scenario-head { background: #fffaf2; border-bottom: 1px solid #ded2c4; }
+      .a .kicker, .a .pill { background: #09111f; color: #f5d36d; }
+      .a h2 { font-family: Georgia, "Times New Roman", serif; }
+      .a .scenario-head p { color: #4b5565; }
+      .a .screen { background: #fffaf2; border-color: #ded2c4; }
+      .a .screen-title span { color: #9a6933; }
+      .a .cta { background: #09111f; color: #fffaf2; }
+      .a .mini-card, .a .row, .a .frame { background: #f5f0e7; }
+      .a .phone { color: #315c56; background: #f8efe1; }
+      .a .quote { font-family: Georgia, "Times New Roman", serif; }
+
+      /* B: Kinetic Retail */
+      .b {
+        color: #f5ffe6;
+        background:
+          radial-gradient(circle at 82% 8%, rgba(225,255,55,.38), transparent 28%),
+          linear-gradient(135deg, #07120b 0 55%, #e8ff38 55% 100%);
+      }
+      .b .scenario-head { border-bottom: 1px solid rgba(245,255,230,.16); }
+      .b .kicker, .b .pill { background: #e8ff38; color: #07120b; }
+      .b h2 { font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; letter-spacing: .005em; text-transform: uppercase; }
+      .b .scenario-head p { color: rgba(245,255,230,.72); }
+      .b .screen { background: rgba(7,18,11,.78); border-color: rgba(245,255,230,.16); }
+      .b .screen-title span { color: #e8ff38; }
+      .b .cta { background: #e8ff38; color: #07120b; }
+      .b .mini-card, .b .row, .b .frame { background: rgba(245,255,230,.1); }
+      .b .phone { color: #e8ff38; background: #111827; }
+      .b .quote { font-size: 34px; text-transform: uppercase; }
+
+      /* C: Calm Concierge */
+      .c { background: #e7edf4; }
+      .c .scenario-head { background: #f8fbff; border-bottom: 1px solid #cfd9e6; }
+      .c .kicker, .c .pill { background: #d8ebff; color: #17415f; }
+      .c h2 { font-family: "Aptos Display", "Segoe UI", Arial, sans-serif; }
+      .c .scenario-head p { color: #43566b; }
+      .c .screen { background: #f8fbff; border-color: #cfd9e6; }
+      .c .screen-title span { color: #17415f; }
+      .c .cta { background: #17415f; color: #fff; }
+      .c .mini-card, .c .row, .c .frame { background: #edf5ff; }
+      .c .phone { color: #17415f; background: #fff; }
+      .c .quote { color: #17415f; }
+
+      @media (max-width: 1050px) {
+        .scenario-head, .screens { padding-left: 18px; padding-right: 18px; }
+        .screens { grid-template-columns: 1fr; }
+        .screen.wide { grid-column: auto; }
+        .scenario-head { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <strong>ViLu MVP scenarios</strong>
+      <nav>
+        <a href="#a">A Editorial</a>
+        <a href="#b">B Kinetic</a>
+        <a href="#c">C Concierge</a>
+      </nav>
+    </header>
+
+    <section class="intro">
+      <h1>Три полных дизайн-сценария для MVP</h1>
+      <p>
+        Каждый сценарий показывает, как один стиль проживает весь продукт: главную,
+        примерку, каталог, салоны, кабинет и knowledge base. Это не финальный код,
+        а выбор направления перед переносом в React.
+      </p>
+    </section>
+
+    <section id="a" class="scenario a">
+      <div class="scenario-head">
+        <div>
+          <span class="kicker">A / Editorial Diagnostic</span>
+          <h2>Метод выбора, который выглядит как источник доверия.</h2>
+        </div>
+        <p>Лучше всего для органики, экспертности и доверия. Внимание держится на методологии: Face-fit score, ограничения онлайн-примерки, понятный следующий шаг.</p>
+      </div>
+      <div class="screens">
+        <article class="screen wide">
+          <div class="screen-title"><span>Главная</span><b class="pill">Фото локально</b></div>
+          <p class="quote">Сначала проверьте посадку, потом выбирайте оправу для визита.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0"><button class="cta">Начать подбор</button><button class="cta ghost">Как работает score</button></div>
+          <div class="mini-grid">
+            <div class="mini-card"><strong>87/100</strong><p>Предварительная оценка посадки до салона.</p></div>
+            <div class="mini-card"><strong>2-3</strong><p>Подходящие оправы вместо хаотичного выбора.</p></div>
+          </div>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Примерка</span><b class="pill">Готово</b></div>
+          <div class="phone"><div class="face"><div class="glasses"><i class="bridge"></i></div></div></div>
+          <div style="margin-top:16px"><button class="cta" style="width:100%">Подстроить автоматически</button></div>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Каталог</span><b class="pill">6 pilot SKU</b></div>
+          <div class="frame-strip">
+            <div class="frame"><div class="glasses"><i class="bridge"></i></div></div>
+            <div class="frame"><div class="glasses"><i class="bridge"></i></div></div>
+            <div class="frame"><div class="glasses"><i class="bridge"></i></div></div>
+          </div>
+          <p class="quote" style="font-size:24px">Карточки продают не цену, а сценарий носки.</p>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Салоны</span><b class="pill">После подбора</b></div>
+          <div class="list">
+            <div class="row"><strong>VisionLux Pilot</strong><span>2.7 км</span></div>
+            <div class="row"><strong>Маршрут</strong><span>1 tap</span></div>
+            <div class="row"><strong>Скопировать подбор</strong><span>без заявки</span></div>
+          </div>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Кабинет</span><b class="pill">Demo/local</b></div>
+          <div class="mini-grid">
+            <div class="mini-card"><strong>Local</strong><p>Данные анкеты не отправляются на сервер.</p></div>
+            <div class="mini-card"><strong>Рецепт</strong><p>Только предварительный подбор, не диагноз.</p></div>
+          </div>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Knowledge</span><b class="pill">Citable</b></div>
+          <p class="quote" style="font-size:28px">Face-fit score: как понять, подходит ли оправа лицу.</p>
+          <div class="list" style="margin-top:14px">
+            <div class="row"><strong>Короткий ответ</strong><span>AI-friendly</span></div>
+            <div class="row"><strong>Ограничения</strong><span>trust</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="b" class="scenario b">
+      <div class="scenario-head">
+        <div>
+          <span class="kicker">B / Kinetic Retail</span>
+          <h2>Try. Score. Go.</h2>
+        </div>
+        <p>Самый агрессивный вариант для удержания внимания. Работает на коротких командах, контрасте, прогрессе и ощущении “я уже почти выбрал”.</p>
+      </div>
+      <div class="screens">
+        <article class="screen wide">
+          <div class="screen-title"><span>Home</span><b class="pill">30 sec flow</b></div>
+          <p class="quote">Upload photo. Get score. Pick 3. Go to store.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0"><button class="cta">Start fitting</button><button class="cta ghost">View drops</button></div>
+          <div class="mini-grid">
+            <div class="mini-card"><strong>1</strong><p>Photo</p></div>
+            <div class="mini-card"><strong>2</strong><p>Score</p></div>
+          </div>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Try-on</span><b class="pill">Auto-fit</b></div>
+          <div class="phone"><div class="face"><div class="glasses"><i class="bridge"></i></div></div></div>
+          <button class="cta" style="width:100%;margin-top:16px">Lock fit</button>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Catalog</span><b class="pill">Drops</b></div>
+          <div class="frame-strip">
+            <div class="frame"><div class="glasses"><i class="bridge"></i></div></div>
+            <div class="frame"><div class="glasses"><i class="bridge"></i></div></div>
+            <div class="frame"><div class="glasses"><i class="bridge"></i></div></div>
+          </div>
+          <p class="quote">Choose your 3.</p>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Stores</span><b class="pill">Intent</b></div>
+          <div class="list">
+            <div class="row"><strong>Route</strong><span>tap</span></div>
+            <div class="row"><strong>Call</strong><span>tap</span></div>
+            <div class="row"><strong>Telegram</strong><span>tap</span></div>
+          </div>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Cabinet</span><b class="pill">Local</b></div>
+          <p class="quote">Demo profile. Zero server storage.</p>
+          <button class="cta" style="margin-top:18px">Save locally</button>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Knowledge</span><b class="pill">SEO fuel</b></div>
+          <div class="list">
+            <div class="row"><strong>52-18-140</strong><span>frame size</span></div>
+            <div class="row"><strong>PD</strong><span>lens position</span></div>
+            <div class="row"><strong>High diopters</strong><span>risk</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="c" class="scenario c">
+      <div class="scenario-head">
+        <div>
+          <span class="kicker">C / Calm Concierge</span>
+          <h2>Сервис, который ведет пользователя за руку.</h2>
+        </div>
+        <p>Лучший вариант для широкой аудитории. Меньше крика, больше ясности: каждый экран показывает состояние, следующий шаг и границы доверия.</p>
+      </div>
+      <div class="screens">
+        <article class="screen wide">
+          <div class="screen-title"><span>Главная</span><b class="pill">4 шага</b></div>
+          <div class="list">
+            <div class="row"><strong>1. Загрузите фото</strong><span>только браузер</span></div>
+            <div class="row"><strong>2. Получите автопосадку</strong><span>без debug-точек</span></div>
+            <div class="row"><strong>3. Сохраните подбор</strong><span>2-3 оправы</span></div>
+            <div class="row"><strong>4. Откройте салон</strong><span>маршрут/контакт</span></div>
+          </div>
+          <button class="cta" style="margin-top:20px">Начать спокойно</button>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Примерка</span><b class="pill">Фото хорошее</b></div>
+          <div class="phone"><div class="face"><div class="glasses"><i class="bridge"></i></div></div></div>
+          <div class="mini-card" style="margin-top:14px"><strong>87/100</strong><p>Подходит для первого визита.</p></div>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Каталог</span><b class="pill">Подбор</b></div>
+          <div class="frame-strip">
+            <div class="frame"><div class="glasses"><i class="bridge"></i></div></div>
+            <div class="frame"><div class="glasses"><i class="bridge"></i></div></div>
+            <div class="frame"><div class="glasses"><i class="bridge"></i></div></div>
+          </div>
+          <div class="row" style="margin-top:14px"><strong>Сохранено</strong><span>2 из 3</span></div>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Салоны</span><b class="pill">Fallback city</b></div>
+          <div class="list">
+            <div class="row"><strong>Выбрать город вручную</strong><span>без гео</span></div>
+            <div class="row"><strong>Ближайшие после подбора</strong><span>not directory</span></div>
+            <div class="row"><strong>Уточните наличие</strong><span>honest</span></div>
+          </div>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Кабинет</span><b class="pill">Trust</b></div>
+          <div class="mini-grid">
+            <div class="mini-card"><strong>Demo</strong><p>Поля работают как UX-прототип.</p></div>
+            <div class="mini-card"><strong>Local</strong><p>Сохранение только на устройстве.</p></div>
+          </div>
+          <button class="cta" style="margin-top:18px;width:100%">Сохранено локально</button>
+        </article>
+        <article class="screen">
+          <div class="screen-title"><span>Knowledge</span><b class="pill">Guide</b></div>
+          <p class="quote" style="font-size:26px">Короткий ответ, пример, ограничения, что делать дальше.</p>
+          <div class="row" style="margin-top:14px"><strong>CTA</strong><span>Получить Face-fit score</span></div>
+        </article>
+      </div>
+    </section>
+  </body>
+</html>

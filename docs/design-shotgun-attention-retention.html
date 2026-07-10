@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ViLu Design Shotgun - Attention and Retention</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #08101f;
+        --muted: #667085;
+        --line: rgba(8, 16, 31, 0.12);
+        --paper: #f7f3ec;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #111827;
+        color: var(--ink);
+        font-family: Inter, Manrope, Arial, sans-serif;
+      }
+
+      .board {
+        display: grid;
+        gap: 24px;
+        padding: 24px;
+      }
+
+      .intro {
+        max-width: 1200px;
+        margin: 0 auto;
+        color: white;
+      }
+
+      .intro h1 {
+        margin: 0 0 8px;
+        font-size: clamp(34px, 5vw, 72px);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+
+      .intro p {
+        max-width: 860px;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 18px;
+        line-height: 1.55;
+      }
+
+      .variant {
+        overflow: hidden;
+        max-width: 1500px;
+        margin: 0 auto;
+        width: 100%;
+        min-height: 760px;
+        border-radius: 34px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 36px 120px rgba(0, 0, 0, 0.36);
+      }
+
+      .variant-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 999px;
+        padding: 9px 14px;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 24px 40px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand {
+        font-size: 30px;
+        font-weight: 950;
+        letter-spacing: -0.05em;
+      }
+
+      .navlinks {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 850;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        border: 0;
+        border-radius: 999px;
+        padding: 0 24px;
+        font-size: 14px;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .ghost {
+        background: transparent;
+        border: 1px solid var(--line);
+      }
+
+      .retention {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .metric {
+        border-radius: 20px;
+        padding: 18px;
+      }
+
+      .metric strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 28px;
+        letter-spacing: -0.04em;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .frame-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 32px;
+        padding: 26px;
+      }
+
+      .glasses {
+        position: relative;
+        height: 140px;
+        margin: 34px auto;
+        max-width: 360px;
+      }
+
+      .lens {
+        position: absolute;
+        top: 25px;
+        width: 132px;
+        height: 88px;
+        border: 14px solid currentColor;
+        border-radius: 42px;
+      }
+
+      .lens.left {
+        left: 28px;
+      }
+
+      .lens.right {
+        right: 28px;
+      }
+
+      .bridge {
+        position: absolute;
+        left: 50%;
+        top: 63px;
+        width: 56px;
+        height: 14px;
+        border-radius: 999px;
+        background: currentColor;
+        transform: translateX(-50%);
+      }
+
+      .variant-a {
+        background: #f5f1e8;
+      }
+
+      .variant-a .nav {
+        background: rgba(245, 241, 232, 0.82);
+        backdrop-filter: blur(20px);
+      }
+
+      .variant-a .shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+        gap: 34px;
+        padding: 56px 40px 40px;
+      }
+
+      .variant-a .left h2 {
+        margin: 24px 0 22px;
+        max-width: 760px;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(54px, 7vw, 116px);
+        line-height: 0.9;
+        letter-spacing: -0.065em;
+      }
+
+      .variant-a .left p {
+        max-width: 620px;
+        margin: 0 0 30px;
+        color: #3c4858;
+        font-size: 20px;
+        line-height: 1.55;
+      }
+
+      .variant-a .variant-label {
+        background: #08101f;
+        color: #f9df7b;
+      }
+
+      .variant-a .primary {
+        background: #08101f;
+        color: white;
+      }
+
+      .variant-a .panel {
+        border: 1px solid #d9cec0;
+        border-radius: 34px;
+        background: #fffaf2;
+        padding: 22px;
+      }
+
+      .variant-a .frame-card {
+        background: #f8efe1;
+        color: #315c56;
+      }
+
+      .variant-a .metric {
+        background: white;
+        border: 1px solid #ece2d3;
+      }
+
+      .variant-a .caption {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 34px;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .variant-b {
+        background:
+          radial-gradient(circle at 75% 20%, rgba(182, 255, 56, 0.32), transparent 28%),
+          linear-gradient(135deg, #07120b 0%, #0a0d0c 46%, #e9ff46 46%, #e9ff46 100%);
+        color: #f4ffe0;
+      }
+
+      .variant-b .nav {
+        border-color: rgba(244, 255, 224, 0.16);
+        background: rgba(7, 18, 11, 0.72);
+        backdrop-filter: blur(22px);
+      }
+
+      .variant-b .brand,
+      .variant-b .navlinks {
+        color: #f4ffe0;
+      }
+
+      .variant-b .navlinks {
+        opacity: 0.74;
+      }
+
+      .variant-b .shell {
+        display: grid;
+        grid-template-columns: minmax(0, 0.96fr) minmax(420px, 1.04fr);
+        gap: 28px;
+        padding: 42px 40px 40px;
+      }
+
+      .variant-b h2 {
+        margin: 22px 0 20px;
+        max-width: 680px;
+        font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+        font-size: clamp(58px, 8vw, 132px);
+        line-height: 0.82;
+        letter-spacing: 0.005em;
+        text-transform: uppercase;
+      }
+
+      .variant-b .variant-label {
+        background: #e9ff46;
+        color: #07120b;
+      }
+
+      .variant-b .copy {
+        max-width: 580px;
+        color: rgba(244, 255, 224, 0.76);
+        font-size: 20px;
+        line-height: 1.55;
+      }
+
+      .variant-b .primary {
+        background: #e9ff46;
+        color: #07120b;
+      }
+
+      .variant-b .ghost {
+        color: #f4ffe0;
+        border-color: rgba(244, 255, 224, 0.28);
+      }
+
+      .variant-b .score-wall {
+        display: grid;
+        gap: 14px;
+        align-content: end;
+        min-height: 540px;
+      }
+
+      .variant-b .score-card {
+        border-radius: 34px;
+        background: #f8ffe8;
+        color: #07120b;
+        padding: 26px;
+        transform: rotate(-1deg);
+      }
+
+      .variant-b .score-card:nth-child(2) {
+        margin-left: 70px;
+        transform: rotate(1.5deg);
+        background: #111827;
+        color: #f4ffe0;
+      }
+
+      .variant-b .score {
+        font-size: 94px;
+        font-weight: 1000;
+        letter-spacing: -0.08em;
+      }
+
+      .variant-b .metric {
+        background: rgba(7, 18, 11, 0.72);
+        border: 1px solid rgba(244, 255, 224, 0.18);
+      }
+
+      .variant-b .metric span {
+        color: rgba(244, 255, 224, 0.72);
+      }
+
+      .variant-c {
+        background: #e7edf4;
+      }
+
+      .variant-c .nav {
+        background: #f8fbff;
+      }
+
+      .variant-c .shell {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr) 360px;
+        gap: 22px;
+        padding: 34px 40px 40px;
+      }
+
+      .variant-c .variant-label {
+        background: #d8ebff;
+        color: #18466d;
+      }
+
+      .variant-c .side,
+      .variant-c .center,
+      .variant-c .right {
+        border-radius: 30px;
+        background: #f8fbff;
+        border: 1px solid #cfd9e6;
+        padding: 24px;
+      }
+
+      .variant-c h2 {
+        margin: 20px 0;
+        font-family: 'Aptos Display', 'Segoe UI', Arial, sans-serif;
+        font-size: clamp(48px, 5.5vw, 92px);
+        line-height: 0.92;
+        letter-spacing: -0.075em;
+      }
+
+      .variant-c .primary {
+        background: #17415f;
+        color: white;
+      }
+
+      .variant-c .frame-card {
+        background: linear-gradient(180deg, #ffffff, #eaf2fb);
+        color: #17415f;
+      }
+
+      .variant-c .step {
+        display: flex;
+        gap: 12px;
+        padding: 14px 0;
+        border-bottom: 1px solid #d8e2ed;
+        color: #34495e;
+      }
+
+      .variant-c .step strong {
+        color: #17415f;
+      }
+
+      .variant-c .metric {
+        background: #eef6ff;
+        border: 1px solid #d8e2ed;
+      }
+
+      @media (max-width: 980px) {
+        .nav {
+          padding: 18px 22px;
+        }
+
+        .navlinks {
+          display: none;
+        }
+
+        .variant-a .shell,
+        .variant-b .shell,
+        .variant-c .shell {
+          grid-template-columns: 1fr;
+          padding: 28px 18px;
+        }
+
+        .variant {
+          border-radius: 22px;
+        }
+
+        .retention {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <section class="intro">
+        <h1>Три новых направления ViLu</h1>
+        <p>
+          Каждый вариант решает одну задачу: быстро объяснить ценность, удержать взгляд на
+          результате примерки и перевести пользователя в следующий шаг без ощущения
+          “каталога оптики”.
+        </p>
+      </section>
+
+      <section class="variant variant-a" aria-label="Variant A">
+        <header class="nav">
+          <div class="brand">ViLu</div>
+          <nav class="navlinks">
+            <span>Примерка</span>
+            <span>Метод</span>
+            <span>Каталог</span>
+            <span>Салоны</span>
+          </nav>
+          <button class="btn ghost">EN</button>
+        </header>
+        <div class="shell">
+          <div class="left">
+            <span class="variant-label">A / Editorial Diagnostic</span>
+            <h2>Сначала посадка. Потом выбор оправы.</h2>
+            <p>
+              Спокойная экспертная подача: пользователь видит не магазин, а метод выбора.
+              Главный крючок внимания - большой тезис и сразу измеримый результат.
+            </p>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:28px">
+              <button class="btn primary">Проверить посадку</button>
+              <button class="btn ghost">Посмотреть метод</button>
+            </div>
+            <div class="retention">
+              <div class="metric"><strong>87</strong><span>Face-fit score до визита</span></div>
+              <div class="metric"><strong>3</strong><span>модели вместо хаотичного выбора</span></div>
+              <div class="metric"><strong>0</strong><span>фото не отправляются на сервер</span></div>
+            </div>
+          </div>
+          <aside class="panel">
+            <div class="frame-card">
+              <div class="variant-label" style="background:#fff;color:#315c56">Автопосадка готова</div>
+              <div class="glasses">
+                <div class="lens left"></div>
+                <div class="bridge"></div>
+                <div class="lens right"></div>
+              </div>
+              <div class="caption">Aurora Crystal подходит для офиса и повседневной носки.</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="variant variant-b" aria-label="Variant B">
+        <header class="nav">
+          <div class="brand">ViLu</div>
+          <nav class="navlinks">
+            <span>Try-on</span>
+            <span>Score</span>
+            <span>Frames</span>
+            <span>Stores</span>
+          </nav>
+          <button class="btn ghost">RU</button>
+        </header>
+        <div class="shell">
+          <div>
+            <span class="variant-label">B / Kinetic Retail</span>
+            <h2>Try. Score. Go.</h2>
+            <p class="copy">
+              Самый цепкий вариант для перформанс-трафика: контраст, короткие команды,
+              “игровая” динамика, быстрый прогресс и ощущение, что выбор уже движется.
+            </p>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;margin:28px 0">
+              <button class="btn primary">Начать за 30 секунд</button>
+              <button class="btn ghost">Каталог</button>
+            </div>
+            <div class="retention">
+              <div class="metric"><strong>1</strong><span>загрузи фото</span></div>
+              <div class="metric"><strong>2</strong><span>получи score</span></div>
+              <div class="metric"><strong>3</strong><span>открой ближайший салон</span></div>
+            </div>
+          </div>
+          <div class="score-wall">
+            <div class="score-card">
+              <div style="font-weight:950;letter-spacing:.12em;text-transform:uppercase">Fit result</div>
+              <div class="score">87</div>
+              <p>Ширина оправы выглядит сбалансированной. Проверьте мост в салоне.</p>
+            </div>
+            <div class="score-card">
+              <div style="font-weight:950;letter-spacing:.12em;text-transform:uppercase">Next move</div>
+              <p style="font-size:26px;line-height:1.1;font-weight:950">Сохранить 2-3 оправы и построить маршрут.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="variant variant-c" aria-label="Variant C">
+        <header class="nav">
+          <div class="brand">ViLu</div>
+          <nav class="navlinks">
+            <span>Онлайн-подбор</span>
+            <span>Каталог</span>
+            <span>Знания</span>
+            <span>Салоны</span>
+          </nav>
+          <button class="btn ghost">Войти</button>
+        </header>
+        <div class="shell">
+          <aside class="side">
+            <span class="variant-label">C / Calm Concierge</span>
+            <div class="step"><strong>01</strong><span>Фото остается в браузере</span></div>
+            <div class="step"><strong>02</strong><span>ViLu подстраивает оправу</span></div>
+            <div class="step"><strong>03</strong><span>Вы сохраняете подбор</span></div>
+            <div class="step"><strong>04</strong><span>Открываете салон рядом</span></div>
+          </aside>
+          <section class="center">
+            <h2>Персональный подбор без лишнего шума.</h2>
+            <p style="font-size:20px;line-height:1.55;color:#43566b">
+              Дашборд-верстка для доверия: все шаги видны, состояние понятно, пользователь
+              не теряется между примеркой, score и салонами.
+            </p>
+            <div class="frame-card">
+              <div class="glasses">
+                <div class="lens left"></div>
+                <div class="bridge"></div>
+                <div class="lens right"></div>
+              </div>
+            </div>
+          </section>
+          <aside class="right">
+            <div class="metric"><strong>Фото: хорошее</strong><span>Лицо занимает 48% кадра</span></div>
+            <div class="metric" style="margin-top:12px"><strong>Score: 87/100</strong><span>Подходит для первого визита</span></div>
+            <button class="btn primary" style="width:100%;margin-top:18px">Сохранить подбор</button>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

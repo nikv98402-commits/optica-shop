@@ -1,4 +1,5 @@
-import { ArrowRight, CalendarDays, CheckCircle2, Eye, MapPin, MapPinned, Route, Sparkles } from 'lucide-react';
+import { ArrowRight, CalendarDays, CheckCircle2, Eye, Handshake, MapPin, MapPinned, Route, Sparkles } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { demoProducts, formatPrice } from '../data/products';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 
@@ -9,7 +10,63 @@ interface HomeProps {
 const featuredFrames = demoProducts.filter((product) => product.featured && product.category !== 'contact_lenses').slice(0, 3);
 const featuredLens = demoProducts.find((product) => product.category === 'contact_lenses');
 
+const homeHeroCopy = {
+  ru: {
+    label: 'Примерка. Score. Салон.',
+    title: 'Подбор до салона.',
+    description: 'Загрузите фото, получите Face-fit score, сохраните 2-3 оправы и откройте ближайшие салоны для финальной примерки.',
+    startFitting: 'Начать примерку',
+    viewCatalog: 'Смотреть каталог',
+    trustItems: ['Фото остается в браузере', 'Face-fit score', 'Салоны после подбора'],
+    mockupEyebrow: 'ViLu примерка',
+    mockupFlow: 'Фото → Score → Салон',
+    localOnly: 'локально',
+    useCase: 'Офис / каждый день',
+    fitResult: 'Результат посадки',
+    fitSummary: 'Подходит для первого визита. Проверьте мост и ширину в салоне.',
+    saved: 'Сохранено',
+    savedCount: '2 из 3',
+    photo: 'Фото',
+    store: 'Салон',
+    findStore: 'Найти салон после подбора',
+    proofItems: ['Проверка зрения в салонах', 'Подбор линз по рецепту', 'Доставка и самовывоз'],
+    missionEyebrow: 'Миссия',
+    missionTitle: 'Vision Access Program',
+    missionBody: 'ViLu начинает с подбора очков и навигации к оптике. Долгосрочно мы хотим помогать расширять доступ к проверке зрения и очкам через партнеров.',
+    missionCta: 'Узнать о миссии',
+    missionTrust: ['Без донатов в MVP', 'Без диагноза', 'Партнерская модель доступа']
+  },
+  en: {
+    label: 'Try. Score. Store.',
+    title: 'Fit before store.',
+    description: 'Upload a photo, get a Face-fit score, save 2-3 frames, and open nearby stores for the final fitting.',
+    startFitting: 'Start fitting',
+    viewCatalog: 'View catalog',
+    trustItems: ['Photo stays in browser', 'Face-fit score', 'Stores after fitting'],
+    mockupEyebrow: 'ViLu try-on',
+    mockupFlow: 'Photo → Score → Store',
+    localOnly: 'Local only',
+    useCase: 'Office / everyday',
+    fitResult: 'Fit result',
+    fitSummary: 'Good for the first visit. Check bridge fit and width in store.',
+    saved: 'Saved',
+    savedCount: '2 of 3',
+    photo: 'Photo',
+    store: 'Store',
+    findStore: 'Find a store after fitting',
+    proofItems: ['Eye checks in stores', 'Prescription lens selection', 'Delivery and pickup'],
+    missionEyebrow: 'Mission',
+    missionTitle: 'Vision Access Program',
+    missionBody: 'ViLu starts with eyewear selection and routing to optical stores. Long term, we want to help expand access to eye checks and glasses through partners.',
+    missionCta: 'Learn about the mission',
+    missionTrust: ['No donations in MVP', 'No diagnosis', 'Partner access model']
+  }
+} as const;
+
 export function Home({ onNavigate }: HomeProps) {
+  const { language } = useLanguage();
+  const copy = homeHeroCopy[language];
+
   return (
     <div className="overflow-hidden kinetic-surface">
       <section className="relative px-4 py-12 sm:px-6 md:py-16">
@@ -18,13 +75,16 @@ export function Home({ onNavigate }: HomeProps) {
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
           <div className="min-w-0">
             <div className="kinetic-label mb-6">
-              <Sparkles size={14} /> Примерка. Score. Салон.
+              <Sparkles size={14} /> {copy.label}
             </div>
-            <h1 className="kinetic-headline max-w-3xl text-[3.2rem] font-black leading-[0.88] text-vilu-paper sm:text-6xl lg:text-8xl">
-              Примерь. Оцени. Иди в салон.
+            <h1 className="kinetic-headline max-w-3xl text-[3.2rem] font-black leading-[0.88] !text-vilu-paper sm:text-6xl lg:text-8xl">
+              {copy.title}
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-vilu-paper/84">
-              Загрузите фото, получите Face-fit score, сохраните 2-3 оправы и откройте ближайшие салоны для финальной примерки.
+            <p
+              className="mt-6 max-w-2xl text-lg font-black leading-8"
+              style={{ color: 'var(--vilu-lime)' }}
+            >
+              {copy.description}
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <button
@@ -34,17 +94,17 @@ export function Home({ onNavigate }: HomeProps) {
                 }}
                 className="group kinetic-cta rounded-full px-8 py-4 text-sm font-black uppercase tracking-[0.14em] transition hover:-translate-y-0.5 hover:bg-vilu-card focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/40"
               >
-                Начать примерку <ArrowRight className="ml-2 inline transition group-hover:translate-x-1" size={18} />
+                {copy.startFitting} <ArrowRight className="ml-2 inline transition group-hover:translate-x-1" size={18} />
               </button>
               <button
                 onClick={() => onNavigate('products')}
                 className="rounded-full border border-vilu-paper/22 bg-vilu-paper/8 px-8 py-4 text-sm font-black uppercase tracking-[0.14em] text-vilu-paper backdrop-blur transition hover:bg-vilu-paper hover:text-vilu-ink focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/40"
               >
-                Смотреть каталог
+                {copy.viewCatalog}
               </button>
             </div>
             <div className="mt-8 grid gap-3 text-sm font-bold text-vilu-paper sm:grid-cols-3">
-              {['Фото остается в браузере', 'Face-fit score', 'Салоны после подбора'].map((label) => (
+              {copy.trustItems.map((label) => (
                 <div key={label} className="rounded-2xl bg-vilu-ink/72 px-4 py-3 shadow-sm ring-1 ring-vilu-paper/15 backdrop-blur">
                   <CheckCircle2 className="mb-2 text-vilu-lime" size={18} />
                   {label}
@@ -59,10 +119,10 @@ export function Home({ onNavigate }: HomeProps) {
               <div className="rounded-[1.6rem] bg-vilu-paper p-4 ring-1 ring-vilu-ink/10 sm:p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">ViLu примерка</p>
-                    <p className="mt-1 text-2xl font-black text-vilu-ink">Фото → Score → Салон</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-green">{copy.mockupEyebrow}</p>
+                    <p className="mt-1 text-2xl font-black text-vilu-ink">{copy.mockupFlow}</p>
                   </div>
-                  <div className="rounded-full bg-vilu-lime px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink">локально</div>
+                  <div className="rounded-full bg-vilu-lime px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink">{copy.localOnly}</div>
                 </div>
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-[1.05fr_0.95fr]">
@@ -77,7 +137,7 @@ export function Home({ onNavigate }: HomeProps) {
                     <div className="mt-4 flex items-end justify-between gap-3">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-ink/42">Aurora Crystal</p>
-                        <p className="mt-1 text-lg font-black text-vilu-ink">Офис / каждый день</p>
+                        <p className="mt-1 text-lg font-black text-vilu-ink">{copy.useCase}</p>
                       </div>
                       <span className="rounded-full bg-vilu-lime px-3 py-2 text-xs font-black text-vilu-ink">49-19-140</span>
                     </div>
@@ -85,17 +145,17 @@ export function Home({ onNavigate }: HomeProps) {
 
                   <div className="grid gap-3">
                     <div className="rounded-[1.4rem] bg-vilu-ink p-4 text-vilu-paper">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-lime">Результат посадки</p>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-vilu-lime">{copy.fitResult}</p>
                       <div className="mt-2 flex items-end gap-2">
                         <span className="text-5xl font-black tracking-tight">84</span>
                         <span className="pb-2 text-sm font-bold text-vilu-paper/60">/100</span>
                       </div>
-                      <p className="mt-3 text-sm leading-6 text-vilu-paper/72">Подходит для первого визита. Проверьте мост и ширину в салоне.</p>
+                      <p className="mt-3 text-sm leading-6 text-vilu-paper/72">{copy.fitSummary}</p>
                     </div>
                     <div className="rounded-[1.4rem] bg-vilu-cream p-4 ring-1 ring-vilu-ink/10">
                       <div className="flex items-center justify-between text-sm font-black">
-                        <span>Сохранено</span>
-                        <span className="text-vilu-green">2 из 3</span>
+                        <span>{copy.saved}</span>
+                        <span className="text-vilu-green">{copy.savedCount}</span>
                       </div>
                       <div className="mt-3 grid grid-cols-3 gap-2">
                         <span className="h-2 rounded-full bg-vilu-lime" />
@@ -107,13 +167,13 @@ export function Home({ onNavigate }: HomeProps) {
                 </div>
 
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] font-black uppercase tracking-[0.1em] text-vilu-ink/55">
-                  <span className="rounded-2xl bg-vilu-cream py-3 ring-1 ring-vilu-ink/10"><Eye className="mx-auto mb-1 text-vilu-green" size={15} />Фото</span>
+                  <span className="rounded-2xl bg-vilu-cream py-3 ring-1 ring-vilu-ink/10"><Eye className="mx-auto mb-1 text-vilu-green" size={15} />{copy.photo}</span>
                   <span className="rounded-2xl bg-vilu-cream py-3 text-vilu-green ring-1 ring-vilu-green/10"><Sparkles className="mx-auto mb-1" size={15} />Score</span>
-                  <span className="rounded-2xl bg-vilu-cream py-3 ring-1 ring-vilu-ink/10"><MapPinned className="mx-auto mb-1 text-vilu-green" size={15} />Салон</span>
+                  <span className="rounded-2xl bg-vilu-cream py-3 ring-1 ring-vilu-ink/10"><MapPinned className="mx-auto mb-1 text-vilu-green" size={15} />{copy.store}</span>
                 </div>
 
                 <div className="mt-4 flex items-center justify-between rounded-2xl bg-vilu-lime px-4 py-3 text-vilu-ink">
-                  <span className="text-sm font-black">Найти салон после подбора</span>
+                  <span className="text-sm font-black">{copy.findStore}</span>
                   <Route size={17} />
                 </div>
               </div>
@@ -124,9 +184,9 @@ export function Home({ onNavigate }: HomeProps) {
 
       <section className="bg-vilu-ink px-6 py-8 text-vilu-paper">
         <div className="mx-auto grid max-w-7xl gap-4 text-sm font-semibold uppercase tracking-[0.18em] md:grid-cols-3">
-          <div className="flex items-center gap-3"><CheckCircle2 className="text-vilu-lime" size={20} /> Проверка зрения в салонах</div>
-          <div className="flex items-center gap-3"><CheckCircle2 className="text-vilu-lime" size={20} /> Подбор линз по рецепту</div>
-          <div className="flex items-center gap-3"><CheckCircle2 className="text-vilu-lime" size={20} /> Доставка и самовывоз</div>
+          {copy.proofItems.map((item) => (
+            <div key={item} className="flex items-center gap-3"><CheckCircle2 className="text-vilu-lime" size={20} /> {item}</div>
+          ))}
         </div>
       </section>
 
@@ -187,6 +247,40 @@ export function Home({ onNavigate }: HomeProps) {
               className="mt-5 w-full rounded-full bg-vilu-lime px-6 py-4 text-sm font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-card"
             >
               Пройти self-check
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-vilu-paper px-6 py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-vilu-line bg-vilu-card p-6 shadow-sm md:grid-cols-[0.9fr_1.1fr] md:p-10">
+          <div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-vilu-lime text-vilu-ink">
+              <Handshake size={22} />
+            </div>
+            <p className="vilu-eyebrow mt-6">{copy.missionEyebrow}</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-vilu-ink md:text-5xl">{copy.missionTitle}</h2>
+          </div>
+          <div>
+            <p className="text-base font-semibold leading-8 text-vilu-ink/72">
+              {copy.missionBody}
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {copy.missionTrust.map((item) => (
+                <div key={item} className="rounded-2xl bg-vilu-cream p-4 text-sm font-black text-vilu-ink ring-1 ring-vilu-line">
+                  <CheckCircle2 className="mb-2 text-vilu-lime" size={18} />
+                  {item}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => {
+                trackEvent(AnalyticsEvent.VisionAccessOpened, { source: 'home_mission_card' });
+                onNavigate('vision-access');
+              }}
+              className="mt-6 rounded-full bg-vilu-lime px-6 py-3 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper"
+            >
+              {copy.missionCta} <ArrowRight className="ml-2 inline" size={16} />
             </button>
           </div>
         </div>

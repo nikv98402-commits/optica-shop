@@ -89,8 +89,9 @@ h1, h2, h3, .font-black {
 }
 
 .kinetic-headline {
-  letter-spacing: -0.055em;
+  letter-spacing: -0.035em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .kinetic-cta {
@@ -118,6 +119,37 @@ h1, h2, h3, .font-black {
 
 .vilu-muted {
   color: var(--vilu-muted-text);
+}
+
+.vilu-copy-on-dark {
+  color: rgba(248, 243, 232, 0.84);
+}
+
+.vilu-copy-on-light {
+  color: rgba(7, 17, 13, 0.72);
+}
+
+.vilu-action-secondary-dark {
+  background: rgba(248, 243, 232, 0.12);
+  color: var(--vilu-paper);
+  border: 1px solid rgba(248, 243, 232, 0.22);
+}
+
+.vilu-action-secondary-dark:hover {
+  background: var(--vilu-paper);
+  color: var(--vilu-ink);
+}
+
+@media (max-width: 640px) {
+  .kinetic-headline {
+    letter-spacing: -0.02em;
+    line-height: 0.94;
+  }
+
+  .kinetic-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.11em;
+  }
 }
 
 .vilu-muted-on-dark {

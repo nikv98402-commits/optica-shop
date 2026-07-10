@@ -1,0 +1,91 @@
+{
+  "url": "https://vilu.store",
+  "timestamp": "2026-06-18T12:31:31.1466919Z",
+  "mode": "http-fallback-no-browser",
+  "baseline_created": true,
+  "pages": {
+    "/": {
+      "status": 200,
+      "ttfb_ms": 337,
+      "full_load_ms": 338,
+      "min_total_ms": 217,
+      "max_total_ms": 493,
+      "html_bytes": 2230
+    },
+    "/products": {
+      "status": 200,
+      "ttfb_ms": 418,
+      "full_load_ms": 418,
+      "min_total_ms": 227,
+      "max_total_ms": 528,
+      "html_bytes": 2230
+    },
+    "/face-fit-score": {
+      "status": 200,
+      "ttfb_ms": 423,
+      "full_load_ms": 423,
+      "min_total_ms": 182,
+      "max_total_ms": 551,
+      "html_bytes": 2230
+    },
+    "/ai-source": {
+      "status": 200,
+      "ttfb_ms": 304,
+      "full_load_ms": 304,
+      "min_total_ms": 214,
+      "max_total_ms": 445,
+      "html_bytes": 2230
+    },
+    "/privacy": {
+      "status": 200,
+      "ttfb_ms": 402,
+      "full_load_ms": 402,
+      "min_total_ms": 227,
+      "max_total_ms": 528,
+      "html_bytes": 2230
+    }
+  },
+  "assets": [
+    {
+      "name": "index-0NFpC6mT.js",
+      "type": "script",
+      "bytes": 330008
+    },
+    {
+      "name": "index-BOSszlw6.css",
+      "type": "css",
+      "bytes": 38542
+    }
+  ],
+  "totals": {
+    "js_bytes": 330008,
+    "css_bytes": 38542,
+    "app_asset_bytes": 368550,
+    "asset_count": 2
+  },
+  "seo": [
+    {
+      "name": "robots.txt",
+      "status": 200,
+      "bytes": 332
+    },
+    {
+      "name": "sitemap.xml",
+      "status": 200,
+      "bytes": 1213
+    },
+    {
+      "name": "llms.txt",
+      "status": 200,
+      "bytes": 1635
+    }
+  ],
+  "budgets": {
+    "ttfb_lt_800ms": "PASS",
+    "js_lt_500kb": "PASS",
+    "css_lt_100kb": "PASS",
+    "app_assets_lt_1mb": "PASS",
+    "direct_routes_200": "PASS"
+  },
+  "limitations": "Browser performance entries, FCP, LCP, DOM timings, screenshots and console checks were unavailable because local gstack browse is missing server.ts and Playwright browser launch is blocked. This benchmark uses HTTP timing and resource-size checks."
+}

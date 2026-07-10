@@ -1,5 +1,13 @@
 import type { Language } from '../i18n/translations';
-import type { EyeCheckFlow, EyeCheckQuestion, EyeCheckResult, EyeCheckRiskLevel } from '../types/eyeCheck';
+import type {
+  EyeCheckFlow,
+  EyeCheckFlowId,
+  EyeCheckQuestion,
+  EyeCheckResult,
+  EyeCheckRiskLevel,
+  VisionTrackerOnboardingAnswers,
+  VisionTrackerOnboardingStep,
+} from '../types/eyeCheck';
 
 type FlowCopy = Pick<EyeCheckFlow, 'title' | 'subtitle' | 'disclaimer'>;
 type QuestionCopy = Pick<EyeCheckQuestion, 'text' | 'helpText'>;
@@ -120,16 +128,26 @@ const resultCopy: Record<Language, Record<string, string>> = {
 export const eyeCheckUiCopy = {
   ru: {
     backHome: 'На главную',
+    productEyebrow: 'ViLu Vision Tracker',
     privacyNotice: 'Ответы обрабатываются в браузере. В аналитику уходят только технические события: старт, выбранный сценарий и итоговый уровень без текста ответов.',
-    selectedScenario: 'Выбранный сценарий',
+    selectedScenario: 'Рекомендованный сценарий',
+    chooseAnotherScenario: 'Можно выбрать другой сценарий ниже.',
     time: 'Время',
     minuteShort: 'мин',
     minuteShortDot: 'мин.',
-    start: 'Начать self-check',
+    start: 'Начать проверку',
+    onboardingEyebrow: 'Персональный старт',
+    onboardingProgress: 'Шаг',
+    onboardingSkip: 'Выбрать сценарий вручную',
+    onboardingNext: 'Продолжить',
+    onboardingComplete: 'Показать сценарий',
+    onboardingLocal: 'Ответы остаются в браузере. ViLu не ставит диагноз и не измеряет диоптрии.',
+    recommendationReady: 'Vision Tracker готов',
+    recommendationText: 'Мы подобрали сценарий, который лучше всего соответствует вашим ответам.',
     question: 'Вопрос',
     of: 'из',
     back: 'Назад',
-    index: 'Индекс',
+    index: 'Индекс очной проверки',
     nonMedical: 'не медицинская оценка',
     why: 'Почему такой результат',
     next: 'Что делать дальше',
@@ -145,21 +163,31 @@ export const eyeCheckUiCopy = {
       urgent: 'Срочно',
     } satisfies Record<EyeCheckRiskLevel, string>,
     introTitle: 'Self-check перед очной проверкой',
-    introText: 'Это не диагностика. ViLu Eye Check помогает по ответам понять, стоит ли запланировать очную проверку зрения у специалиста.',
+    introText: 'Это не диагностика. ViLu Vision Tracker помогает по ответам понять, стоит ли запланировать очную проверку зрения у специалиста.',
     introDisclaimer: 'ViLu не определяет заболевание, не измеряет диоптрии и не заменяет офтальмолога или оптометриста.',
   },
   en: {
     backHome: 'Back home',
+    productEyebrow: 'ViLu Vision Tracker',
     privacyNotice: 'Answers are processed in the browser. Analytics receives only technical events: start, selected scenario, and final level without answer text.',
-    selectedScenario: 'Selected scenario',
+    selectedScenario: 'Recommended scenario',
+    chooseAnotherScenario: 'You can choose another scenario below.',
     time: 'Time',
     minuteShort: 'min',
     minuteShortDot: 'min.',
-    start: 'Start self-check',
+    start: 'Start check',
+    onboardingEyebrow: 'Personal start',
+    onboardingProgress: 'Step',
+    onboardingSkip: 'Choose a scenario manually',
+    onboardingNext: 'Continue',
+    onboardingComplete: 'Show scenario',
+    onboardingLocal: 'Answers stay in your browser. ViLu does not diagnose or measure diopters.',
+    recommendationReady: 'Vision Tracker is ready',
+    recommendationText: 'We selected the scenario that best matches your answers.',
     question: 'Question',
     of: 'of',
     back: 'Back',
-    index: 'Index',
+    index: 'In-person check index',
     nonMedical: 'not a medical score',
     why: 'Why this result',
     next: 'What to do next',
@@ -174,11 +202,74 @@ export const eyeCheckUiCopy = {
       'do-not-delay': 'Do not delay',
       urgent: 'Urgent',
     } satisfies Record<EyeCheckRiskLevel, string>,
-    introTitle: 'Self-check before an in-person eye check',
-    introText: 'This is not a diagnosis. ViLu Eye Check helps you decide whether to schedule an in-person eye check with a specialist.',
+    introTitle: 'Vision Tracker before an in-person eye check',
+    introText: 'This is not a diagnosis. ViLu Vision Tracker helps you decide whether to schedule an in-person eye check with a specialist.',
     introDisclaimer: 'ViLu does not identify disease, measure diopters, or replace an ophthalmologist or optometrist.',
   },
 };
+
+export const visionTrackerOnboardingSteps: VisionTrackerOnboardingStep[] = [
+  {
+    id: 'profileType',
+    title: {
+      ru: 'Для кого вы проходите проверку?',
+      en: 'Who is this check for?',
+    },
+    subtitle: {
+      ru: 'Это поможет подобрать самый короткий и уместный сценарий.',
+      en: 'This helps choose the shortest relevant scenario.',
+    },
+    options: [
+      { value: 'self', label: { ru: 'Для себя', en: 'For myself' } },
+      { value: 'child', label: { ru: 'Для ребенка', en: 'For a child' } },
+      { value: 'family', label: { ru: 'Для близкого', en: 'For a family member' } },
+      { value: 'explore', label: { ru: 'Просто посмотреть', en: 'Just exploring' } },
+    ],
+  },
+  {
+    id: 'reason',
+    title: {
+      ru: 'Что сейчас важнее всего?',
+      en: 'What matters most right now?',
+    },
+    subtitle: {
+      ru: 'Мы не собираем медицинские данные, только выбираем подходящий путь.',
+      en: 'We do not collect medical data, only choose the right path.',
+    },
+    options: [
+      { value: 'screen-fatigue', label: { ru: 'Устают глаза от экрана', en: 'Screen eye fatigue' } },
+      { value: 'time-to-check', label: { ru: 'Пора проверить зрение', en: 'Time for an eye check' } },
+      { value: 'child-concern', label: { ru: 'Есть вопросы по зрению ребенка', en: 'Concern about a child' } },
+      { value: 'one-eye-worse', label: { ru: 'Один глаз ощущается хуже', en: 'One eye feels worse' } },
+      { value: 'choose-glasses', label: { ru: 'Готовлюсь выбрать очки', en: 'Preparing to choose glasses' } },
+    ],
+  },
+  {
+    id: 'lastExam',
+    title: {
+      ru: 'Когда была очная проверка?',
+      en: 'When was your last in-person check?',
+    },
+    subtitle: {
+      ru: 'Ответ нужен только для контекста результата и остается в браузере.',
+      en: 'This only adds result context and stays in the browser.',
+    },
+    options: [
+      { value: 'less-six-months', label: { ru: 'Меньше 6 месяцев назад', en: 'Less than 6 months ago' } },
+      { value: 'six-twelve-months', label: { ru: '6-12 месяцев назад', en: '6-12 months ago' } },
+      { value: 'more-one-year', label: { ru: 'Больше года назад', en: 'More than 1 year ago' } },
+      { value: 'more-two-years', label: { ru: 'Больше 2 лет назад', en: 'More than 2 years ago' } },
+      { value: 'unknown', label: { ru: 'Не помню', en: 'I do not remember' } },
+      { value: 'never', label: { ru: 'Никогда', en: 'Never' } },
+    ],
+  },
+];
+
+export function recommendVisionTrackerFlow(answers: VisionTrackerOnboardingAnswers): EyeCheckFlowId {
+  if (answers.profileType === 'child' || answers.reason === 'child-concern') return 'child-risk';
+  if (answers.reason === 'one-eye-worse') return 'one-eye-comparison';
+  return 'adult-comfort';
+}
 
 export function getEyeCheckFlowCopy(flow: EyeCheckFlow, language: Language): FlowCopy {
   return flowCopy[language][flow.id] ?? flow;

@@ -13,7 +13,7 @@ export function EyeCheckIntro() {
           <ShieldCheck size={22} />
         </div>
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-vilu-lime">{language === 'en' ? 'ViLu Eye Check' : 'ViLu Проверка зрения'}</p>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-vilu-lime">{copy.productEyebrow}</p>
           <h1 className="mt-3 text-4xl font-black leading-[0.95] tracking-tight md:text-6xl">{copy.introTitle}</h1>
           <p className="mt-5 max-w-3xl text-base font-semibold leading-8 text-vilu-paper/76">
             {copy.introText}

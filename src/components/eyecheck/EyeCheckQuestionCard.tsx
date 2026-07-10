@@ -35,9 +35,9 @@ export function EyeCheckQuestionCard({
   const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100);
 
   return (
-    <section className="rounded-[2rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-line md:p-8">
+    <section className="overflow-hidden rounded-[2rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-line md:p-8">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">{flowText.title}</p>
           <p className="mt-2 text-sm font-bold text-vilu-ink/55">{copy.question} {questionIndex + 1} {copy.of} {totalQuestions}</p>
         </div>
@@ -48,7 +48,7 @@ export function EyeCheckQuestionCard({
 
       {flow.id === 'amsler-grid' && questionIndex === 0 && <div className="mb-6"><AmslerGrid /></div>}
 
-      <h2 className="text-3xl font-black leading-tight tracking-tight text-vilu-ink md:text-4xl">{questionText.text}</h2>
+      <h2 className="break-words text-[clamp(1.65rem,7vw,2.35rem)] font-black leading-tight tracking-tight text-vilu-ink md:text-4xl">{questionText.text}</h2>
       {questionText.helpText && <p className="mt-3 text-base font-semibold leading-7 text-vilu-ink/65">{questionText.helpText}</p>}
 
       <div className="mt-7 grid gap-3">
@@ -63,20 +63,20 @@ export function EyeCheckQuestionCard({
                 score: option.score,
                 redFlag: option.redFlag,
               })}
-              className={`flex min-h-16 items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left text-base font-black transition ${
+              className={`flex min-h-16 w-full items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left text-base font-black transition ${
                 selected
                   ? 'bg-vilu-lime text-vilu-ink'
                   : 'bg-vilu-paper text-vilu-ink ring-1 ring-vilu-line hover:bg-vilu-lime/40'
               }`}
             >
-              <span>{getEyeCheckOptionLabel(option.label, language)}</span>
+              <span className="min-w-0 break-words">{getEyeCheckOptionLabel(option.label, language)}</span>
               {selected && <CheckCircle2 size={20} />}
             </button>
           );
         })}
       </div>
 
-      <div className="mt-7 flex items-center justify-between">
+      <div className="mt-7 grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
         <button
           type="button"
           onClick={onBack}
@@ -85,7 +85,7 @@ export function EyeCheckQuestionCard({
         >
           <ArrowLeft size={16} /> {copy.back}
         </button>
-        <p className="text-xs font-bold leading-5 text-vilu-ink/50">{flowText.disclaimer}</p>
+        <p className="min-w-0 text-xs font-bold leading-5 text-vilu-ink/60 sm:text-right">{flowText.disclaimer}</p>
       </div>
     </section>
   );

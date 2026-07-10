@@ -1,0 +1,14 @@
+{
+  "url": "https://vilu.store",
+  "timestamp": "2026-06-18T12:18:47.7649712Z",
+  "status": "HEALTHY",
+  "duration": "quick-2-pass",
+  "pages": 10,
+  "alerts": 0,
+  "persistent_failures": 0,
+  "transient_observations": [
+    "/ai-source timeout round 1 recovered round 2",
+    "/disclaimer SSL round 1 recovered round 2"
+  ],
+  "browse": "unavailable: missing server.ts in gstack browse install"
+}

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const textNodeSources = new WeakMap<Text, string>();
+const textNodeLastWrites = new WeakMap<Text, string>();
 
 const textTranslations: Record<string, string> = {
   'Онлайн-примерка': 'Online try-on',
@@ -23,6 +24,9 @@ const textTranslations: Record<string, string> = {
   'Оптики после подбора': 'Stores after fitting',
   'Салоны после подбора': 'Stores after fitting',
   'Примерка. Score. Салон.': 'Try. Score. Store.',
+  'Примерь. Оцени. Иди в салон.': 'Try on. Check fit. Visit a store.',
+  'Подбор до салона.': 'Fit before store.',
+  'Загрузите фото, получите Face-fit score, сохраните 2-3 оправы и откройте ближайшие салоны для финальной примерки.': 'Upload a photo, get a Face-fit score, save 2-3 frames, and open nearby stores for the final fitting.',
   'Фото → Score → Салон': 'Photo → Score → Store',
   'ViLu примерка': 'ViLu try-on',
   'Результат посадки': 'Fit result',
@@ -207,6 +211,71 @@ const textTranslations: Record<string, string> = {
   'Найти салон': 'Find store',
   'Сценарий подбора': 'Pick use case',
   'Автопосадка': 'Auto-fit',
+  'Автопосадка оправы': 'Frame auto-fit',
+  'Автопосадка готова': 'Auto-fit ready',
+  'Лицо найдено': 'Face detected',
+  'Нужно другое фото': 'Use another photo',
+  'На фото несколько лиц': 'Multiple faces detected',
+  'Формат не поддержан': 'Unsupported format',
+  'Автопосадка недоступна': 'Auto-fit unavailable',
+  'Анализируем фото': 'Analyzing photo',
+  'Можно подстроить': 'Ready to adjust',
+  'Анализ фото': 'Photo analysis',
+  'Ждем фото': 'Waiting for photo',
+  'Ручной режим': 'Manual mode',
+  'Фото: анализируем': 'Photo: analyzing',
+  'Фото: нужна проверка': 'Photo: needs check',
+  'Фото: хорошее': 'Photo: good',
+  'Фото: среднее': 'Photo: medium',
+  'Фото: лучше переснять': 'Photo: retake recommended',
+  'анализируем': 'analyzing',
+  'нужна проверка': 'needs check',
+  'хорошее': 'good',
+  'среднее': 'medium',
+  'лучше переснять': 'retake recommended',
+  'Ищем глаза и переносицу, чтобы поставить оправу ближе к реальной посадке.': 'Finding eyes and bridge to place the frame closer to a real fit.',
+  'Лицо найдено. ViLu может выровнять оправу по глазам и переносице.': 'Face detected. ViLu can align the frame to the eyes and bridge.',
+  'Лицо не найдено. Попробуйте фото анфас при хорошем освещении.': 'No face detected. Try a front-facing photo in good light.',
+  'Найдено несколько лиц. Для примерки нужно одно лицо.': 'Multiple faces detected. Try-on needs one face.',
+  'Фото не открылось в браузере. Нужен JPEG, PNG или WebP.': 'The photo could not open in the browser. Use JPEG, PNG, or WebP.',
+  'Автопосадка не загрузилась, базовая ручная примерка продолжает работать.': 'Auto-fit did not load, but manual try-on still works.',
+  'Загрузите фото, чтобы ViLu нашел глаза и переносицу и предложил стартовую посадку оправы.': 'Upload a photo so ViLu can find the eyes and bridge and suggest a starting frame fit.',
+  'Оправа выровнена по глазам и переносице. Теперь можно оценить общий баланс и сохранить модель в подбор.': 'The frame is aligned to the eyes and bridge. Now you can check the overall balance and save the model.',
+  'Посадка применена': 'Fit applied',
+  'Оправа стоит по центру глаз и переносице.': 'The frame is centered on the eyes and bridge.',
+  'ViLu нашел глаза, переносицу и центр лица.': 'ViLu found the eyes, bridge, and face center.',
+  'Масштаб': 'Scale',
+  'Проверка фото': 'Photo check',
+  'Линия глаз ровная для предварительной оценки.': 'The eye line is level enough for a preliminary check.',
+  'Фото немного наклонено, посадку лучше перепроверить.': 'The photo is slightly tilted, so check the fit again.',
+  'Ищем ориентиры': 'Finding landmarks',
+  'Определяем глаза, переносицу и центр лица.': 'Detecting eyes, bridge, and face center.',
+  'Готовим посадку': 'Preparing fit',
+  'После анализа предложим стартовую позицию оправы.': 'After analysis, we will suggest a starting frame position.',
+  'Контроль вручную': 'Manual control',
+  'Ручная подстройка остается доступной.': 'Manual adjustment remains available.',
+  'Фото анфас': 'Front-facing photo',
+  'Смотрите прямо в камеру.': 'Look straight at the camera.',
+  'Уровень глаз': 'Eye level',
+  'Держите телефон на уровне глаз.': 'Keep the phone at eye level.',
+  'Дистанция': 'Distance',
+  'Лицо занимает 40-60% кадра.': 'Face fills 40-60% of the frame.',
+  'Нужна проверка': 'Needs check',
+  'Автопосадка не смогла уверенно оценить фото.': 'Auto-fit could not confidently evaluate the photo.',
+  'Без блокировки': 'No blocking',
+  'Ручная примерка продолжает работать.': 'Manual try-on still works.',
+  'Что попробовать': 'What to try',
+  'Загрузите JPEG, PNG или WebP при хорошем свете.': 'Upload JPEG, PNG, or WebP in good light.',
+  'Face-fit score': 'Face-fit score',
+  'Смотрим посадку после автоподстройки': 'Checking fit after auto-adjustment',
+  'Предварительная оценка модели': 'Preliminary model score',
+  'Ограничение': 'Limitation',
+  'Это не медицинская проверка. Размер, PD, мост и комфорт подтверждаются в салоне.': 'This is not a medical check. Size, PD, bridge fit, and comfort are confirmed in store.',
+  'Подстроить еще раз': 'Adjust again',
+  'Подстроить автоматически': 'Auto-adjust',
+  'Скрыть ориентиры': 'Hide landmarks',
+  'Показать ориентиры': 'Show landmarks',
+  'Ориентиры скрыты по умолчанию. Они нужны только для проверки, куда ViLu поставил оправу.': 'Landmarks are hidden by default. They are only for checking where ViLu placed the frame.',
   'Подбор пока пуст.': 'Selection is empty for now.',
   'Примерил': 'Tried on',
   'Оценил посадку': 'Checked fit',
@@ -226,11 +295,16 @@ const textTranslations: Record<string, string> = {
   'Фото для примерки': 'Try-on photo',
   'Загрузите фото лица': 'Upload a face photo',
   'После загрузки можно подвинуть оправу и оценить посадку.': 'After upload, you can move the frame and check the fit.',
-  'Масштаб': 'Scale',
   'Влево / вправо': 'Left / right',
   'Выше / ниже': 'Up / down',
   'Помощник выбора перед визитом': 'Pre-visit selection assistant',
   'Оценка помогает выбрать оправы для салона. Финальную посадку проверяет консультант.': 'The score helps choose frames for the store visit. Final fit is checked by a consultant.',
+  'Оценка помогает выбрать оправы для салона. Если автопосадка готова, учитываем центр глаз, переносицу и качество фото.': 'The score helps choose frames for the store visit. If auto-fit is ready, we account for eye center, bridge, and photo quality.',
+  'Автопосадка учтена в предварительной проверке': 'Auto-fit is included in the preliminary check',
+  'Что дала автопосадка:': 'What auto-fit added:',
+  'центр оправы поставлен по глазам, стартовый масштаб': 'frame center was aligned to the eyes, starting scale',
+  'центр оправы можно поставить по глазам, стартовый масштаб': 'frame center can be aligned to the eyes, starting scale',
+  'качество фото': 'photo quality',
   'Оценить посадку': 'Check fit',
   'Скор': 'Score',
   'из 100': 'out of 100',
@@ -374,16 +448,19 @@ const textPatterns: Array<[RegExp, (match: RegExpMatchArray) => string]> = [
   [/^(\d+) сек\.$/, (match) => `${match[1]} sec.`],
   [/^Вариант (\d+)$/, (match) => `Option ${match[1]}`],
   [/^Оправа (\d+)$/, (match) => `Frame ${match[1]}`],
+  [/^Стартовая ширина оправы: (\d+)%\.$/, (match) => `Starting frame width: ${match[1]}%.`],
+  [/^Глаза найдены, межзрачковая линия наклонена примерно на (.+) градуса\.$/, (match) => `Eyes detected, the eye line is tilted by about ${match[1]} degrees.`],
+  [/^Рекомендуемый стартовый масштаб оправы: (\d+)%\.$/, (match) => `Recommended starting frame scale: ${match[1]}%.`],
+  [/^центр оправы (поставлен|можно поставить) по глазам, стартовый масштаб (\d+)%, качество фото (.+)\.$/, (match) => {
+    const fitVerb = match[1] === 'поставлен' ? 'was aligned' : 'can be aligned';
+    return `frame center ${fitVerb} to the eyes, starting scale ${match[2]}%, photo quality ${translateValue(match[3])}.`;
+  }],
   [/^Сегодня открыто до (.+)$/, (match) => `Open today until ${match[1]}`],
   [/^(.+) км from (.+)$/, (match) => `${match[1]} km from ${match[2]}`],
   [/^(.+) от (.+) - (.+)$/, (match) => `${match[1]} from ${match[2]} - ${match[3]}`],
   [/^Показываем оптики для города: (.+)\.$/, (match) => `Showing optical stores for: ${match[1]}.`],
   [/^(.+) от (ваше местоположение|центра Москвы)$/, (match) => `${match[1]} from ${translateValue(match[2])}`],
 ];
-
-function hasCyrillic(value: string) {
-  return /[А-Яа-яЁё]/.test(value);
-}
 
 function translateValue(value: string) {
   const trimmed = value.trim();
@@ -417,11 +494,13 @@ function translateDom(root: ParentNode, language: 'en' | 'ru') {
     if (!element) return;
     const currentText = node.textContent ?? '';
     const storedSource = textNodeSources.get(node);
-    const original = storedSource && !(language === 'en' && hasCyrillic(currentText) && currentText !== storedSource)
+    const lastBridgeWrite = textNodeLastWrites.get(node);
+    const original = storedSource && currentText === lastBridgeWrite
       ? storedSource
       : currentText;
     textNodeSources.set(node, original);
     const nextText = language === 'en' ? translateValue(original) : original;
+    textNodeLastWrites.set(node, nextText);
     if (node.textContent !== nextText) node.textContent = nextText;
   });
 
