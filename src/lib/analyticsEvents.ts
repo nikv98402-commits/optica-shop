@@ -43,6 +43,9 @@ export const AnalyticsEvent = {
   VisionAccessTrackerCtaClicked: 'vision_access_tracker_cta_clicked',
   VisionAccessTryOnCtaClicked: 'vision_access_tryon_cta_clicked',
   VisionAccessCounterViewed: 'vision_access_counter_viewed',
+  PaymentDoorViewed: 'payment_door_viewed',
+  PaymentIntentClicked: 'payment_intent_clicked',
+  PaymentDoorDismissed: 'payment_door_dismissed',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvent)[keyof typeof AnalyticsEvent];

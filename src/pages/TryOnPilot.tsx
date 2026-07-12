@@ -54,7 +54,13 @@ interface VisitLeadForm {
 }
 
 const INTENT_KEY = 'visionlux_tryon_intent_events';
+const PAYMENT_INTENT_KEY = 'vilu_payment_intent_stats';
 const MAX_SELECTED_FRAMES = 3;
+const VISIT_PREP_OFFER = {
+  id: 'visit-prep-priority',
+  price: 290,
+  title: 'Приоритетная подготовка визита',
+};
 const FACE_FIT_IDLE: FaceFitMeasurement = {
   status: 'idle',
   confidence: 0,
@@ -286,6 +292,29 @@ function saveIntentEvent(event: IntentEvent) {
   localStorage.setItem(INTENT_KEY, JSON.stringify(next));
 }
 
+function getPaymentIntentCount() {
+  if (typeof window === 'undefined') return 0;
+  const rawValue = localStorage.getItem(PAYMENT_INTENT_KEY);
+  if (!rawValue) return 0;
+
+  try {
+    const parsed = JSON.parse(rawValue) as { count?: number };
+    return Number(parsed.count ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+function savePaymentIntentClick() {
+  const count = getPaymentIntentCount() + 1;
+  localStorage.setItem(PAYMENT_INTENT_KEY, JSON.stringify({
+    count,
+    lastClickedAt: new Date().toISOString(),
+    offerId: VISIT_PREP_OFFER.id,
+  }));
+  return count;
+}
+
 function FrameDrawing({ frame, className = '', style, compact = false }: { frame: PilotFrame; className?: string; style?: CSSProperties; compact?: boolean }) {
   const lensHeight = compact ? 'h-14' : 'h-20';
   const borderWidth = compact ? 'border-[7px]' : 'border-[9px]';
@@ -328,6 +357,8 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [geoStatus, setGeoStatus] = useState('');
   const [copiedOpticId, setCopiedOpticId] = useState('');
   const [isVisitLeadOpen, setIsVisitLeadOpen] = useState(false);
+  const [isPaymentDoorOpen, setIsPaymentDoorOpen] = useState(false);
+  const [paymentDoorStatus, setPaymentDoorStatus] = useState('');
   const [visitLeadStatus, setVisitLeadStatus] = useState('');
   const [visitLeadForm, setVisitLeadForm] = useState<VisitLeadForm>({
     city: 'Москва',
@@ -358,6 +389,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   const canPrepareVisit = selectedFrames.length >= 2;
   const canSubmitVisitLead = canPrepareVisit && visitLeadForm.contact.trim().length >= 3 && visitLeadForm.consent;
+  const paymentDoorDisabled = selectedFrames.length < 1;
   const photoQuality = photoQualityLabel(faceFitMeasurement);
   const autoFitChecklistItems = autoFitChecklist(faceFitMeasurement, autoFitApplied);
 
@@ -497,6 +529,37 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     trackEvent(AnalyticsEvent.VisitLeadOpened, {
       selected_count: selectedFrames.length,
       source: 'selection_card',
+    });
+  };
+
+  const openPaymentDoor = (source: string) => {
+    setPaymentDoorStatus('');
+    setIsPaymentDoorOpen(true);
+    trackEvent(AnalyticsEvent.PaymentDoorViewed, {
+      offer_id: VISIT_PREP_OFFER.id,
+      price: VISIT_PREP_OFFER.price,
+      selected_count: selectedFrames.length,
+      source,
+    });
+  };
+
+  const clickPaymentIntent = () => {
+    const intentClicks = savePaymentIntentClick();
+    trackEvent(AnalyticsEvent.PaymentIntentClicked, {
+      offer_id: VISIT_PREP_OFFER.id,
+      price: VISIT_PREP_OFFER.price,
+      selected_count: selectedFrames.length,
+      intent_clicks: intentClicks,
+      source: 'fake_payment_modal',
+    });
+    setPaymentDoorStatus('Платежи пока не подключены. Мы зафиксировали интерес к сервису и не списали деньги.');
+  };
+
+  const closePaymentDoor = () => {
+    setIsPaymentDoorOpen(false);
+    trackEvent(AnalyticsEvent.PaymentDoorDismissed, {
+      offer_id: VISIT_PREP_OFFER.id,
+      selected_count: selectedFrames.length,
     });
   };
 
@@ -915,6 +978,32 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             >
               Подготовить подбор к визиту <ArrowRight size={16} />
             </button>
+            <div className="mt-4 rounded-[1.7rem] bg-vilu-ink p-5 text-vilu-paper ring-1 ring-vilu-lime/20">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-vilu-lime">Платный сервис</p>
+                  <h3 className="mt-2 text-xl font-black tracking-tight">{VISIT_PREP_OFFER.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-vilu-paper/70">
+                    Консультант заранее получает ваш короткий список, готовит похожие оправы и экономит время визита.
+                  </p>
+                </div>
+                <div className="shrink-0 rounded-2xl bg-vilu-lime px-4 py-3 text-center text-vilu-ink">
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em]">тест</p>
+                  <p className="text-xl font-black">{formatPrice(VISIT_PREP_OFFER.price)}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => openPaymentDoor('selection_card')}
+                disabled={paymentDoorDisabled}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-5 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-card disabled:cursor-not-allowed disabled:bg-vilu-paper/20 disabled:text-vilu-paper/45"
+              >
+                Проверить готовность платить <ArrowRight size={16} />
+              </button>
+              {paymentDoorDisabled && (
+                <p className="mt-3 text-xs leading-5 text-vilu-paper/58">Сначала сохраните хотя бы одну оправу в подбор.</p>
+              )}
+            </div>
             <p className="mt-3 text-xs leading-5 text-vilu-ink/55">
               Контакт передается только после согласия. Фото, рецепт и точное местоположение не отправляются.
             </p>
@@ -1007,6 +1096,75 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           </div>
         </div>
       </section>
+
+      {isPaymentDoorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-vilu-ink/75 px-4 py-6">
+          <div className="w-full max-w-xl rounded-[2rem] bg-vilu-paper p-6 shadow-2xl ring-1 ring-white/20 md:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Оплата скоро</p>
+                <h2 className="mt-2 text-3xl font-black tracking-tight text-vilu-ink">{VISIT_PREP_OFFER.title}</h2>
+                <p className="mt-3 text-sm leading-6 text-vilu-ink/65">
+                  Это фейк-дверь для проверки спроса: платежная интеграция пока не подключена, деньги не списываются.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closePaymentDoor}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-vilu-card text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-paper"
+                aria-label="Закрыть оплату"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-3xl bg-vilu-card p-4 ring-1 ring-vilu-ink/10">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Цена</p>
+                <p className="mt-2 text-3xl font-black text-vilu-ink">{formatPrice(VISIT_PREP_OFFER.price)}</p>
+              </div>
+              <div className="rounded-3xl bg-vilu-card p-4 ring-1 ring-vilu-ink/10">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Подбор</p>
+                <p className="mt-2 text-3xl font-black text-vilu-ink">{selectedFrames.length}</p>
+              </div>
+              <div className="rounded-3xl bg-vilu-card p-4 ring-1 ring-vilu-ink/10">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Данные</p>
+                <p className="mt-2 text-sm font-black leading-5 text-vilu-green">без фото и рецепта</p>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-3xl bg-vilu-ink p-5 text-vilu-paper">
+              <p className="font-black">Что входит в сервис</p>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-vilu-paper/72">
+                <li>1. Проверка короткого списка 2-3 оправ перед визитом.</li>
+                <li>2. Подготовка похожих моделей консультантом.</li>
+                <li>3. Чеклист вопросов по посадке, мосту и ширине оправы.</li>
+              </ul>
+            </div>
+
+            {paymentDoorStatus && (
+              <p className="mt-5 rounded-2xl bg-vilu-lime/18 p-4 text-sm font-bold leading-6 text-vilu-ink ring-1 ring-vilu-lime/40">{paymentDoorStatus}</p>
+            )}
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={clickPaymentIntent}
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper"
+              >
+                Оплатить {formatPrice(VISIT_PREP_OFFER.price)}
+              </button>
+              <button
+                type="button"
+                onClick={closePaymentDoor}
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-vilu-card px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-cream"
+              >
+                Не сейчас
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isVisitLeadOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-vilu-ink/70 px-4 py-6">
