@@ -73,15 +73,15 @@ export function Home({ onNavigate }: HomeProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(216,239,79,0.14),transparent_30%),linear-gradient(180deg,#07110d_0%,#0b1511_100%)]" />
 
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
-          <div className="min-w-0">
+          <div className="min-w-0 max-w-[calc(100vw-2rem)] sm:max-w-none">
             <div className="kinetic-label mb-6">
               <Sparkles size={14} /> {copy.label}
             </div>
-            <h1 className="kinetic-headline max-w-3xl text-[3.2rem] font-black leading-[0.88] !text-vilu-paper sm:text-6xl lg:text-8xl">
+            <h1 className="kinetic-headline max-w-3xl text-[clamp(2.25rem,10.5vw,3.6rem)] font-black leading-[0.88] !text-vilu-paper sm:text-6xl lg:text-8xl">
               {copy.title}
             </h1>
             <p
-              className="mt-6 max-w-2xl text-lg font-black leading-8"
+              className="mt-6 max-w-[calc(100vw-2rem)] break-words text-base font-black leading-7 sm:max-w-2xl sm:text-lg sm:leading-8"
               style={{ color: 'var(--vilu-lime)' }}
             >
               {copy.description}
@@ -92,13 +92,13 @@ export function Home({ onNavigate }: HomeProps) {
                   trackEvent(AnalyticsEvent.TryOnOpened, { source: 'home_hero' });
                   onNavigate('tryon');
                 }}
-                className="group kinetic-cta rounded-full px-8 py-4 text-sm font-black uppercase tracking-[0.14em] transition hover:-translate-y-0.5 hover:bg-vilu-card focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/40"
+                className="group kinetic-cta w-full rounded-full px-6 py-4 text-sm font-black uppercase tracking-[0.14em] transition hover:-translate-y-0.5 hover:bg-vilu-card focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/40 sm:w-auto sm:px-8"
               >
                 {copy.startFitting} <ArrowRight className="ml-2 inline transition group-hover:translate-x-1" size={18} />
               </button>
               <button
                 onClick={() => onNavigate('products')}
-                className="rounded-full border border-vilu-paper/22 bg-vilu-paper/8 px-8 py-4 text-sm font-black uppercase tracking-[0.14em] text-vilu-paper backdrop-blur transition hover:bg-vilu-paper hover:text-vilu-ink focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/40"
+                className="w-full rounded-full border border-vilu-paper/22 bg-vilu-paper/8 px-6 py-4 text-sm font-black uppercase tracking-[0.14em] text-vilu-paper backdrop-blur transition hover:bg-vilu-paper hover:text-vilu-ink focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/40 sm:w-auto sm:px-8"
               >
                 {copy.viewCatalog}
               </button>

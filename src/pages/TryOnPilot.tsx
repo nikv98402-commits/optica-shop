@@ -648,19 +648,21 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     <div className="min-h-screen overflow-x-hidden bg-vilu-paper">
       <section className="w-full overflow-x-hidden border-b border-vilu-paper/10 bg-vilu-ink px-4 py-10 text-vilu-paper sm:px-6 sm:py-12">
         <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center">
-          <div className="min-w-0">
+          <div className="min-w-0 max-w-[calc(100vw-2rem)] sm:max-w-none">
             <p className="kinetic-label sm:text-sm">Пилот примерки</p>
-            <h1 className="kinetic-headline mt-4 max-w-full break-words text-[clamp(3.25rem,15vw,5.2rem)] font-black leading-[0.9] text-vilu-paper md:text-7xl">
-              Примерь. Оцени. Салон.
+            <h1 className="kinetic-headline mt-4 max-w-full break-words text-[clamp(2.25rem,10.5vw,5.2rem)] font-black leading-[0.9] text-vilu-paper md:text-7xl">
+              <span className="block">Примерь.</span>
+              <span className="block">Оцени.</span>
+              <span className="block">Салон.</span>
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-vilu-paper/84">
+            <p className="mt-6 max-w-[calc(100vw-2rem)] break-words text-base leading-7 text-vilu-paper/90 sm:max-w-2xl sm:text-lg sm:leading-8">
               Загрузите фото, выберите 2-3 подходящих стиля и получите список ближайших оптик для финальной примерки.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="#fit-goal" onClick={() => trackEvent(AnalyticsEvent.TryOnOpened, { source: 'tryon_hero' })} className="kinetic-cta inline-flex justify-center rounded-full px-7 py-4 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-vilu-card">
+              <a href="#fit-goal" onClick={() => trackEvent(AnalyticsEvent.TryOnOpened, { source: 'tryon_hero' })} className="kinetic-cta inline-flex w-full justify-center rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-vilu-card sm:w-auto sm:px-7">
                 Начать примерку <ArrowRight className="ml-2" size={16} />
               </a>
-              <a href="#nearby-optics" className="vilu-action-secondary-dark inline-flex justify-center rounded-full px-7 py-4 text-xs font-black uppercase tracking-[0.16em] transition">
+              <a href="#nearby-optics" className="vilu-action-secondary-dark inline-flex w-full justify-center rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.16em] transition sm:w-auto sm:px-7">
                 Найти салон
               </a>
             </div>

@@ -45,7 +45,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
 
   return (
     <nav className="fixed left-0 right-0 top-0 z-50 border-b border-vilu-paper/10 bg-vilu-ink text-vilu-paper shadow-sm">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         <button onClick={() => go('home')} className="text-2xl font-black tracking-[-0.06em] text-vilu-paper">ViLu</button>
 
         <div className="hidden items-center gap-8 md:flex">
@@ -55,10 +55,10 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
           <button onClick={openStores} className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-vilu-paper/58 transition hover:text-vilu-paper"><MapPin size={16} /> {labels.stores}</button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button onClick={() => go('tryon')} className="rounded-full bg-vilu-lime px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-card md:hidden">{labels.tryOn}</button>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <button onClick={() => go('tryon')} className="hidden rounded-full bg-vilu-lime px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-card sm:block md:hidden">{labels.tryOn}</button>
           <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-vilu-ink ring-1 ring-vilu-lime/20 sm:flex" aria-label={`Switch language to ${targetLanguageLabel}`}><Languages size={15} /> {targetLanguageLabel}</button>
-          <button onClick={() => go('dashboard')} className="flex items-center gap-2 rounded-full bg-vilu-paper px-3 py-3 text-vilu-ink ring-1 ring-vilu-lime/20 transition hover:bg-vilu-lime md:px-4">
+          <button onClick={() => go('dashboard')} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-3 py-3 text-vilu-ink ring-1 ring-vilu-lime/20 transition hover:bg-vilu-lime sm:flex md:px-4">
             <User size={18} />
             {user && <span className="hidden max-w-28 truncate text-xs font-black md:inline">{user.name}</span>}
           </button>
@@ -67,7 +67,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
               <LogOut size={18} />
             </button>
           )}
-          <button onClick={() => go('checkout')} className="relative rounded-full bg-vilu-lime p-3 text-vilu-ink transition hover:bg-vilu-card"><ShoppingBag size={18} />{fittingCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-vilu-paper text-[10px] font-black text-vilu-ink">{fittingCount}</span>}</button>
+          <button onClick={() => go('checkout')} className="relative hidden rounded-full bg-vilu-lime p-3 text-vilu-ink transition hover:bg-vilu-card sm:block"><ShoppingBag size={18} />{fittingCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-vilu-paper text-[10px] font-black text-vilu-ink">{fittingCount}</span>}</button>
           <button onClick={() => setMenuOpen((value) => !value)} className="rounded-full bg-vilu-paper p-3 text-vilu-ink ring-1 ring-vilu-lime/20 md:hidden">{menuOpen ? <X size={18} /> : <Menu size={18} />}</button>
         </div>
       </div>
