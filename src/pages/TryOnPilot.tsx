@@ -655,7 +655,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <span className="block">Оцени.</span>
               <span className="block">Салон.</span>
             </h1>
-            <p className="mt-6 max-w-[calc(100vw-2rem)] break-words text-base leading-7 text-vilu-paper/90 sm:max-w-2xl sm:text-lg sm:leading-8">
+            <p className="mt-6 max-w-[calc(100vw-2rem)] break-words text-base font-bold leading-7 text-vilu-lime sm:max-w-2xl sm:text-lg sm:leading-8">
               Загрузите фото, выберите 2-3 подходящих стиля и получите список ближайших оптик для финальной примерки.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -695,9 +695,16 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   key={goal}
                   type="button"
                   onClick={() => setSelectedGoal(goal)}
-                  className={`rounded-2xl px-5 py-4 text-left text-sm font-black transition ${selectedGoal === goal ? 'bg-vilu-card text-vilu-ink shadow-sm' : 'bg-vilu-paper/10 text-vilu-paper/75 hover:bg-vilu-paper hover:text-vilu-ink'}`}
+                  className={`rounded-2xl px-5 py-4 text-left text-sm font-black transition ${
+                    selectedGoal === goal
+                      ? 'bg-vilu-lime text-vilu-ink shadow-[0_0_0_2px_rgba(217,255,46,0.38),0_18px_42px_rgba(217,255,46,0.18)]'
+                      : 'bg-vilu-paper/10 text-vilu-paper/80 ring-1 ring-vilu-paper/10 hover:bg-vilu-paper/16 hover:text-vilu-paper'
+                  }`}
                 >
-                  {goal}
+                  <span className="inline-flex items-center gap-2">
+                    {selectedGoal === goal && <CheckCircle2 size={16} className="shrink-0" />}
+                    <span>{goal}</span>
+                  </span>
                 </button>
               ))}
             </div>
