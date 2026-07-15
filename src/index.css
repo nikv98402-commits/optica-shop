@@ -125,6 +125,10 @@ h1, h2, h3, .font-black {
   color: rgba(248, 243, 232, 0.84);
 }
 
+.vilu-accent-copy-on-dark {
+  color: var(--vilu-lime) !important;
+}
+
 .vilu-copy-on-light {
   color: rgba(7, 17, 13, 0.72);
 }
