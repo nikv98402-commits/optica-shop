@@ -732,7 +732,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <span className="block">Оцени.</span>
               <span className="block">Салон.</span>
             </h1>
-            <p className="mt-6 max-w-[calc(100vw-2rem)] break-words text-base font-bold leading-7 text-vilu-lime sm:max-w-2xl sm:text-lg sm:leading-8">
+            <p className="vilu-accent-copy-on-dark mt-6 max-w-[calc(100vw-2rem)] break-words text-base font-bold leading-7 sm:max-w-2xl sm:text-lg sm:leading-8">
               Загрузите фото, выберите 2-3 подходящих стиля и получите список ближайших оптик для финальной примерки.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">

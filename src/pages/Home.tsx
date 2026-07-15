@@ -80,10 +80,7 @@ export function Home({ onNavigate }: HomeProps) {
             <h1 className="kinetic-headline max-w-3xl text-[clamp(2.25rem,10.5vw,3.6rem)] font-black leading-[0.88] !text-vilu-paper sm:text-6xl lg:text-8xl">
               {copy.title}
             </h1>
-            <p
-              className="mt-6 max-w-[calc(100vw-2rem)] break-words text-base font-black leading-7 sm:max-w-2xl sm:text-lg sm:leading-8"
-              style={{ color: 'var(--vilu-lime)' }}
-            >
+            <p className="vilu-accent-copy-on-dark mt-6 max-w-[calc(100vw-2rem)] break-words text-base font-black leading-7 sm:max-w-2xl sm:text-lg sm:leading-8">
               {copy.description}
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
