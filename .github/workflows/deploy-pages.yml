@@ -48,6 +48,8 @@ jobs:
             eye-check
             eyecheck
             vision-check
+            vision-tracker
+            visiontracker
             products
             product
             dashboard
