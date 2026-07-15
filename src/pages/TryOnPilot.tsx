@@ -24,6 +24,9 @@ import { pilotFrames, PilotFrame } from '../data/pilotOptics';
 import { analyzeFacePhoto, type FaceFitMeasurement, unsupportedPhotoMeasurement } from '../lib/faceFitEngine';
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
+import { submitVisitLead as submitVisitLeadToBackend } from '../services/leadService';
+import { createPaymentIntent as createBackendPaymentIntent } from '../services/paymentService';
+import { toVisitLeadFrames } from '../services/selectionService';
 
 interface TryOnPilotProps {
   onNavigate?: (page: string) => void;
@@ -54,7 +57,14 @@ interface VisitLeadForm {
 }
 
 const INTENT_KEY = 'visionlux_tryon_intent_events';
+const PAYMENT_INTENT_KEY = 'vilu_payment_intent_stats';
 const MAX_SELECTED_FRAMES = 3;
+const VISIT_PREP_OFFER = {
+  id: 'visit-prep-priority',
+  price: 290,
+  title: 'Приоритетная подготовка визита',
+};
+const PAYMENT_INTENT_CTA = 'Зафиксировать интерес';
 const FACE_FIT_IDLE: FaceFitMeasurement = {
   status: 'idle',
   confidence: 0,
@@ -286,6 +296,42 @@ function saveIntentEvent(event: IntentEvent) {
   localStorage.setItem(INTENT_KEY, JSON.stringify(next));
 }
 
+function getPaymentIntentCount() {
+  if (typeof window === 'undefined') return 0;
+  const rawValue = localStorage.getItem(PAYMENT_INTENT_KEY);
+  if (!rawValue) return 0;
+
+  try {
+    const parsed = JSON.parse(rawValue) as { count?: number };
+    return Number(parsed.count ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+function savePaymentIntentClick() {
+  const count = getPaymentIntentCount() + 1;
+  localStorage.setItem(PAYMENT_INTENT_KEY, JSON.stringify({
+    count,
+    lastClickedAt: new Date().toISOString(),
+    offerId: VISIT_PREP_OFFER.id,
+  }));
+  return count;
+}
+
+async function copyTextSafely(text: string) {
+  if (!navigator.clipboard?.writeText) {
+    return false;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function FrameDrawing({ frame, className = '', style, compact = false }: { frame: PilotFrame; className?: string; style?: CSSProperties; compact?: boolean }) {
   const lensHeight = compact ? 'h-14' : 'h-20';
   const borderWidth = compact ? 'border-[7px]' : 'border-[9px]';
@@ -328,7 +374,12 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [geoStatus, setGeoStatus] = useState('');
   const [copiedOpticId, setCopiedOpticId] = useState('');
   const [isVisitLeadOpen, setIsVisitLeadOpen] = useState(false);
+  const [isPaymentDoorOpen, setIsPaymentDoorOpen] = useState(false);
+  const [isCreatingPaymentIntent, setIsCreatingPaymentIntent] = useState(false);
+  const [isSubmittingVisitLead, setIsSubmittingVisitLead] = useState(false);
+  const [paymentDoorStatus, setPaymentDoorStatus] = useState('');
   const [visitLeadStatus, setVisitLeadStatus] = useState('');
+  const [visitLeadId, setVisitLeadId] = useState('');
   const [visitLeadForm, setVisitLeadForm] = useState<VisitLeadForm>({
     city: 'Москва',
     contactMethod: 'telegram',
@@ -358,6 +409,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
   const canPrepareVisit = selectedFrames.length >= 2;
   const canSubmitVisitLead = canPrepareVisit && visitLeadForm.contact.trim().length >= 3 && visitLeadForm.consent;
+  const paymentDoorDisabled = selectedFrames.length < 1;
   const photoQuality = photoQualityLabel(faceFitMeasurement);
   const autoFitChecklistItems = autoFitChecklist(faceFitMeasurement, autoFitApplied);
 
@@ -500,11 +552,69 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     });
   };
 
+  const openPaymentDoor = (source: string) => {
+    setPaymentDoorStatus('');
+    setIsPaymentDoorOpen(true);
+    trackEvent(AnalyticsEvent.PaymentDoorViewed, {
+      offer_id: VISIT_PREP_OFFER.id,
+      price: VISIT_PREP_OFFER.price,
+      selected_count: selectedFrames.length,
+      source,
+    });
+  };
+
+  const clickPaymentIntent = async () => {
+    if (isCreatingPaymentIntent) return;
+
+    setIsCreatingPaymentIntent(true);
+    setPaymentDoorStatus('Фиксируем интерес. Деньги не списываются.');
+
+    const intentClicks = savePaymentIntentClick();
+    trackEvent(AnalyticsEvent.PaymentIntentClicked, {
+      offer_id: VISIT_PREP_OFFER.id,
+      price: VISIT_PREP_OFFER.price,
+      selected_count: selectedFrames.length,
+      intent_clicks: intentClicks,
+      source: 'fake_payment_modal',
+    });
+
+    const result = await createBackendPaymentIntent({
+      leadId: visitLeadId || undefined,
+      serviceType: 'visit_preparation',
+      amountRub: VISIT_PREP_OFFER.price,
+      currency: 'RUB',
+      provider: 'none',
+      sourcePage: '/tryon',
+    });
+
+    if (result.ok) {
+      setPaymentDoorStatus('Интерес к сервису сохранен. Платежный провайдер пока не подключен, деньги не списаны.');
+      setIsCreatingPaymentIntent(false);
+      return;
+    }
+
+    setPaymentDoorStatus('Платежи пока не подключены. Мы зафиксировали интерес локально и не списали деньги.');
+    setIsCreatingPaymentIntent(false);
+  };
+
+  const closePaymentDoor = () => {
+    setIsPaymentDoorOpen(false);
+    trackEvent(AnalyticsEvent.PaymentDoorDismissed, {
+      offer_id: VISIT_PREP_OFFER.id,
+      selected_count: selectedFrames.length,
+    });
+  };
+
   const submitVisitLead = async () => {
+    if (isSubmittingVisitLead) return;
+
     if (!canSubmitVisitLead) {
       setVisitLeadStatus('Укажите контакт и подтвердите согласие, чтобы подготовить заявку к визиту.');
       return;
     }
+
+    setIsSubmittingVisitLead(true);
+    setVisitLeadStatus('Готовим подбор. Фото, рецепт и точные координаты не отправляются.');
 
     saveIntentEvent({
       id: createLocalId('intent'),
@@ -521,23 +631,47 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       selected_count: selectedFrames.length,
       city: visitLeadForm.city,
       contact_type: visitLeadForm.contactMethod,
-      mode: hasLeadForm() ? 'tally' : 'copy_fallback',
+      mode: 'backend_first',
     });
+
+    const backendResult = await submitVisitLeadToBackend({
+      locale: language,
+      contactValue: visitLeadForm.contact.trim(),
+      contactChannel: visitLeadForm.contactMethod,
+      city: visitLeadForm.city,
+      consentPersonalData: true,
+      consentVersion: 'personal-data-consent-v1-2026-07',
+      privacyVersion: 'privacy-v1-2026-07',
+      sourcePage: '/tryon',
+      selectedFrames: toVisitLeadFrames(selectedFrames, selectedGoal, activeFrameScore?.total),
+      comment: visitLeadForm.comment.trim() || undefined,
+    });
+
+    if (backendResult.ok) {
+      setVisitLeadId(backendResult.data.leadId);
+      setVisitLeadStatus('Подбор сохранен для подготовки визита. Фото, рецепт и точные координаты не отправлены.');
+      setIsSubmittingVisitLead(false);
+      return;
+    }
 
     if (hasLeadForm()) {
       window.open(buildTallyUrl(visitLeadForm, selectedFrames, selectedGoal), '_blank', 'noopener,noreferrer');
       setVisitLeadStatus('Форма для визита открыта. Фото и рецепт не передаются.');
+      setIsSubmittingVisitLead(false);
       return;
     }
 
     const text = `Подбор ViLu для визита\nГород: ${visitLeadForm.city}\nЦель: ${selectedGoal}\n${selectionText}\n\nКонтакт: ${visitLeadForm.contactMethod}\nКомментарий: ${visitLeadForm.comment || 'нет'}\n\nФото и рецепт не передаются.`;
-    await navigator.clipboard.writeText(text);
-    setVisitLeadStatus('Подбор скопирован. Данные не отправлены на сервер.');
+    const copied = await copyTextSafely(text);
+    setVisitLeadStatus(copied
+      ? 'Подбор скопирован. Данные не отправлены на сервер.'
+      : 'Подбор подготовлен локально, но браузер запретил копирование. Данные не отправлены на сервер.');
+    setIsSubmittingVisitLead(false);
   };
 
   const copyVisitSelection = async () => {
     const text = `Мой подбор ViLu\nЦель: ${selectedGoal}\n${selectionText}\n\nФото, рецепт, контакт и точное местоположение не передаются. Перед визитом уточните наличие похожих моделей.`;
-    await navigator.clipboard.writeText(text);
+    const copied = await copyTextSafely(text);
     saveIntentEvent({
       id: createLocalId('intent'),
       createdAt: new Date().toISOString(),
@@ -553,14 +687,20 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       goal: selectedGoal,
       source: 'visit_modal',
     });
-    setVisitLeadStatus('Подбор скопирован без контакта. Вы можете показать его консультанту в салоне.');
+    setVisitLeadStatus(copied
+      ? 'Подбор скопирован без контакта. Вы можете показать его консультанту в салоне.'
+      : 'Подбор готов локально, но браузер запретил копирование. Контакт не отправлен.');
   };
 
   const copySelection = async (optic: DirectoryOptic) => {
     const text = `Мой подбор ViLu\nЦель: ${selectedGoal}\n${selectionText}\n\nПеред визитом уточните наличие похожих моделей.\nОптика: ${optic.name}, ${optic.address}`;
-    await navigator.clipboard.writeText(text);
+    const copied = await copyTextSafely(text);
     recordIntent(optic, 'copy');
-    setCopiedOpticId(optic.id);
+    if (copied) {
+      setCopiedOpticId(optic.id);
+    } else {
+      setGeoStatus('Браузер запретил копирование. Подбор остался только на этом устройстве.');
+    }
   };
 
   const openRoute = (optic: DirectoryOptic) => {
@@ -585,19 +725,21 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     <div className="min-h-screen overflow-x-hidden bg-vilu-paper">
       <section className="w-full overflow-x-hidden border-b border-vilu-paper/10 bg-vilu-ink px-4 py-10 text-vilu-paper sm:px-6 sm:py-12">
         <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center">
-          <div className="min-w-0">
+          <div className="min-w-0 max-w-[calc(100vw-2rem)] sm:max-w-none">
             <p className="kinetic-label sm:text-sm">Пилот примерки</p>
-            <h1 className="kinetic-headline mt-4 max-w-full break-words text-[clamp(3.25rem,15vw,5.2rem)] font-black leading-[0.9] text-vilu-paper md:text-7xl">
-              Примерь. Оцени. Салон.
+            <h1 className="kinetic-headline mt-4 max-w-full break-words text-[clamp(2.25rem,10.5vw,5.2rem)] font-black leading-[0.9] text-vilu-paper md:text-7xl">
+              <span className="block">Примерь.</span>
+              <span className="block">Оцени.</span>
+              <span className="block">Салон.</span>
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-vilu-paper/84">
+            <p className="mt-6 max-w-[calc(100vw-2rem)] break-words text-base font-bold leading-7 text-vilu-lime sm:max-w-2xl sm:text-lg sm:leading-8">
               Загрузите фото, выберите 2-3 подходящих стиля и получите список ближайших оптик для финальной примерки.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="#fit-goal" onClick={() => trackEvent(AnalyticsEvent.TryOnOpened, { source: 'tryon_hero' })} className="kinetic-cta inline-flex justify-center rounded-full px-7 py-4 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-vilu-card">
+              <a href="#fit-goal" onClick={() => trackEvent(AnalyticsEvent.TryOnOpened, { source: 'tryon_hero' })} className="kinetic-cta inline-flex w-full justify-center rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.16em] transition hover:bg-vilu-card sm:w-auto sm:px-7">
                 Начать примерку <ArrowRight className="ml-2" size={16} />
               </a>
-              <a href="#nearby-optics" className="vilu-action-secondary-dark inline-flex justify-center rounded-full px-7 py-4 text-xs font-black uppercase tracking-[0.16em] transition">
+              <a href="#nearby-optics" className="vilu-action-secondary-dark inline-flex w-full justify-center rounded-full px-6 py-4 text-xs font-black uppercase tracking-[0.16em] transition sm:w-auto sm:px-7">
                 Найти салон
               </a>
             </div>
@@ -630,9 +772,16 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                   key={goal}
                   type="button"
                   onClick={() => setSelectedGoal(goal)}
-                  className={`rounded-2xl px-5 py-4 text-left text-sm font-black transition ${selectedGoal === goal ? 'bg-vilu-card text-vilu-ink shadow-sm' : 'bg-vilu-paper/10 text-vilu-paper/75 hover:bg-vilu-paper hover:text-vilu-ink'}`}
+                  className={`rounded-2xl px-5 py-4 text-left text-sm font-black transition ${
+                    selectedGoal === goal
+                      ? 'bg-vilu-lime text-vilu-ink shadow-[0_0_0_2px_rgba(217,255,46,0.38),0_18px_42px_rgba(217,255,46,0.18)]'
+                      : 'bg-vilu-paper/10 text-vilu-paper/80 ring-1 ring-vilu-paper/10 hover:bg-vilu-paper/16 hover:text-vilu-paper'
+                  }`}
                 >
-                  {goal}
+                  <span className="inline-flex items-center gap-2">
+                    {selectedGoal === goal && <CheckCircle2 size={16} className="shrink-0" />}
+                    <span>{goal}</span>
+                  </span>
                 </button>
               ))}
             </div>
@@ -915,6 +1064,32 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
             >
               Подготовить подбор к визиту <ArrowRight size={16} />
             </button>
+            <div className="mt-4 rounded-[1.7rem] bg-vilu-ink p-5 text-vilu-paper ring-1 ring-vilu-lime/20">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-vilu-lime">Платный сервис</p>
+                  <h3 className="mt-2 text-xl font-black tracking-tight">{VISIT_PREP_OFFER.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-vilu-paper/70">
+                    Консультант заранее получает ваш короткий список, готовит похожие оправы и экономит время визита.
+                  </p>
+                </div>
+                <div className="shrink-0 rounded-2xl bg-vilu-lime px-4 py-3 text-center text-vilu-ink">
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em]">тест</p>
+                  <p className="text-xl font-black">{formatPrice(VISIT_PREP_OFFER.price)}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => openPaymentDoor('selection_card')}
+                disabled={paymentDoorDisabled}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-5 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-card disabled:cursor-not-allowed disabled:bg-vilu-paper/20 disabled:text-vilu-paper/45"
+              >
+                Проверить готовность платить <ArrowRight size={16} />
+              </button>
+              {paymentDoorDisabled && (
+                <p className="mt-3 text-xs leading-5 text-vilu-paper/58">Сначала сохраните хотя бы одну оправу в подбор.</p>
+              )}
+            </div>
             <p className="mt-3 text-xs leading-5 text-vilu-ink/55">
               Контакт передается только после согласия. Фото, рецепт и точное местоположение не отправляются.
             </p>
@@ -1007,6 +1182,76 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           </div>
         </div>
       </section>
+
+      {isPaymentDoorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-vilu-ink/75 px-4 py-6">
+          <div className="w-full max-w-xl rounded-[2rem] bg-vilu-paper p-6 shadow-2xl ring-1 ring-white/20 md:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Оплата скоро</p>
+                <h2 className="mt-2 text-3xl font-black tracking-tight text-vilu-ink">{VISIT_PREP_OFFER.title}</h2>
+                <p className="mt-3 text-sm leading-6 text-vilu-ink/65">
+                  Это фейк-дверь для проверки спроса: платежная интеграция пока не подключена, деньги не списываются.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closePaymentDoor}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-vilu-card text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-paper"
+                aria-label="Закрыть оплату"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-3xl bg-vilu-card p-4 ring-1 ring-vilu-ink/10">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Цена</p>
+                <p className="mt-2 text-3xl font-black text-vilu-ink">{formatPrice(VISIT_PREP_OFFER.price)}</p>
+              </div>
+              <div className="rounded-3xl bg-vilu-card p-4 ring-1 ring-vilu-ink/10">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Подбор</p>
+                <p className="mt-2 text-3xl font-black text-vilu-ink">{selectedFrames.length}</p>
+              </div>
+              <div className="rounded-3xl bg-vilu-card p-4 ring-1 ring-vilu-ink/10">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Данные</p>
+                <p className="mt-2 text-sm font-black leading-5 text-vilu-green">без фото и рецепта</p>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-3xl bg-vilu-ink p-5 text-vilu-paper">
+              <p className="font-black">Что входит в сервис</p>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-vilu-paper/72">
+                <li>1. Проверка короткого списка 2-3 оправ перед визитом.</li>
+                <li>2. Подготовка похожих моделей консультантом.</li>
+                <li>3. Чеклист вопросов по посадке, мосту и ширине оправы.</li>
+              </ul>
+            </div>
+
+            {paymentDoorStatus && (
+              <p className="mt-5 rounded-2xl bg-vilu-lime/18 p-4 text-sm font-bold leading-6 text-vilu-ink ring-1 ring-vilu-lime/40">{paymentDoorStatus}</p>
+            )}
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={clickPaymentIntent}
+                disabled={isCreatingPaymentIntent}
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper disabled:cursor-wait disabled:bg-vilu-card disabled:text-vilu-ink/55"
+              >
+                {isCreatingPaymentIntent ? 'Фиксируем...' : `${PAYMENT_INTENT_CTA} ${formatPrice(VISIT_PREP_OFFER.price)}`}
+              </button>
+              <button
+                type="button"
+                onClick={closePaymentDoor}
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-vilu-card px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-cream"
+              >
+                Не сейчас
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isVisitLeadOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-vilu-ink/70 px-4 py-6">
@@ -1114,10 +1359,10 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <button
                 type="button"
                 onClick={submitVisitLead}
-                disabled={!canSubmitVisitLead}
+                disabled={!canSubmitVisitLead || isSubmittingVisitLead}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-vilu-ink px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-paper transition hover:bg-vilu-lime hover:text-vilu-ink disabled:cursor-not-allowed disabled:bg-vilu-ink/10 disabled:text-vilu-ink/42"
               >
-                {hasLeadForm() ? 'Открыть заявку' : 'Скопировать заявку'} <ArrowRight size={16} />
+                {isSubmittingVisitLead ? 'Готовим...' : hasLeadForm() ? 'Открыть заявку' : 'Скопировать заявку'} <ArrowRight size={16} />
               </button>
               <button
                 type="button"
