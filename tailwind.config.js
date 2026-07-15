@@ -19,6 +19,7 @@ export default {
           line: 'rgba(7, 17, 13, 0.14)',
           night: '#07110d',
           foam: '#eef5e7',
+          card: '#fffdf7',
           success: '#15803d',
           warning: '#92400e',
           error: '#b91c1c',

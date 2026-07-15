@@ -253,18 +253,18 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     return (
       <div className="kinetic-surface min-h-screen px-6 py-16">
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.95fr_1.05fr]">
-          <section>
-            <p className="kinetic-label text-vilu-green">Личный кабинет</p>
-            <h1 className="kinetic-headline mt-4 text-4xl sm:text-5xl md:text-6xl">Ваш центр управления зрением.</h1>
-            <p className="mt-7 max-w-2xl text-lg font-semibold leading-8 text-vilu-ink/65">
+          <section className="text-vilu-paper">
+            <p className="kinetic-label">Личный кабинет</p>
+            <h1 className="kinetic-headline mt-4 text-4xl text-vilu-paper sm:text-5xl md:text-6xl">Ваш центр управления зрением.</h1>
+            <p className="mt-7 max-w-2xl text-lg font-semibold leading-8 text-vilu-paper/80">
               Создайте demo-аккаунт, сохраните рецепт, контактные данные, график осмотров и проверьте тренажеры для глаз. Все данные сохраняются локально в браузере.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <button onClick={openDemoProfile} className="rounded-full bg-vilu-lime px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-card">Открыть demo-кабинет</button>
-              <button onClick={() => openAuth('signup')} className="rounded-full bg-vilu-ink px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-paper transition hover:bg-vilu-lime hover:text-vilu-ink">Создать demo-кабинет</button>
+              <button onClick={() => openAuth('signup')} className="rounded-full border border-vilu-paper/30 bg-vilu-paper/10 px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-paper transition hover:bg-vilu-paper hover:text-vilu-ink">Создать demo-кабинет</button>
               <button onClick={() => openAuth('login')} className="rounded-full border border-vilu-ink/15 bg-vilu-card px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-paper">Войти</button>
             </div>
-            <p className="mt-4 max-w-xl text-sm font-semibold leading-6 text-vilu-ink/55">
+            <p className="mt-4 max-w-xl text-sm font-semibold leading-6 text-vilu-paper/70">
               Demo-режим можно открыть без реальных персональных данных. Профиль хранится только на этом устройстве.
             </p>
           </section>
@@ -297,18 +297,18 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   return (
     <div className="kinetic-surface min-h-screen px-6 py-12">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+        <header className="mb-10 flex flex-col justify-between gap-5 text-vilu-paper md:flex-row md:items-end">
           <div>
-            <p className="kinetic-label text-vilu-green">Vision profile</p>
-            <h1 className="kinetic-headline mt-3 text-4xl sm:text-5xl md:text-6xl">Кабинет зрения</h1>
-            <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-vilu-ink/65">Здравствуйте, {profile.fullName || user.name}. Здесь собраны данные клиента, рецепт, тренировки, инфографика и персональные предложения.</p>
-            <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-vilu-green">
+            <p className="kinetic-label">Vision profile</p>
+            <h1 className="kinetic-headline mt-3 text-4xl text-vilu-paper sm:text-5xl md:text-6xl">Кабинет зрения</h1>
+            <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-vilu-paper/80">Здравствуйте, {profile.fullName || user.name}. Здесь собраны данные клиента, рецепт, тренировки, инфографика и персональные предложения.</p>
+            <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-vilu-lime">
               Demo/local mode: данные кабинета сохраняются только в вашем браузере и не отправляются на сервер.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <button onClick={() => onNavigate?.('products')} className="rounded-full bg-vilu-ink px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-paper transition hover:bg-vilu-lime hover:text-vilu-ink">В каталог</button>
-            <button onClick={() => signOut()} className="rounded-full bg-vilu-card px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/60 ring-1 ring-vilu-ink/10 transition hover:text-vilu-ink">Выйти</button>
+            <button onClick={() => onNavigate?.('products')} className="rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-paper">В каталог</button>
+            <button onClick={() => signOut()} className="rounded-full bg-vilu-paper px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-ink ring-1 ring-vilu-paper/30 transition hover:bg-vilu-lime">Выйти</button>
           </div>
         </header>
 
