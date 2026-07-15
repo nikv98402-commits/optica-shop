@@ -126,7 +126,9 @@ h1, h2, h3, .font-black {
 }
 
 .vilu-accent-copy-on-dark {
-  color: var(--vilu-lime) !important;
+  color: #d8ef4f !important;
+  -webkit-text-fill-color: #d8ef4f !important;
+  opacity: 1 !important;
 }
 
 .vilu-copy-on-light {
