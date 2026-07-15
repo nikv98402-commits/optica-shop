@@ -6,6 +6,7 @@ All notable ViLu MVP changes should be documented here.
 
 ### Added
 
+- Engineering runbook for the planned YooKassa integration, including architecture, API contracts, payment states, security boundaries, test matrix, rollout, and rollback.
 - Developer experience review report for the current MVP branch.
 - Product UX wrapper for MediaPipe-powered auto-fit try-on.
 - Route smoke-test script for key app pages and public SEO files.
@@ -18,6 +19,7 @@ All notable ViLu MVP changes should be documented here.
 
 ### Known
 
+- Real charging remains disabled until the server owns offer pricing, YooKassa webhooks are verified, and the payment Definition of Done is complete.
 - The project currently has non-blocking Fast Refresh lint warnings in existing context and knowledge-base files.
 - Production build can need normal process permissions on Windows because Vite/esbuild starts a child process.
 
