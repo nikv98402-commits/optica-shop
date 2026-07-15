@@ -64,6 +64,7 @@ const VISIT_PREP_OFFER = {
   price: 290,
   title: 'Приоритетная подготовка визита',
 };
+const PAYMENT_INTENT_CTA = 'Зафиксировать интерес';
 const FACE_FIT_IDLE: FaceFitMeasurement = {
   status: 'idle',
   confidence: 0,
@@ -318,6 +319,19 @@ function savePaymentIntentClick() {
   return count;
 }
 
+async function copyTextSafely(text: string) {
+  if (!navigator.clipboard?.writeText) {
+    return false;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function FrameDrawing({ frame, className = '', style, compact = false }: { frame: PilotFrame; className?: string; style?: CSSProperties; compact?: boolean }) {
   const lensHeight = compact ? 'h-14' : 'h-20';
   const borderWidth = compact ? 'border-[7px]' : 'border-[9px]';
@@ -361,6 +375,8 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [copiedOpticId, setCopiedOpticId] = useState('');
   const [isVisitLeadOpen, setIsVisitLeadOpen] = useState(false);
   const [isPaymentDoorOpen, setIsPaymentDoorOpen] = useState(false);
+  const [isCreatingPaymentIntent, setIsCreatingPaymentIntent] = useState(false);
+  const [isSubmittingVisitLead, setIsSubmittingVisitLead] = useState(false);
   const [paymentDoorStatus, setPaymentDoorStatus] = useState('');
   const [visitLeadStatus, setVisitLeadStatus] = useState('');
   const [visitLeadId, setVisitLeadId] = useState('');
@@ -548,6 +564,11 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   };
 
   const clickPaymentIntent = async () => {
+    if (isCreatingPaymentIntent) return;
+
+    setIsCreatingPaymentIntent(true);
+    setPaymentDoorStatus('Фиксируем интерес. Деньги не списываются.');
+
     const intentClicks = savePaymentIntentClick();
     trackEvent(AnalyticsEvent.PaymentIntentClicked, {
       offer_id: VISIT_PREP_OFFER.id,
@@ -568,10 +589,12 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
     if (result.ok) {
       setPaymentDoorStatus('Интерес к сервису сохранен. Платежный провайдер пока не подключен, деньги не списаны.');
+      setIsCreatingPaymentIntent(false);
       return;
     }
 
     setPaymentDoorStatus('Платежи пока не подключены. Мы зафиксировали интерес локально и не списали деньги.');
+    setIsCreatingPaymentIntent(false);
   };
 
   const closePaymentDoor = () => {
@@ -583,10 +606,15 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   };
 
   const submitVisitLead = async () => {
+    if (isSubmittingVisitLead) return;
+
     if (!canSubmitVisitLead) {
       setVisitLeadStatus('Укажите контакт и подтвердите согласие, чтобы подготовить заявку к визиту.');
       return;
     }
+
+    setIsSubmittingVisitLead(true);
+    setVisitLeadStatus('Готовим подбор. Фото, рецепт и точные координаты не отправляются.');
 
     saveIntentEvent({
       id: createLocalId('intent'),
@@ -622,23 +650,28 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     if (backendResult.ok) {
       setVisitLeadId(backendResult.data.leadId);
       setVisitLeadStatus('Подбор сохранен для подготовки визита. Фото, рецепт и точные координаты не отправлены.');
+      setIsSubmittingVisitLead(false);
       return;
     }
 
     if (hasLeadForm()) {
       window.open(buildTallyUrl(visitLeadForm, selectedFrames, selectedGoal), '_blank', 'noopener,noreferrer');
       setVisitLeadStatus('Форма для визита открыта. Фото и рецепт не передаются.');
+      setIsSubmittingVisitLead(false);
       return;
     }
 
     const text = `Подбор ViLu для визита\nГород: ${visitLeadForm.city}\nЦель: ${selectedGoal}\n${selectionText}\n\nКонтакт: ${visitLeadForm.contactMethod}\nКомментарий: ${visitLeadForm.comment || 'нет'}\n\nФото и рецепт не передаются.`;
-    await navigator.clipboard.writeText(text);
-    setVisitLeadStatus('Подбор скопирован. Данные не отправлены на сервер.');
+    const copied = await copyTextSafely(text);
+    setVisitLeadStatus(copied
+      ? 'Подбор скопирован. Данные не отправлены на сервер.'
+      : 'Подбор подготовлен локально, но браузер запретил копирование. Данные не отправлены на сервер.');
+    setIsSubmittingVisitLead(false);
   };
 
   const copyVisitSelection = async () => {
     const text = `Мой подбор ViLu\nЦель: ${selectedGoal}\n${selectionText}\n\nФото, рецепт, контакт и точное местоположение не передаются. Перед визитом уточните наличие похожих моделей.`;
-    await navigator.clipboard.writeText(text);
+    const copied = await copyTextSafely(text);
     saveIntentEvent({
       id: createLocalId('intent'),
       createdAt: new Date().toISOString(),
@@ -654,14 +687,20 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       goal: selectedGoal,
       source: 'visit_modal',
     });
-    setVisitLeadStatus('Подбор скопирован без контакта. Вы можете показать его консультанту в салоне.');
+    setVisitLeadStatus(copied
+      ? 'Подбор скопирован без контакта. Вы можете показать его консультанту в салоне.'
+      : 'Подбор готов локально, но браузер запретил копирование. Контакт не отправлен.');
   };
 
   const copySelection = async (optic: DirectoryOptic) => {
     const text = `Мой подбор ViLu\nЦель: ${selectedGoal}\n${selectionText}\n\nПеред визитом уточните наличие похожих моделей.\nОптика: ${optic.name}, ${optic.address}`;
-    await navigator.clipboard.writeText(text);
+    const copied = await copyTextSafely(text);
     recordIntent(optic, 'copy');
-    setCopiedOpticId(optic.id);
+    if (copied) {
+      setCopiedOpticId(optic.id);
+    } else {
+      setGeoStatus('Браузер запретил копирование. Подбор остался только на этом устройстве.');
+    }
   };
 
   const openRoute = (optic: DirectoryOptic) => {
@@ -1197,9 +1236,10 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <button
                 type="button"
                 onClick={clickPaymentIntent}
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper"
+                disabled={isCreatingPaymentIntent}
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper disabled:cursor-wait disabled:bg-vilu-card disabled:text-vilu-ink/55"
               >
-                Оплатить {formatPrice(VISIT_PREP_OFFER.price)}
+                {isCreatingPaymentIntent ? 'Фиксируем...' : `${PAYMENT_INTENT_CTA} ${formatPrice(VISIT_PREP_OFFER.price)}`}
               </button>
               <button
                 type="button"
@@ -1319,10 +1359,10 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <button
                 type="button"
                 onClick={submitVisitLead}
-                disabled={!canSubmitVisitLead}
+                disabled={!canSubmitVisitLead || isSubmittingVisitLead}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-vilu-ink px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-paper transition hover:bg-vilu-lime hover:text-vilu-ink disabled:cursor-not-allowed disabled:bg-vilu-ink/10 disabled:text-vilu-ink/42"
               >
-                {hasLeadForm() ? 'Открыть заявку' : 'Скопировать заявку'} <ArrowRight size={16} />
+                {isSubmittingVisitLead ? 'Готовим...' : hasLeadForm() ? 'Открыть заявку' : 'Скопировать заявку'} <ArrowRight size={16} />
               </button>
               <button
                 type="button"
