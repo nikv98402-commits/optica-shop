@@ -19,7 +19,9 @@ const failures = [];
 
 async function checkRoute({ path, type }) {
   const url = `${baseUrl}${path}`;
-  const response = await fetch(url, { redirect: 'manual' });
+  // GitHub Pages canonicalizes directory routes with a trailing-slash redirect.
+  // Follow it so the smoke test validates the final application response.
+  const response = await fetch(url, { redirect: 'follow' });
   const body = await response.text();
 
   if (!response.ok) {
