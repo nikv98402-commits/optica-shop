@@ -46,6 +46,11 @@ export const AnalyticsEvent = {
   PaymentDoorViewed: 'payment_door_viewed',
   PaymentIntentClicked: 'payment_intent_clicked',
   PaymentDoorDismissed: 'payment_door_dismissed',
+  BackendLeadSubmitStarted: 'backend_lead_submit_started',
+  BackendLeadSubmitSucceeded: 'backend_lead_submit_succeeded',
+  BackendLeadSubmitFailed: 'backend_lead_submit_failed',
+  BackendPaymentIntentCreated: 'backend_payment_intent_created',
+  BackendPaymentIntentFailed: 'backend_payment_intent_failed',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvent)[keyof typeof AnalyticsEvent];

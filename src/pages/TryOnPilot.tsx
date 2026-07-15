@@ -24,6 +24,9 @@ import { pilotFrames, PilotFrame } from '../data/pilotOptics';
 import { analyzeFacePhoto, type FaceFitMeasurement, unsupportedPhotoMeasurement } from '../lib/faceFitEngine';
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
+import { submitVisitLead as submitVisitLeadToBackend } from '../services/leadService';
+import { createPaymentIntent as createBackendPaymentIntent } from '../services/paymentService';
+import { toVisitLeadFrames } from '../services/selectionService';
 
 interface TryOnPilotProps {
   onNavigate?: (page: string) => void;
@@ -360,6 +363,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const [isPaymentDoorOpen, setIsPaymentDoorOpen] = useState(false);
   const [paymentDoorStatus, setPaymentDoorStatus] = useState('');
   const [visitLeadStatus, setVisitLeadStatus] = useState('');
+  const [visitLeadId, setVisitLeadId] = useState('');
   const [visitLeadForm, setVisitLeadForm] = useState<VisitLeadForm>({
     city: 'Москва',
     contactMethod: 'telegram',
@@ -543,7 +547,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     });
   };
 
-  const clickPaymentIntent = () => {
+  const clickPaymentIntent = async () => {
     const intentClicks = savePaymentIntentClick();
     trackEvent(AnalyticsEvent.PaymentIntentClicked, {
       offer_id: VISIT_PREP_OFFER.id,
@@ -552,7 +556,22 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       intent_clicks: intentClicks,
       source: 'fake_payment_modal',
     });
-    setPaymentDoorStatus('Платежи пока не подключены. Мы зафиксировали интерес к сервису и не списали деньги.');
+
+    const result = await createBackendPaymentIntent({
+      leadId: visitLeadId || undefined,
+      serviceType: 'visit_preparation',
+      amountRub: VISIT_PREP_OFFER.price,
+      currency: 'RUB',
+      provider: 'none',
+      sourcePage: '/tryon',
+    });
+
+    if (result.ok) {
+      setPaymentDoorStatus('Интерес к сервису сохранен. Платежный провайдер пока не подключен, деньги не списаны.');
+      return;
+    }
+
+    setPaymentDoorStatus('Платежи пока не подключены. Мы зафиксировали интерес локально и не списали деньги.');
   };
 
   const closePaymentDoor = () => {
@@ -584,8 +603,27 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       selected_count: selectedFrames.length,
       city: visitLeadForm.city,
       contact_type: visitLeadForm.contactMethod,
-      mode: hasLeadForm() ? 'tally' : 'copy_fallback',
+      mode: 'backend_first',
     });
+
+    const backendResult = await submitVisitLeadToBackend({
+      locale: language,
+      contactValue: visitLeadForm.contact.trim(),
+      contactChannel: visitLeadForm.contactMethod,
+      city: visitLeadForm.city,
+      consentPersonalData: true,
+      consentVersion: 'personal-data-consent-v1-2026-07',
+      privacyVersion: 'privacy-v1-2026-07',
+      sourcePage: '/tryon',
+      selectedFrames: toVisitLeadFrames(selectedFrames, selectedGoal, activeFrameScore?.total),
+      comment: visitLeadForm.comment.trim() || undefined,
+    });
+
+    if (backendResult.ok) {
+      setVisitLeadId(backendResult.data.leadId);
+      setVisitLeadStatus('Подбор сохранен для подготовки визита. Фото, рецепт и точные координаты не отправлены.');
+      return;
+    }
 
     if (hasLeadForm()) {
       window.open(buildTallyUrl(visitLeadForm, selectedFrames, selectedGoal), '_blank', 'noopener,noreferrer');
