@@ -54,6 +54,9 @@ jobs:
             product
             dashboard
             checkout
+            payment/return
+            payment/success
+            payment/failed
             face-fit-score
             kak-vybrat-razmer-opravy
             pd-i-oprava
