@@ -15,7 +15,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { ChangeEvent, CSSProperties, useMemo, useState } from 'react';
+import { ChangeEvent, CSSProperties, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { hasLeadForm, TALLY_FORM_URL } from '../config/leads';
 import { useLanguage } from '../contexts/LanguageContext';
 import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
@@ -58,6 +58,7 @@ interface VisitLeadForm {
 
 const INTENT_KEY = 'visionlux_tryon_intent_events';
 const PAYMENT_INTENT_KEY = 'vilu_payment_intent_stats';
+const SELECTED_FRAMES_KEY = 'vilu_tryon_selected_frames_v1';
 const MAX_SELECTED_FRAMES = 3;
 const VISIT_PREP_OFFER = {
   id: 'visit_preparation_v1',
@@ -319,6 +320,20 @@ function savePaymentIntentClick() {
   return count;
 }
 
+function getStoredSelectedFrames(validFrameIds: Set<string>) {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const stored = JSON.parse(localStorage.getItem(SELECTED_FRAMES_KEY) || '[]');
+    if (!Array.isArray(stored)) return [];
+    return stored
+      .filter((frameId): frameId is string => typeof frameId === 'string' && validFrameIds.has(frameId))
+      .slice(0, MAX_SELECTED_FRAMES);
+  } catch {
+    return [];
+  }
+}
+
 async function copyTextSafely(text: string) {
   if (!navigator.clipboard?.writeText) {
     return false;
@@ -357,9 +372,10 @@ function FrameThumb({ frame, failedImages, onImageError }: { frame: PilotFrame; 
 export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
   const { language } = useLanguage();
   const frames = pilotFrames;
+  const validFrameIds = useMemo(() => new Set(frames.map((frame) => frame.id)), [frames]);
   const [selectedGoal, setSelectedGoal] = useState(fitGoals[0]);
   const [activeFrameId, setActiveFrameId] = useState(frames[0]?.id ?? '');
-  const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
+  const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>(() => getStoredSelectedFrames(validFrameIds));
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoAspectRatio, setPhotoAspectRatio] = useState(3 / 4);
   const [frameScale, setFrameScale] = useState(66);
@@ -388,11 +404,38 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     consent: false,
   });
   const [intentCount, setIntentCount] = useState(() => getStoredIntentEvents().length);
+  const paymentDialogRef = useRef<HTMLDivElement>(null);
+  const paymentTriggerRef = useRef<HTMLElement | null>(null);
 
   const activeFrame = frames.find((frame) => frame.id === activeFrameId) ?? frames[0];
   const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
   const activeFrameHasImage = Boolean(activeFrame?.imageUrl) && !failedFrameImages.has(activeFrame.id);
   const fitScore = activeFrame && fitScoreFrameId === activeFrame.id ? getFitScore(activeFrame) : null;
+  const paymentEntryText = language === 'ru' ? 'Подготовить визит за 429 ₽' : 'Prepare the visit for 429 RUB';
+  const paymentDialogCloseLabel = language === 'ru' ? 'Закрыть оплату' : 'Close payment';
+
+  useEffect(() => {
+    localStorage.setItem(SELECTED_FRAMES_KEY, JSON.stringify(selectedFrameIds));
+  }, [selectedFrameIds]);
+
+  useEffect(() => {
+    if (!isPaymentDoorOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    paymentTriggerRef.current = previousFocus;
+    document.body.style.overflow = 'hidden';
+
+    const dialog = paymentDialogRef.current;
+    const focusable = dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    focusable?.[0]?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      paymentTriggerRef.current?.focus();
+      paymentTriggerRef.current = null;
+    };
+  }, [isPaymentDoorOpen]);
   const activeFrameScore = activeFrame ? getFitScore(activeFrame) : null;
 
   const nearbyOptics = useMemo(() => {
@@ -609,6 +652,28 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       offer_id: VISIT_PREP_OFFER.id,
       selected_count: selectedFrames.length,
     });
+  };
+
+  const handlePaymentDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closePaymentDoor();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+    const focusable = Array.from(paymentDialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []);
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   };
 
   const submitVisitLead = async () => {
@@ -1090,7 +1155,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 disabled={paymentDoorDisabled}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-5 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-card disabled:cursor-not-allowed disabled:bg-vilu-paper/20 disabled:text-vilu-paper/45"
               >
-                Проверить готовность платить <ArrowRight size={16} />
+                {paymentEntryText} <ArrowRight size={16} />
               </button>
               {paymentDoorDisabled && (
                 <p className="mt-3 text-xs leading-5 text-vilu-paper/58">Сначала сохраните хотя бы одну оправу в подбор.</p>
@@ -1190,12 +1255,19 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
       </section>
 
       {isPaymentDoorOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-vilu-ink/75 px-4 py-6">
-          <div className="w-full max-w-xl rounded-[2rem] bg-vilu-paper p-6 shadow-2xl ring-1 ring-white/20 md:p-8">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-vilu-ink/75 sm:items-center sm:px-4 sm:py-6">
+          <div
+            ref={paymentDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-dialog-title"
+            onKeyDown={handlePaymentDialogKeyDown}
+            className="max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] bg-vilu-paper p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl ring-1 ring-white/20 sm:max-h-[92vh] sm:rounded-[2rem] sm:p-6 md:p-8"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Тестовый контур оплаты</p>
-                <h2 className="mt-2 text-3xl font-black tracking-tight text-vilu-ink">{VISIT_PREP_OFFER.title}</h2>
+                <h2 id="payment-dialog-title" className="mt-2 text-3xl font-black tracking-tight text-vilu-ink">{VISIT_PREP_OFFER.title}</h2>
                 <p className="mt-3 text-sm leading-6 text-vilu-ink/65">
                   Проверяем сценарий оплаты без реального списания. Банковские данные не запрашиваются и не сохраняются.
                 </p>
@@ -1204,7 +1276,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 type="button"
                 onClick={closePaymentDoor}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-vilu-card text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-paper"
-                aria-label="Закрыть оплату"
+                aria-label={paymentDialogCloseLabel}
               >
                 <X size={18} />
               </button>
@@ -1238,7 +1310,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
               <p className="mt-5 rounded-2xl bg-vilu-lime/18 p-4 text-sm font-bold leading-6 text-vilu-ink ring-1 ring-vilu-lime/40">{paymentDoorStatus}</p>
             )}
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <div className="sticky bottom-0 -mx-5 mt-6 flex flex-col gap-3 border-t border-vilu-ink/10 bg-vilu-paper px-5 pb-1 pt-4 sm:static sm:mx-0 sm:flex-row sm:border-0 sm:p-0">
               <button
                 type="button"
                 onClick={clickPaymentIntent}
