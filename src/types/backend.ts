@@ -40,22 +40,37 @@ export interface SubmitVisitLeadResponse {
   nextStep: 'payment_optional' | 'contact_pending';
 }
 
-export type PaymentProvider = 'none' | 'yookassa' | 'stripe';
+export type PaymentOfferCode = 'visit_preparation_v1';
+export type PaymentIntentStatus = 'draft' | 'provider_created' | 'paid' | 'cancelled' | 'failed';
 
 export interface CreatePaymentIntentRequest {
+  offerCode: PaymentOfferCode;
   leadId?: string;
-  serviceType: 'visit_preparation';
-  amountRub: number;
-  currency: 'RUB';
-  provider: PaymentProvider;
   sourcePage: '/tryon' | '/products';
+  idempotencyKey: string;
 }
 
 export interface CreatePaymentIntentResponse {
   paymentIntentId: string;
-  status: 'draft' | 'provider_created';
-  providerMode: 'not_connected' | 'checkout';
+  publicToken: string;
+  offerCode: PaymentOfferCode;
+  amountRub: 429;
+  currency: 'RUB';
+  status: PaymentIntentStatus;
+  providerMode: 'test_not_connected' | 'checkout';
+  returnUrl: string;
   checkoutUrl?: string;
+}
+
+export interface PublicPaymentStatusResponse {
+  publicToken: string;
+  offerCode: PaymentOfferCode;
+  amountRub: 429;
+  currency: 'RUB';
+  status: PaymentIntentStatus;
+  providerMode: 'test_not_connected' | 'checkout';
+  paidAt?: string;
+  failureCode?: string;
 }
 
 export type BackendResult<T> =
