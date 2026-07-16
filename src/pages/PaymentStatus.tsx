@@ -20,6 +20,8 @@ const copy = {
     pendingBody: 'Подтверждение может занять несколько секунд. Не закрывайте страницу.',
     successTitle: 'Оплата завершена',
     successBody: 'Подбор сохранен. На следующем этапе здесь появится подтвержденная подготовка визита.',
+    demoSuccessTitle: 'Интерес сохранен',
+    demoSuccessBody: 'Тест завершен: списания не было. Подбор сохранен, и вы можете продолжить подготовку к визиту.',
     failedTitle: 'Оплата не прошла',
     failedBody: 'Деньги не списаны. Можно вернуться к подбору или повторить попытку позже.',
     unknownTitle: 'Не удалось проверить оплату',
@@ -38,6 +40,8 @@ const copy = {
     pendingBody: 'Confirmation may take a few seconds. Please keep this page open.',
     successTitle: 'Payment completed',
     successBody: 'Your selection is saved. Verified visit preparation will appear here in the next stage.',
+    demoSuccessTitle: 'Interest saved',
+    demoSuccessBody: 'The test is complete: no charge was made. Your selection is saved so you can continue preparing for the visit.',
     failedTitle: 'Payment was not completed',
     failedBody: 'No money was charged. Return to your selection or try again later.',
     unknownTitle: 'Payment status unavailable',
@@ -120,8 +124,8 @@ export function PaymentStatus({ mode, onNavigate }: PaymentStatusProps) {
   const success = status === 'paid';
   const failed = status === 'failed' || status === 'cancelled';
   const Icon = success ? CheckCircle2 : failed || hasError ? AlertCircle : Clock3;
-  const title = hasError ? text.unknownTitle : success ? text.successTitle : failed ? text.failedTitle : text.pendingTitle;
-  const body = hasError ? text.unknownBody : success ? text.successBody : failed ? text.failedBody : text.pendingBody;
+  const title = hasError ? text.unknownTitle : success ? (isDemo ? text.demoSuccessTitle : text.successTitle) : failed ? text.failedTitle : text.pendingTitle;
+  const body = hasError ? text.unknownBody : success ? (isDemo ? text.demoSuccessBody : text.successBody) : failed ? text.failedBody : text.pendingBody;
 
   const showDemoState = (next: 'success' | 'failed') => {
     const state: PaymentIntentStatus = next === 'success' ? 'paid' : 'failed';
