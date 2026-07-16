@@ -10,11 +10,12 @@ import { Dashboard } from './pages/Dashboard';
 import { TryOnPilot } from './pages/TryOnPilot';
 import { EyeCheck } from './pages/EyeCheck';
 import { VisionAccess } from './pages/VisionAccess';
+import { PaymentStatus } from './pages/PaymentStatus';
 import { getKnowledgePage, KnowledgeBase } from './pages/KnowledgeBase';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 
-type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess';
+type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess' | 'payment-return' | 'payment-success' | 'payment-failed';
 
 const pathPageMap: Record<string, Page> = {
   '': 'home',
@@ -31,6 +32,9 @@ const pathPageMap: Record<string, Page> = {
   'vision-access': 'visionaccess',
   impact: 'visionaccess',
   access: 'visionaccess',
+  'payment/return': 'payment-return',
+  'payment/success': 'payment-success',
+  'payment/failed': 'payment-failed',
 };
 
 function currentKnowledgeSlug() {
@@ -120,6 +124,9 @@ function App() {
             {currentPage === 'visionaccess' && (
               <VisionAccess onNavigate={handleNavigate} />
             )}
+            {currentPage === 'payment-return' && <PaymentStatus mode="return" onNavigate={handleNavigate} />}
+            {currentPage === 'payment-success' && <PaymentStatus mode="success" onNavigate={handleNavigate} />}
+            {currentPage === 'payment-failed' && <PaymentStatus mode="failed" onNavigate={handleNavigate} />}
           </main>
 
           <StoreLocator isOpen={isStoreLocatorOpen} onClose={() => setIsStoreLocatorOpen(false)} />

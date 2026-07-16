@@ -1,14 +1,67 @@
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import type { BackendResult, CreatePaymentIntentRequest, CreatePaymentIntentResponse } from '../types/backend';
+import type {
+  BackendResult,
+  CreatePaymentIntentRequest,
+  CreatePaymentIntentResponse,
+  PaymentIntentStatus,
+  PublicPaymentStatusResponse,
+} from '../types/backend';
 import { assertBackendPayloadSafe } from './privacyGuard';
 
-export async function createPaymentIntent(payload: CreatePaymentIntentRequest): Promise<BackendResult<CreatePaymentIntentResponse>> {
-  if (!isSupabaseConfigured) {
-    return { ok: false, reason: 'backend_disabled', message: 'Backend is not configured.' };
-  }
+const PAYMENT_RECEIPT_PREFIX = 'vilu_payment_receipt_';
+const IDEMPOTENCY_KEY = 'vilu_visit_preparation_idempotency_key';
 
-  if (payload.serviceType !== 'visit_preparation' || payload.amountRub < 0) {
+function randomId() {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+export function getPaymentIdempotencyKey() {
+  const existing = window.sessionStorage.getItem(IDEMPOTENCY_KEY);
+  if (existing) return existing;
+  const created = randomId();
+  window.sessionStorage.setItem(IDEMPOTENCY_KEY, created);
+  return created;
+}
+
+function receiptKey(publicToken: string) {
+  return `${PAYMENT_RECEIPT_PREFIX}${publicToken}`;
+}
+
+function storeSafeReceipt(receipt: PublicPaymentStatusResponse) {
+  window.localStorage.setItem(receiptKey(receipt.publicToken), JSON.stringify(receipt));
+}
+
+function readSafeReceipt(publicToken: string): PublicPaymentStatusResponse | null {
+  const raw = window.localStorage.getItem(receiptKey(publicToken));
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as PublicPaymentStatusResponse;
+  } catch {
+    return null;
+  }
+}
+
+function demoIntent(): CreatePaymentIntentResponse {
+  const publicToken = `demo_${randomId()}`;
+  const response: CreatePaymentIntentResponse = {
+    paymentIntentId: `local_${randomId()}`,
+    publicToken,
+    offerCode: 'visit_preparation_v1',
+    amountRub: 429,
+    currency: 'RUB',
+    status: 'draft',
+    providerMode: 'test_not_connected',
+    returnUrl: `/payment/return?token=${encodeURIComponent(publicToken)}`,
+  };
+  storeSafeReceipt(response);
+  return response;
+}
+
+export async function createPaymentIntent(payload: CreatePaymentIntentRequest): Promise<BackendResult<CreatePaymentIntentResponse>> {
+  if (payload.offerCode !== 'visit_preparation_v1' || !payload.idempotencyKey) {
     return { ok: false, reason: 'validation_failed', message: 'Payment payload is incomplete.' };
   }
 
@@ -23,20 +76,52 @@ export async function createPaymentIntent(payload: CreatePaymentIntentRequest): 
     };
   }
 
+  if (!isSupabaseConfigured) {
+    if (import.meta.env.DEV || import.meta.env.VITE_PAYMENT_DEMO_MODE === 'true') {
+      return { ok: true, data: demoIntent() };
+    }
+    return { ok: false, reason: 'backend_disabled', message: 'Backend is not configured.' };
+  }
+
   const { data, error } = await supabase.functions.invoke<CreatePaymentIntentResponse>('create-payment-intent', {
     body: payload,
   });
 
-  if (error || !data?.paymentIntentId) {
+  if (error || !data?.paymentIntentId || !data.publicToken) {
     trackEvent(AnalyticsEvent.BackendPaymentIntentFailed, { source: payload.sourcePage, error_code: error?.name || 'request_failed' });
     return { ok: false, reason: 'request_failed', message: error?.message || 'Payment intent request failed.' };
   }
 
+  storeSafeReceipt(data);
   trackEvent(AnalyticsEvent.BackendPaymentIntentCreated, {
     source: payload.sourcePage,
-    service_type: payload.serviceType,
+    offer_code: payload.offerCode,
     provider_mode: data.providerMode,
   });
-
   return { ok: true, data };
+}
+
+export async function getPaymentStatus(publicToken: string): Promise<BackendResult<PublicPaymentStatusResponse>> {
+  if (!publicToken) return { ok: false, reason: 'validation_failed', message: 'Missing payment token.' };
+
+  const localReceipt = readSafeReceipt(publicToken);
+  if (publicToken.startsWith('demo_') && localReceipt) return { ok: true, data: localReceipt };
+  if (!isSupabaseConfigured) return { ok: false, reason: 'backend_disabled', message: 'Backend is not configured.' };
+
+  const { data, error } = await supabase.functions.invoke<PublicPaymentStatusResponse>('get-payment-status', {
+    body: { token: publicToken },
+  });
+  if (error || !data?.publicToken) {
+    return { ok: false, reason: 'request_failed', message: error?.message || 'Payment status request failed.' };
+  }
+  storeSafeReceipt(data);
+  return { ok: true, data };
+}
+
+export function simulateLocalPaymentStatus(publicToken: string, status: PaymentIntentStatus) {
+  if (!publicToken.startsWith('demo_')) return false;
+  const receipt = readSafeReceipt(publicToken);
+  if (!receipt) return false;
+  storeSafeReceipt({ ...receipt, status, paidAt: status === 'paid' ? new Date().toISOString() : undefined });
+  return true;
 }

@@ -25,7 +25,7 @@ import { analyzeFacePhoto, type FaceFitMeasurement, unsupportedPhotoMeasurement 
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
 import { submitVisitLead as submitVisitLeadToBackend } from '../services/leadService';
-import { createPaymentIntent as createBackendPaymentIntent } from '../services/paymentService';
+import { createPaymentIntent as createBackendPaymentIntent, getPaymentIdempotencyKey } from '../services/paymentService';
 import { toVisitLeadFrames } from '../services/selectionService';
 
 interface TryOnPilotProps {
@@ -60,11 +60,11 @@ const INTENT_KEY = 'visionlux_tryon_intent_events';
 const PAYMENT_INTENT_KEY = 'vilu_payment_intent_stats';
 const MAX_SELECTED_FRAMES = 3;
 const VISIT_PREP_OFFER = {
-  id: 'visit-prep-priority',
-  price: 290,
+  id: 'visit_preparation_v1',
+  price: 429,
   title: 'Приоритетная подготовка визита',
 };
-const PAYMENT_INTENT_CTA = 'Зафиксировать интерес';
+const PAYMENT_INTENT_CTA = 'Перейти к тесту оплаты';
 const FACE_FIT_IDLE: FaceFitMeasurement = {
   status: 'idle',
   confidence: 0,
@@ -567,7 +567,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
     if (isCreatingPaymentIntent) return;
 
     setIsCreatingPaymentIntent(true);
-    setPaymentDoorStatus('Фиксируем интерес. Деньги не списываются.');
+    setPaymentDoorStatus('Создаем безопасный тестовый платеж. Деньги не списываются.');
 
     const intentClicks = savePaymentIntentClick();
     trackEvent(AnalyticsEvent.PaymentIntentClicked, {
@@ -580,16 +580,22 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
 
     const result = await createBackendPaymentIntent({
       leadId: visitLeadId || undefined,
-      serviceType: 'visit_preparation',
-      amountRub: VISIT_PREP_OFFER.price,
-      currency: 'RUB',
-      provider: 'none',
+      offerCode: 'visit_preparation_v1',
       sourcePage: '/tryon',
+      idempotencyKey: getPaymentIdempotencyKey(),
     });
 
     if (result.ok) {
-      setPaymentDoorStatus('Интерес к сервису сохранен. Платежный провайдер пока не подключен, деньги не списаны.');
-      setIsCreatingPaymentIntent(false);
+      trackEvent(AnalyticsEvent.PaymentCheckoutOpened, {
+        offer_code: result.data.offerCode,
+        provider_mode: result.data.providerMode,
+        source: 'payment_modal',
+      });
+      if (result.data.checkoutUrl) {
+        window.location.href = result.data.checkoutUrl;
+        return;
+      }
+      window.location.href = `${result.data.returnUrl}${result.data.returnUrl.includes('?') ? '&' : '?'}demoStatus=pending`;
       return;
     }
 
@@ -1188,10 +1194,10 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
           <div className="w-full max-w-xl rounded-[2rem] bg-vilu-paper p-6 shadow-2xl ring-1 ring-white/20 md:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Оплата скоро</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Тестовый контур оплаты</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight text-vilu-ink">{VISIT_PREP_OFFER.title}</h2>
                 <p className="mt-3 text-sm leading-6 text-vilu-ink/65">
-                  Это фейк-дверь для проверки спроса: платежная интеграция пока не подключена, деньги не списываются.
+                  Проверяем сценарий оплаты без реального списания. Банковские данные не запрашиваются и не сохраняются.
                 </p>
               </div>
               <button
@@ -1239,7 +1245,7 @@ export function TryOnPilot({ onNavigate }: TryOnPilotProps) {
                 disabled={isCreatingPaymentIntent}
                 className="inline-flex flex-1 items-center justify-center rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper disabled:cursor-wait disabled:bg-vilu-card disabled:text-vilu-ink/55"
               >
-                {isCreatingPaymentIntent ? 'Фиксируем...' : `${PAYMENT_INTENT_CTA} ${formatPrice(VISIT_PREP_OFFER.price)}`}
+                {isCreatingPaymentIntent ? 'Создаем тест...' : `${PAYMENT_INTENT_CTA} ${formatPrice(VISIT_PREP_OFFER.price)}`}
               </button>
               <button
                 type="button"

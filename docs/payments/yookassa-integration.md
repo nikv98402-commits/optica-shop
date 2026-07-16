@@ -1,9 +1,11 @@
 # ViLu Payments: YooKassa Integration Runbook
 
-Status: implementation-ready, real charging is not enabled  
-Last reviewed: 2026-07-15  
+Status: safe test contour implemented, real charging is not enabled
+
+Last reviewed: 2026-07-16
+
 Owner flow: `visit_preparation` / "Подготовить подбор к визиту"  
-Pilot price: 290 RUB
+Pilot price: 429 RUB
 
 ## 1. Purpose
 
@@ -19,10 +21,13 @@ The frontend remains React/Vite on GitHub Pages. Payment creation, provider secr
 
 ### Already implemented
 
-- Fake payment UI and safe analytics events in `src/pages/TryOnPilot.tsx`.
+- Test payment UI and safe analytics events in `src/pages/TryOnPilot.tsx`.
 - Frontend payment adapter in `src/services/paymentService.ts`.
 - Shared contracts in `src/types/backend.ts`.
-- Supabase function scaffold in `supabase/functions/create-payment-intent/index.ts`.
+- Server-owned 429 RUB offer in `supabase/functions/create-payment-intent/index.ts`.
+- Public-safe status lookup in `supabase/functions/get-payment-status/index.ts`.
+- RU/EN result pages at `/payment/return`, `/payment/success`, and `/payment/failed`.
+- Client-generated idempotency keys and opaque public status tokens.
 - `payment_intents` table and enum states in `supabase/migrations/20260715120000_create_visit_preparation_backend.sql`.
 - RLS blocks direct public access to payment and lead tables.
 - Face photos stay in the browser and are not part of payment payloads.
@@ -32,15 +37,15 @@ The frontend remains React/Vite on GitHub Pages. Payment creation, provider secr
 - No YooKassa API call is made.
 - No real checkout URL is returned.
 - No webhook updates a payment to `paid`.
-- No trusted payment-status endpoint exists.
 - No receipt/fiscalization configuration is connected.
 - No production merchant credentials are configured.
 
-### Release blockers in the current scaffold
+### Release blockers before real charging
 
-1. `amountRub` and `provider` are accepted from the browser. A production endpoint must ignore both and resolve price/provider from server configuration.
-2. The current function sets `provider_created` when the requested provider is not `none`, even though no provider object has been created. This state transition must only occur after YooKassa returns a payment ID.
-3. A redirect back to ViLu is not proof of payment. Only a verified provider state may produce `paid`.
+1. Connect the YooKassa test shop and keep `shopId` and `secretKey` in Supabase secrets.
+2. Create a real YooKassa payment and persist its provider ID before transitioning to `provider_created`.
+3. Add a verified, idempotent webhook; a browser return URL must never produce `paid`.
+4. Complete receipt, refund, reconciliation, rate-limit, and restricted-CORS checks.
 
 Do not set `PAYMENT_PROVIDER=yookassa` until these blockers are resolved.
 
@@ -98,8 +103,8 @@ Create one server-side offer definition. Do not read the payable amount from the
 
 ```ts
 const PAYMENT_OFFERS = {
-  visit_preparation: {
-    amountRub: 290,
+  visit_preparation_v1: {
+    amountRub: 429,
     currency: 'RUB',
     description: 'ViLu: подготовка подбора к визиту',
   },
@@ -111,12 +116,13 @@ The client sends only:
 ```json
 {
   "leadId": "optional-uuid",
-  "serviceType": "visit_preparation",
-  "sourcePage": "/tryon"
+  "offerCode": "visit_preparation_v1",
+  "sourcePage": "/tryon",
+  "idempotencyKey": "client-generated-uuid"
 }
 ```
 
-The server resolves provider, price, currency, description, return URL, and idempotency key.
+The server resolves provider, price, currency, description, and return URL. The browser supplies only an idempotency UUID, never the payable amount.
 
 ## 6. API Contracts
 
@@ -125,20 +131,25 @@ The server resolves provider, price, currency, description, return URL, and idem
 Responsibilities:
 
 1. Validate origin, payload, rate limit, and optional `leadId`.
-2. Resolve `visit_preparation` to 290 RUB on the server.
+2. Resolve `visit_preparation_v1` to 429 RUB on the server.
 3. Insert a `draft` payment intent.
-4. Create a YooKassa payment using a unique idempotency key.
-5. Save `provider_payment_id` and transition to `provider_created` only after provider success.
-6. Return the hosted confirmation URL.
+4. In the current test contour, save `draft` with provider `none` and return a ViLu status URL.
+5. In the future YooKassa contour, create a payment with the same idempotency key.
+6. Save `provider_payment_id` and transition to `provider_created` only after provider success.
+7. Return the hosted confirmation URL.
 
 Success response:
 
 ```json
 {
   "paymentIntentId": "internal-uuid",
-  "status": "provider_created",
-  "providerMode": "checkout",
-  "checkoutUrl": "https://yoomoney.ru/..."
+  "publicToken": "opaque-uuid",
+  "offerCode": "visit_preparation_v1",
+  "amountRub": 429,
+  "currency": "RUB",
+  "status": "draft",
+  "providerMode": "test_not_connected",
+  "returnUrl": "https://vilu.store/payment/return?token=opaque-uuid"
 }
 ```
 
@@ -166,18 +177,28 @@ Responsibilities:
 
 The webhook must not trust a user browser, return URL query string, or analytics event.
 
-### `GET /functions/v1/get-payment-status?id=<internal-uuid>`
+### `POST /functions/v1/get-payment-status`
+
+Request:
+
+```json
+{ "token": "opaque-public-token" }
+```
 
 Returns a minimal public projection:
 
 ```json
 {
-  "paymentIntentId": "internal-uuid",
-  "status": "provider_created"
+  "publicToken": "opaque-public-token",
+  "offerCode": "visit_preparation_v1",
+  "amountRub": 429,
+  "currency": "RUB",
+  "status": "draft",
+  "providerMode": "test_not_connected"
 }
 ```
 
-Do not expose contact data, provider payloads, or other users' payment intents. Use a short-lived opaque status token or authenticated ownership before production launch.
+Do not expose contact data, provider payloads, internal payment UUIDs, or other users' payment intents. Rotate or expire public tokens if the projection ever gains sensitive fields.
 
 ## 7. Database Changes
 
@@ -309,7 +330,7 @@ Revenue dashboards must use verified backend `paid` records, not fake-door click
 | User cancels checkout | Internal status becomes `cancelled`; selection remains available |
 | Double-click payment CTA | One provider payment is created |
 | Duplicate webhook | No duplicate entitlement or status regression |
-| Browser changes amount | Server still creates exactly 290 RUB |
+| Browser attempts to add or change amount | Server ignores it and creates exactly 429 RUB |
 | Forged return URL | UI remains pending; no `paid` transition |
 | Forged webhook body | Verification fails; database is unchanged |
 | Provider timeout | Intent becomes retryable/failed without duplicate charge |
@@ -380,4 +401,3 @@ Real payments may be enabled only when:
 - YooKassa payment lifecycle: https://yookassa.ru/developers/payment-acceptance/getting-started/payment-process
 - YooKassa incoming notifications: https://yookassa.ru/developers/using-api/webhooks
 - Supabase Edge Functions secrets: https://supabase.com/docs/guides/functions/secrets
-

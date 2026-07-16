@@ -6,6 +6,8 @@ All notable ViLu MVP changes should be documented here.
 
 ### Added
 
+- Safe 429 RUB payment test contour with server-owned pricing, idempotent intent creation, opaque status tokens, and RU/EN return, success, and failure pages.
+- Public-safe payment status Edge Function and forward-only database hardening migration.
 - Engineering runbook for the planned YooKassa integration, including architecture, API contracts, payment states, security boundaries, test matrix, rollout, and rollback.
 - Developer experience review report for the current MVP branch.
 - Product UX wrapper for MediaPipe-powered auto-fit try-on.
@@ -14,6 +16,8 @@ All notable ViLu MVP changes should be documented here.
 
 ### Changed
 
+- Payment-result routes are excluded from search indexing and never treat a browser redirect as proof of payment.
+- Payment analytics record only technical funnel states and never payment tokens or personal data.
 - Auto-fit try-on copy now uses customer-facing language instead of implementation language.
 - Frame asset documentation now uses root-domain paths for `https://vilu.store/`.
 
