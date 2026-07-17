@@ -78,6 +78,8 @@ const copy = {
     submittingLead: 'Сохраняем заявку...',
     creatingPayment: 'Открываем тестовую оплату...',
     required: 'Укажите контакт и подтвердите согласие.',
+    contactRequired: 'Укажите телефон, email или имя пользователя в мессенджере.',
+    consentRequired: 'Подтвердите согласие, чтобы продолжить.',
     leadError: 'Не удалось сохранить заявку. Проверьте соединение и повторите попытку.',
     paymentError: 'Заявка сохранена, но тестовую оплату открыть не удалось. Повторите попытку.',
     storageWarning: 'Браузер не разрешил сохранить подбор. Не закрывайте страницу до завершения теста.',
@@ -130,6 +132,8 @@ const copy = {
     submittingLead: 'Saving the request...',
     creatingPayment: 'Opening test payment...',
     required: 'Enter a contact and confirm consent.',
+    contactRequired: 'Enter a phone number, email, or messenger username.',
+    consentRequired: 'Confirm consent to continue.',
     leadError: 'Could not save the request. Check your connection and try again.',
     paymentError: 'The request is saved, but test payment could not be opened. Try again.',
     storageWarning: 'The browser could not save the shortlist. Keep this page open until the test is complete.',
@@ -153,8 +157,11 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
   const [stage, setStage] = useState<'idle' | 'lead' | 'payment'>('idle');
   const [error, setError] = useState('');
   const [storageWarning, setStorageWarning] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
   const idempotencyKeyRef = useRef('');
   const openedRef = useRef(false);
+  const contactInputRef = useRef<HTMLInputElement>(null);
+  const consentInputRef = useRef<HTMLInputElement>(null);
 
   const cities = useMemo(
     () => Array.from(new Set(opticsDirectory.map((optic) => optic.city))).sort((a, b) => a.localeCompare(b, 'ru')),
@@ -207,11 +214,19 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
 
   const submit = async () => {
     if (!draft || stage !== 'idle') return;
-    if (contactValue.trim().length < 3 || !consent) {
+    const contactInvalid = contactValue.trim().length < 3;
+    const consentInvalid = !consent;
+    if (contactInvalid || consentInvalid) {
+      setShowValidation(true);
       setError(text.required);
+      requestAnimationFrame(() => {
+        if (contactInvalid) contactInputRef.current?.focus();
+        else consentInputRef.current?.focus();
+      });
       return;
     }
 
+    setShowValidation(false);
     setError('');
     setStage('lead');
     trackEvent(AnalyticsEvent.ServiceCheckoutContactCompleted, {
@@ -459,12 +474,35 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
               </div>
               <label className="mt-4 grid gap-2">
                 <span className="text-xs font-black uppercase tracking-[0.14em] text-vilu-ink/55">{text.contactValue}</span>
-                <input value={contactValue} onChange={(event) => setContactValue(event.target.value)} placeholder={text.contactPlaceholder} autoComplete={contactChannel === 'email' ? 'email' : 'tel'} className="rounded-2xl border border-vilu-line bg-vilu-paper px-4 py-4 font-bold outline-none focus:border-vilu-lime" />
+                <input
+                  ref={contactInputRef}
+                  value={contactValue}
+                  onChange={(event) => setContactValue(event.target.value)}
+                  placeholder={text.contactPlaceholder}
+                  autoComplete={contactChannel === 'email' ? 'email' : 'tel'}
+                  aria-invalid={showValidation && contactValue.trim().length < 3}
+                  aria-describedby={showValidation && contactValue.trim().length < 3 ? 'checkout-contact-error' : undefined}
+                  className="rounded-2xl border border-vilu-line bg-vilu-paper px-4 py-4 font-bold outline-none focus:border-vilu-lime aria-[invalid=true]:border-red-600 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-600/20"
+                />
+                {showValidation && contactValue.trim().length < 3 && (
+                  <span id="checkout-contact-error" className="text-sm font-bold text-red-700">{text.contactRequired}</span>
+                )}
               </label>
-              <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl bg-vilu-paper p-4 ring-1 ring-vilu-line">
-                <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 h-5 w-5 accent-vilu-lime" />
+              <label className={`mt-5 flex cursor-pointer items-start gap-3 rounded-2xl bg-vilu-paper p-4 ring-1 ${showValidation && !consent ? 'ring-2 ring-red-600/70' : 'ring-vilu-line'}`}>
+                <input
+                  ref={consentInputRef}
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(event) => setConsent(event.target.checked)}
+                  aria-invalid={showValidation && !consent}
+                  aria-describedby={showValidation && !consent ? 'checkout-consent-error' : undefined}
+                  className="mt-1 h-5 w-5 accent-vilu-lime"
+                />
                 <span className="text-sm leading-6">{text.consent} <a href="/privacy" className="font-black text-vilu-green underline">{text.privacy}</a></span>
               </label>
+              {showValidation && !consent && (
+                <p id="checkout-consent-error" className="mt-2 text-sm font-bold text-red-700">{text.consentRequired}</p>
+              )}
               <p className="mt-4 flex gap-2 text-sm leading-6 text-vilu-ink/60"><ShieldCheck className="mt-0.5 shrink-0 text-vilu-green" size={18} /> {text.safe}</p>
             </section>
           </div>
