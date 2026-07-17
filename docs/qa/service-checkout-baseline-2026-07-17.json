@@ -1,0 +1,25 @@
+{
+  "date": "2026-07-17",
+  "url": "http://127.0.0.1:5182",
+  "healthScore": 94,
+  "issues": [
+    {
+      "id": "QA-001",
+      "title": "Empty checkout submission had no field-level feedback",
+      "severity": "Medium",
+      "category": "UX and accessibility",
+      "status": "fixed",
+      "commit": "d3197ed"
+    }
+  ],
+  "categoryScores": {
+    "console": 100,
+    "links": 100,
+    "visual": 94,
+    "functional": 98,
+    "ux": 96,
+    "performance": 82,
+    "content": 96,
+    "accessibility": 92
+  }
+}
