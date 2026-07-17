@@ -65,7 +65,12 @@ function demoIntent(): CreatePaymentIntentResponse {
 }
 
 export async function createPaymentIntent(payload: CreatePaymentIntentRequest): Promise<BackendResult<CreatePaymentIntentResponse>> {
-  if (payload.offerCode !== 'visit_preparation_v1' || !payload.leadId || !payload.idempotencyKey) {
+  if (
+    payload.offerCode !== 'visit_preparation_v1'
+    || !payload.leadId
+    || !payload.leadCapabilityToken
+    || !payload.idempotencyKey
+  ) {
     return { ok: false, reason: 'validation_failed', message: 'Payment payload is incomplete.' };
   }
 

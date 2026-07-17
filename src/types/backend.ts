@@ -29,6 +29,14 @@ export interface ServiceCheckoutDraft {
   createdAt: string;
 }
 
+export interface ServiceCheckoutAttempt {
+  version: 1;
+  draftCreatedAt: string;
+  leadId: string;
+  paymentCapabilityToken: string;
+  idempotencyKey: string;
+}
+
 export interface VisitLeadFramePayload {
   frameId: string;
   frameName: string;
@@ -63,6 +71,7 @@ export interface SubmitVisitLeadRequest {
 
 export interface SubmitVisitLeadResponse {
   leadId: string;
+  paymentCapabilityToken: string;
   status: 'new';
   nextStep: 'payment_optional' | 'contact_pending';
 }
@@ -73,6 +82,7 @@ export type PaymentIntentStatus = 'draft' | 'provider_created' | 'paid' | 'cance
 export interface CreatePaymentIntentRequest {
   offerCode: PaymentOfferCode;
   leadId: string;
+  leadCapabilityToken: string;
   sourcePage: '/tryon' | '/products';
   idempotencyKey: string;
 }

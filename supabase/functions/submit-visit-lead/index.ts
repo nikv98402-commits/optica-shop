@@ -43,6 +43,7 @@ type LeadFramePayload = {
 
 type LeadPayload = {
   locale?: string;
+  customerName?: string;
   contactChannel?: string;
   contactValue?: string;
   city?: string;
@@ -104,41 +105,31 @@ serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  const { data: lead, error: leadError } = await supabase
-    .from('visit_preparation_leads')
-    .insert({
-      locale: body.locale || 'ru',
-      contact_channel: body.contactChannel,
-      contact_value: body.contactValue,
-      city: body.city || null,
-      preferred_store_id: body.preferredStoreId || null,
-      preferred_store_name: body.preferredStoreName || null,
-      source_page: body.sourcePage || '/tryon',
-      consent_personal_data: true,
-      consent_version: body.consentVersion,
-      privacy_version: body.privacyVersion,
-      utm: body.utm || {},
-      comment: body.comment || null,
-    })
-    .select('id')
-    .single();
+  const { data, error } = await supabase.rpc('submit_visit_preparation_lead', {
+    p_locale: body.locale || 'ru',
+    p_customer_name: body.customerName || '',
+    p_contact_channel: body.contactChannel,
+    p_contact_value: body.contactValue,
+    p_city: body.city || '',
+    p_preferred_store_id: body.preferredStoreId || '',
+    p_preferred_store_name: body.preferredStoreName || '',
+    p_source_page: body.sourcePage || '/tryon',
+    p_consent_version: body.consentVersion,
+    p_privacy_version: body.privacyVersion,
+    p_utm: body.utm || {},
+    p_comment: body.comment || '',
+    p_selected_frames: body.selectedFrames.slice(0, 3),
+  });
+  const lead = Array.isArray(data) ? data[0] : data;
 
-  if (leadError || !lead?.id) return json({ error: 'lead_insert_failed' }, 500);
+  if (error || !lead?.lead_id || !lead.payment_capability_token) {
+    return json({ error: 'lead_transaction_failed' }, 500);
+  }
 
-  const frameRows = body.selectedFrames.slice(0, 3).map((frame) => ({
-    lead_id: lead.id,
-    frame_id: frame.frameId,
-    frame_name: frame.frameName,
-    frame_brand: frame.frameBrand || null,
-    frame_category: frame.frameCategory || null,
-    frame_size: frame.frameSize || null,
-    frame_price_rub: frame.framePriceRub || null,
-    fit_score: frame.fitScore || null,
-    use_case: frame.useCase || null,
-  }));
-
-  const { error: framesError } = await supabase.from('visit_preparation_frames').insert(frameRows);
-  if (framesError) return json({ error: 'frames_insert_failed' }, 500);
-
-  return json({ leadId: lead.id, status: 'new', nextStep: 'payment_optional' });
+  return json({
+    leadId: lead.lead_id,
+    paymentCapabilityToken: lead.payment_capability_token,
+    status: 'new',
+    nextStep: 'payment_optional',
+  });
 });

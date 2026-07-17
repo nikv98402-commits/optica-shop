@@ -20,6 +20,7 @@ function json(body: unknown, status = 200) {
 type PaymentIntentPayload = {
   offerCode?: string;
   leadId?: string;
+  leadCapabilityToken?: string;
   sourcePage?: string;
   idempotencyKey?: string;
 };
@@ -37,6 +38,7 @@ serve(async (req) => {
     !body
     || body.offerCode !== OFFER_CODE
     || !isUuid(body.leadId)
+    || !isUuid(body.leadCapabilityToken)
     || !isUuid(body.idempotencyKey)
     || !['/tryon', '/products'].includes(body.sourcePage || '')
   ) {
@@ -48,6 +50,15 @@ serve(async (req) => {
   if (!supabaseUrl || !serviceRoleKey) return json({ error: 'server_not_configured' }, 500);
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+  const lead = await supabase
+    .from('visit_preparation_leads')
+    .select('id')
+    .eq('id', body.leadId)
+    .eq('payment_capability_token', body.leadCapabilityToken)
+    .maybeSingle();
+  if (lead.error) return json({ error: 'lead_lookup_failed' }, 500);
+  if (!lead.data?.id) return json({ error: 'lead_capability_rejected' }, 403);
+
   const insert = await supabase
     .from('payment_intents')
     .upsert({
@@ -61,14 +72,14 @@ serve(async (req) => {
       source_page: body.sourcePage,
       idempotency_key: body.idempotencyKey,
     }, { onConflict: 'idempotency_key', ignoreDuplicates: true })
-    .select('id, public_token, offer_code, amount_rub, currency, status')
+    .select('id, lead_id, source_page, public_token, offer_code, amount_rub, currency, status')
     .maybeSingle();
 
   let intent = insert.data;
   if (!intent && !insert.error) {
     const existing = await supabase
       .from('payment_intents')
-      .select('id, public_token, offer_code, amount_rub, currency, status')
+      .select('id, lead_id, source_page, public_token, offer_code, amount_rub, currency, status')
       .eq('idempotency_key', body.idempotencyKey)
       .maybeSingle();
     intent = existing.data;
@@ -76,6 +87,9 @@ serve(async (req) => {
 
   if (insert.error || !intent?.id || !intent.public_token) {
     return json({ error: 'payment_intent_insert_failed' }, 500);
+  }
+  if (intent.lead_id !== body.leadId || intent.source_page !== body.sourcePage) {
+    return json({ error: 'idempotency_conflict' }, 409);
   }
 
   const returnUrl = `https://vilu.store/payment/return?token=${encodeURIComponent(intent.public_token)}`;

@@ -14,9 +14,14 @@ import { opticsDirectory } from '../data/opticsDirectory';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 import { submitVisitLead } from '../services/leadService';
 import { createPaymentIntent, getPaymentIdempotencyKey } from '../services/paymentService';
-import { saveServiceCheckoutDraft } from '../services/serviceCheckout';
+import {
+  readServiceCheckoutAttempt,
+  saveServiceCheckoutAttempt,
+  saveServiceCheckoutDraft,
+} from '../services/serviceCheckout';
 import type {
   ContactChannel,
+  ServiceCheckoutAttempt,
   ServiceCheckoutDraft,
   ServiceCheckoutStorePreference,
 } from '../types/backend';
@@ -83,6 +88,7 @@ const copy = {
     leadError: 'Не удалось сохранить заявку. Проверьте соединение и повторите попытку.',
     paymentError: 'Заявка сохранена, но тестовую оплату открыть не удалось. Повторите попытку.',
     retryPayment: 'Повторить открытие оплаты 429 ₽',
+    requestLocked: 'Заявка сохранена. Данные зафиксированы; повторная кнопка откроет только ту же тестовую оплату.',
     storageWarning: 'Браузер не разрешил сохранить подбор. Не закрывайте страницу до завершения теста.',
     safe: 'Контакт отправляется только после согласия и не сохраняется в браузере, URL или аналитике.',
   },
@@ -138,6 +144,7 @@ const copy = {
     leadError: 'Could not save the request. Check your connection and try again.',
     paymentError: 'The request is saved, but test payment could not be opened. Try again.',
     retryPayment: 'Retry 429 RUB test payment',
+    requestLocked: 'Request saved. Details are locked; retry opens only the same test payment.',
     storageWarning: 'The browser could not save the shortlist. Keep this page open until the test is complete.',
     safe: 'Contact is sent only after consent and is never stored in the browser, URL, or analytics.',
   },
@@ -160,11 +167,17 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
   const [error, setError] = useState('');
   const [storageWarning, setStorageWarning] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
+  const [checkoutAttempt, setCheckoutAttempt] = useState<ServiceCheckoutAttempt | null>(
+    () => draft ? readServiceCheckoutAttempt(draft.createdAt) : null,
+  );
   const leadIdRef = useRef('');
+  const leadCapabilityTokenRef = useRef('');
   const idempotencyKeyRef = useRef('');
   const openedRef = useRef(false);
   const contactInputRef = useRef<HTMLInputElement>(null);
   const consentInputRef = useRef<HTMLInputElement>(null);
+  const requestLocked = checkoutAttempt !== null;
+  const draftCreatedAt = draft?.createdAt ?? '';
 
   const cities = useMemo(
     () => Array.from(new Set(opticsDirectory.map((optic) => optic.city))).sort((a, b) => a.localeCompare(b, 'ru')),
@@ -191,13 +204,22 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
     });
   }, [draft, language]);
 
+  useEffect(() => {
+    const restored = draftCreatedAt ? readServiceCheckoutAttempt(draftCreatedAt) : null;
+    leadIdRef.current = restored?.leadId ?? '';
+    leadCapabilityTokenRef.current = restored?.paymentCapabilityToken ?? '';
+    idempotencyKeyRef.current = restored?.idempotencyKey ?? '';
+    setCheckoutAttempt(restored);
+  }, [draftCreatedAt]);
+
   const updateDraft = (next: ServiceCheckoutDraft) => {
+    if (requestLocked) return;
     onDraftChange(next);
     setStorageWarning(!saveServiceCheckoutDraft(next));
   };
 
   const updateStorePreference = (storePreference: ServiceCheckoutStorePreference) => {
-    if (!draft) return;
+    if (!draft || requestLocked) return;
     const next = { ...draft, storePreference };
     updateDraft(next);
     trackEvent(AnalyticsEvent.ServiceCheckoutStoreSelected, {
@@ -208,7 +230,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
   };
 
   const removeFrame = (frameId: string) => {
-    if (!draft || draft.selectedFrames.length <= 1) return;
+    if (!draft || requestLocked || draft.selectedFrames.length <= 1) return;
     updateDraft({
       ...draft,
       selectedFrames: draft.selectedFrames.filter((frame) => frame.frameId !== frameId),
@@ -217,9 +239,9 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
 
   const submit = async () => {
     if (!draft || stage !== 'idle') return;
-    const contactInvalid = contactValue.trim().length < 3;
-    const consentInvalid = !consent;
-    if (contactInvalid || consentInvalid) {
+    const contactInvalid = !checkoutAttempt && contactValue.trim().length < 3;
+    const consentInvalid = !checkoutAttempt && !consent;
+    if (!checkoutAttempt && (contactInvalid || consentInvalid)) {
       setShowValidation(true);
       setError(text.required);
       requestAnimationFrame(() => {
@@ -285,14 +307,25 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
         return;
       }
 
-      leadIdRef.current = lead.data.leadId;
+      const attempt: ServiceCheckoutAttempt = {
+        version: 1,
+        draftCreatedAt: draft.createdAt,
+        leadId: lead.data.leadId,
+        paymentCapabilityToken: lead.data.paymentCapabilityToken,
+        idempotencyKey: getPaymentIdempotencyKey(),
+      };
+      leadIdRef.current = attempt.leadId;
+      leadCapabilityTokenRef.current = attempt.paymentCapabilityToken;
+      idempotencyKeyRef.current = attempt.idempotencyKey;
+      setCheckoutAttempt(attempt);
+      setStorageWarning(!saveServiceCheckoutAttempt(attempt));
     }
 
     setStage('payment');
-    if (!idempotencyKeyRef.current) idempotencyKeyRef.current = getPaymentIdempotencyKey();
     const payment = await createPaymentIntent({
       offerCode: 'visit_preparation_v1',
       leadId: leadIdRef.current,
+      leadCapabilityToken: leadCapabilityTokenRef.current,
       sourcePage: draft.sourcePage,
       idempotencyKey: idempotencyKeyRef.current,
     });
@@ -371,7 +404,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                     <button
                       type="button"
                       onClick={() => removeFrame(frame.frameId)}
-                      disabled={draft.selectedFrames.length <= 1}
+                      disabled={requestLocked || draft.selectedFrames.length <= 1}
                       className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-card px-4 py-3 text-xs font-black uppercase tracking-[0.1em] text-vilu-ink ring-1 ring-vilu-line disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       <Trash2 size={15} /> {text.remove}
@@ -405,6 +438,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                   <button
                     type="button"
                     key={mode}
+                    disabled={requestLocked}
                     onClick={() => {
                       if (mode === 'later') updateStorePreference({ mode: 'later' });
                       else if (mode === 'city') updateStorePreference({ mode: 'city', city: selectedCity });
@@ -413,7 +447,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                         updateStorePreference({ mode: 'store', city: firstStore.city, storeId: firstStore.id, storeName: firstStore.name });
                       }
                     }}
-                    className={`rounded-2xl p-4 text-left text-sm font-black transition ring-1 ${
+                    className={`rounded-2xl p-4 text-left text-sm font-black transition ring-1 disabled:cursor-not-allowed disabled:opacity-65 ${
                       draft.storePreference.mode === mode
                         ? 'bg-vilu-lime text-vilu-ink ring-vilu-lime'
                         : 'bg-vilu-paper text-vilu-ink ring-vilu-line'
@@ -430,6 +464,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                     <span className="text-xs font-black uppercase tracking-[0.14em] text-vilu-ink/55">{text.city}</span>
                     <select
                       value={selectedCity}
+                      disabled={requestLocked}
                       onChange={(event) => {
                         const city = event.target.value;
                         if (draft.storePreference.mode === 'city') updateStorePreference({ mode: 'city', city });
@@ -448,6 +483,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                       <span className="text-xs font-black uppercase tracking-[0.14em] text-vilu-ink/55">{text.storeLabel}</span>
                       <select
                         value={draft.storePreference.storeId}
+                        disabled={requestLocked}
                         onChange={(event) => {
                           const store = opticsDirectory.find((optic) => optic.id === event.target.value);
                           if (store) updateStorePreference({ mode: 'store', city: store.city, storeId: store.id, storeName: store.name });
@@ -468,11 +504,11 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <label className="grid gap-2">
                   <span className="text-xs font-black uppercase tracking-[0.14em] text-vilu-ink/55">{text.name}</span>
-                  <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder={text.namePlaceholder} autoComplete="name" className="rounded-2xl border border-vilu-line bg-vilu-paper px-4 py-4 font-bold outline-none focus:border-vilu-lime" />
+                  <input disabled={requestLocked} value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder={text.namePlaceholder} autoComplete="name" className="rounded-2xl border border-vilu-line bg-vilu-paper px-4 py-4 font-bold outline-none focus:border-vilu-lime disabled:cursor-not-allowed disabled:opacity-65" />
                 </label>
                 <label className="grid gap-2">
                   <span className="text-xs font-black uppercase tracking-[0.14em] text-vilu-ink/55">{text.channel}</span>
-                  <select value={contactChannel} onChange={(event) => setContactChannel(event.target.value as ContactChannel)} className="rounded-2xl border border-vilu-line bg-vilu-paper px-4 py-4 font-bold outline-none focus:border-vilu-lime">
+                  <select disabled={requestLocked} value={contactChannel} onChange={(event) => setContactChannel(event.target.value as ContactChannel)} className="rounded-2xl border border-vilu-line bg-vilu-paper px-4 py-4 font-bold outline-none focus:border-vilu-lime disabled:cursor-not-allowed disabled:opacity-65">
                     <option value="telegram">Telegram</option>
                     <option value="whatsapp">WhatsApp</option>
                     <option value="phone">{language === 'ru' ? 'Телефон' : 'Phone'}</option>
@@ -484,13 +520,14 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                 <span className="text-xs font-black uppercase tracking-[0.14em] text-vilu-ink/55">{text.contactValue}</span>
                 <input
                   ref={contactInputRef}
+                  disabled={requestLocked}
                   value={contactValue}
                   onChange={(event) => setContactValue(event.target.value)}
                   placeholder={text.contactPlaceholder}
                   autoComplete={contactChannel === 'email' ? 'email' : 'tel'}
                   aria-invalid={showValidation && contactValue.trim().length < 3}
                   aria-describedby={showValidation && contactValue.trim().length < 3 ? 'checkout-contact-error' : undefined}
-                  className="rounded-2xl border border-vilu-line bg-vilu-paper px-4 py-4 font-bold outline-none focus:border-vilu-lime aria-[invalid=true]:border-red-600 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-600/20"
+                  className="rounded-2xl border border-vilu-line bg-vilu-paper px-4 py-4 font-bold outline-none focus:border-vilu-lime disabled:cursor-not-allowed disabled:opacity-65 aria-[invalid=true]:border-red-600 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-600/20"
                 />
                 {showValidation && contactValue.trim().length < 3 && (
                   <span id="checkout-contact-error" className="text-sm font-bold text-red-700">{text.contactRequired}</span>
@@ -499,6 +536,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
               <label className={`mt-5 flex cursor-pointer items-start gap-3 rounded-2xl bg-vilu-paper p-4 ring-1 ${showValidation && !consent ? 'ring-2 ring-red-600/70' : 'ring-vilu-line'}`}>
                 <input
                   ref={consentInputRef}
+                  disabled={requestLocked}
                   type="checkbox"
                   checked={consent}
                   onChange={(event) => setConsent(event.target.checked)}
@@ -512,6 +550,11 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                 <p id="checkout-consent-error" className="mt-2 text-sm font-bold text-red-700">{text.consentRequired}</p>
               )}
               <p className="mt-4 flex gap-2 text-sm leading-6 text-vilu-ink/60"><ShieldCheck className="mt-0.5 shrink-0 text-vilu-green" size={18} /> {text.safe}</p>
+              {requestLocked && (
+                <p className="mt-4 rounded-2xl bg-vilu-lime/20 p-4 text-sm font-bold leading-6 text-vilu-ink ring-1 ring-vilu-lime/45">
+                  {text.requestLocked}
+                </p>
+              )}
             </section>
           </div>
 
@@ -531,7 +574,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                 ? text.submittingLead
                 : stage === 'payment'
                   ? text.creatingPayment
-                  : leadIdRef.current
+                  : checkoutAttempt
                     ? text.retryPayment
                     : text.submit}
             </button>

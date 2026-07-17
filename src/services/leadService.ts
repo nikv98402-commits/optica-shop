@@ -7,7 +7,12 @@ function demoLead(): SubmitVisitLeadResponse {
   const suffix = typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  return { leadId: `demo_lead_${suffix}`, status: 'new', nextStep: 'payment_optional' };
+  return {
+    leadId: `demo_lead_${suffix}`,
+    paymentCapabilityToken: suffix,
+    status: 'new',
+    nextStep: 'payment_optional',
+  };
 }
 
 export async function submitVisitLead(payload: SubmitVisitLeadRequest): Promise<BackendResult<SubmitVisitLeadResponse>> {
@@ -49,7 +54,7 @@ export async function submitVisitLead(payload: SubmitVisitLeadRequest): Promise<
     body: payload,
   });
 
-  if (error || !data?.leadId) {
+  if (error || !data?.leadId || !data.paymentCapabilityToken) {
     trackEvent(AnalyticsEvent.BackendLeadSubmitFailed, { source: payload.sourcePage, error_code: error?.name || 'request_failed' });
     return { ok: false, reason: 'request_failed', message: error?.message || 'Lead request failed.' };
   }

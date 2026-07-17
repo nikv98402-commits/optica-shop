@@ -1,11 +1,13 @@
 import type {
   ServiceCheckoutDraft,
+  ServiceCheckoutAttempt,
   ServiceCheckoutFrame,
   ServiceCheckoutSource,
   ServiceCheckoutStorePreference,
 } from '../types/backend';
 
 export const SERVICE_CHECKOUT_STORAGE_KEY = 'vilu_service_checkout_draft_v1';
+export const SERVICE_CHECKOUT_ATTEMPT_STORAGE_KEY = 'vilu_service_checkout_attempt_v1';
 export const SERVICE_CHECKOUT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 export const SERVICE_CHECKOUT_MAX_FRAMES = 3;
 
@@ -149,5 +151,56 @@ export function clearServiceCheckoutDraft() {
     window.localStorage.removeItem(SERVICE_CHECKOUT_STORAGE_KEY);
   } catch {
     // The in-memory checkout remains usable when storage is unavailable.
+  }
+}
+
+function isServiceCheckoutAttempt(value: unknown, draftCreatedAt: string): value is ServiceCheckoutAttempt {
+  if (!value || typeof value !== 'object') return false;
+  const attempt = value as Record<string, unknown>;
+  return attempt.version === 1
+    && attempt.draftCreatedAt === draftCreatedAt
+    && typeof attempt.leadId === 'string'
+    && attempt.leadId.length > 0
+    && typeof attempt.paymentCapabilityToken === 'string'
+    && attempt.paymentCapabilityToken.length > 0
+    && typeof attempt.idempotencyKey === 'string'
+    && attempt.idempotencyKey.length > 0
+    && Object.keys(attempt).every((key) => [
+      'version',
+      'draftCreatedAt',
+      'leadId',
+      'paymentCapabilityToken',
+      'idempotencyKey',
+    ].includes(key));
+}
+
+export function saveServiceCheckoutAttempt(attempt: ServiceCheckoutAttempt) {
+  if (!isServiceCheckoutAttempt(attempt, attempt.draftCreatedAt)) return false;
+  try {
+    window.sessionStorage.setItem(SERVICE_CHECKOUT_ATTEMPT_STORAGE_KEY, JSON.stringify(attempt));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function readServiceCheckoutAttempt(draftCreatedAt: string): ServiceCheckoutAttempt | null {
+  try {
+    const raw = window.sessionStorage.getItem(SERVICE_CHECKOUT_ATTEMPT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (isServiceCheckoutAttempt(parsed, draftCreatedAt)) return parsed;
+    window.sessionStorage.removeItem(SERVICE_CHECKOUT_ATTEMPT_STORAGE_KEY);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearServiceCheckoutAttempt() {
+  try {
+    window.sessionStorage.removeItem(SERVICE_CHECKOUT_ATTEMPT_STORAGE_KEY);
+  } catch {
+    // The current in-memory attempt remains safe when storage is unavailable.
   }
 }
