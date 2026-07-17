@@ -122,7 +122,12 @@ assert.match(leadFunction, /SUPABASE_ANON_KEY/);
 assert.match(leadFunction, /body\.selectedFrames\.every\(isValidFrame\)/);
 assert.match(leadFunction, /isOptionalInteger\(frame\.framePriceRub, 0, 10_000_000\)/);
 assert.match(leadFunction, /isOptionalInteger\(frame\.fitScore, 0, 100\)/);
+assert.match(leadFunction, /isAllowedValue\(body\.locale, allowedLocales\)/);
+assert.match(leadFunction, /isAllowedValue\(body\.contactChannel, allowedContactChannels\)/);
+assert.match(leadFunction, /isAllowedValue\(body\.sourcePage, allowedSourcePages\)/);
+assert.match(leadFunction, /isValidUtm\(body\.utm\)/);
 assert.doesNotMatch(checkout, /contact:\s*contactValue\.trim\(\)/);
+assert.doesNotMatch(tryOn, /contact:\s*visitLeadForm\.contact\.trim\(\)/);
 assert.match(analytics, /\/contact\/i/);
 
 console.log('Service checkout contract checks passed.');

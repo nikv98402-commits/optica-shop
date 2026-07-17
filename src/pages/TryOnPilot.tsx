@@ -694,7 +694,6 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
     const leadFormUrl = buildLeadFormUrl({
       city: visitLeadForm.city,
       contact_method: visitLeadForm.contactMethod,
-      contact: visitLeadForm.contact.trim(),
       goal: selectedGoal,
       selected_count: selectedFrames.length,
       frames: selectedFrames.map(frameLabel).join(', '),

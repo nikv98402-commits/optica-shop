@@ -6,6 +6,10 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
 const DEFAULT_ALLOWED_ORIGINS = ['https://vilu.store', 'https://www.vilu.store'];
 const rateLimitBuckets = new Map<string, number[]>();
+const allowedLocales = ['ru', 'en'] as const;
+const allowedContactChannels = ['phone', 'whatsapp', 'telegram', 'email'] as const;
+const allowedSourcePages = ['/tryon', '/products', '/vision-tracker'] as const;
+const allowedUtmKeys = ['source', 'medium', 'campaign'] as const;
 
 const forbiddenKeys = [
   /photo/i,
@@ -117,6 +121,19 @@ function isOptionalInteger(value: unknown, min: number, max: number) {
     || (typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max);
 }
 
+function isAllowedValue<T extends string>(value: unknown, allowed: readonly T[]) {
+  return typeof value === 'string' && allowed.includes(value as T);
+}
+
+function isValidUtm(value: unknown) {
+  if (value === undefined) return true;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+
+  const utm = value as Record<string, unknown>;
+  return Object.keys(utm).every((key) => allowedUtmKeys.includes(key as typeof allowedUtmKeys[number]))
+    && allowedUtmKeys.every((key) => isBoundedString(utm[key], 160));
+}
+
 function isValidFrame(frame: LeadFramePayload) {
   return Boolean(
     frame
@@ -187,6 +204,10 @@ serve(async (req) => {
   const body = payload as LeadPayload;
   if (
     !body.consentPersonalData
+    || !isAllowedValue(body.locale, allowedLocales)
+    || !isAllowedValue(body.contactChannel, allowedContactChannels)
+    || !isAllowedValue(body.sourcePage, allowedSourcePages)
+    || !isValidUtm(body.utm)
     || !isBoundedString(body.contactValue, 160, true)
     || !isBoundedString(body.customerName, 120)
     || !isBoundedString(body.city, 120)
