@@ -119,6 +119,10 @@ assert.doesNotMatch(leadFunction, /Access-Control-Allow-Origin': '\*'/);
 assert.match(leadFunction, /MAX_BODY_BYTES/);
 assert.match(leadFunction, /RATE_LIMIT_MAX_REQUESTS/);
 assert.match(leadFunction, /SUPABASE_ANON_KEY/);
+assert.match(leadFunction, /body\.selectedFrames\.every\(isValidFrame\)/);
+assert.match(leadFunction, /isOptionalInteger\(frame\.framePriceRub, 0, 10_000_000\)/);
+assert.match(leadFunction, /isOptionalInteger\(frame\.fitScore, 0, 100\)/);
+assert.doesNotMatch(checkout, /contact:\s*contactValue\.trim\(\)/);
 assert.match(analytics, /\/contact\/i/);
 
 console.log('Service checkout contract checks passed.');

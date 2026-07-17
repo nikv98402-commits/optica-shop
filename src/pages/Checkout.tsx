@@ -302,7 +302,6 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
         const leadFormUrl = buildLeadFormUrl({
           city: draft.storePreference.mode === 'later' ? undefined : draft.storePreference.city,
           contact_method: contactChannel,
-          contact: contactValue.trim(),
           selected_count: draft.selectedFrames.length,
           frames: draft.selectedFrames.map((frame) => frame.frameName).join(', '),
           source: draft.sourcePage,

@@ -425,12 +425,20 @@ Real payments may be enabled only when:
 The current test contour deliberately separates lead creation from payment creation:
 
 1. Checkout validates contact and consent before any request.
-2. A successful lead response is retained in component memory.
+2. A successful lead response is retained in component memory and mirrored in
+   `sessionStorage` so a same-tab redirect or refresh can resume the attempt.
 3. Payment creation receives that `leadId` and one idempotency key.
 4. If payment creation fails, the retry reuses both values and does not create another
    lead.
-5. Reloading checkout may create a new lead because contact and operational lead state
-   are intentionally not persisted in browser storage.
+5. The session record contains only `leadId`, a short-lived payment capability token,
+   the idempotency key, and the draft timestamp. It never contains the customer's name,
+   contact, selected-frame payload, prescription, or health data.
+6. Terminal payment states clear or rotate the stored attempt as appropriate. A new
+   browser session may create a new lead because contact data is never persisted.
+
+The Tally fallback opens without contact details in query parameters. The fallback form
+must ask the customer to enter their contact again, avoiding personal data in browser
+history, referrer headers, and access logs.
 
 The return page checks unfinished `draft` and `provider_created` statuses immediately,
 then at 2, 5, 10, and 20 seconds. It stops after five total requests, on a terminal

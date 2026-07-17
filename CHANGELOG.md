@@ -5,6 +5,7 @@ All notable ViLu MVP changes should be documented here.
 ## Unreleased
 
 - Hardened the service-checkout release gate: terminal payment retries now rotate idempotency keys, the lead endpoint enforces origin/auth/size/rate boundaries, and Tally fallback protects mixed-version rollouts.
+- Removed personal contact values from Tally fallback URLs and added strict server-side validation for every selected-frame field.
 
 ### Added
 

@@ -112,6 +112,26 @@ function isBoundedString(value: unknown, max: number, required = false) {
   return typeof value === 'string' && value.trim().length >= (required ? 1 : 0) && value.length <= max;
 }
 
+function isOptionalInteger(value: unknown, min: number, max: number) {
+  return value === undefined
+    || (typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max);
+}
+
+function isValidFrame(frame: LeadFramePayload) {
+  return Boolean(
+    frame
+    && typeof frame === 'object'
+    && isBoundedString(frame.frameId, 120, true)
+    && isBoundedString(frame.frameName, 160, true)
+    && isBoundedString(frame.frameBrand, 120)
+    && isBoundedString(frame.frameCategory, 120)
+    && isBoundedString(frame.frameSize, 80)
+    && isOptionalInteger(frame.framePriceRub, 0, 10_000_000)
+    && isOptionalInteger(frame.fitScore, 0, 100)
+    && isBoundedString(frame.useCase, 120)
+  );
+}
+
 function findForbiddenKey(value: unknown): string | null {
   if (!value || typeof value !== 'object') return null;
   if (Array.isArray(value)) {
@@ -177,6 +197,7 @@ serve(async (req) => {
     || !Array.isArray(body.selectedFrames)
     || body.selectedFrames.length < 1
     || body.selectedFrames.length > 3
+    || !body.selectedFrames.every(isValidFrame)
   ) {
     return json({ error: 'validation_failed' }, 400, origin);
   }
