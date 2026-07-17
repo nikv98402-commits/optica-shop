@@ -4,6 +4,8 @@ All notable ViLu MVP changes should be documented here.
 
 ## Unreleased
 
+- Hardened the service-checkout release gate: terminal payment retries now rotate idempotency keys, the lead endpoint enforces origin/auth/size/rate boundaries, and Tally fallback protects mixed-version rollouts.
+
 ### Added
 
 - Vitest/React Testing Library coverage for checkout validation, lead/payment orchestration, retry identity, and bounded payment-status polling.

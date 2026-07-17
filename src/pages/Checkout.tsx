@@ -9,6 +9,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { buildLeadFormUrl, hasLeadForm } from '../config/leads';
 import { useLanguage } from '../contexts/LanguageContext';
 import { opticsDirectory } from '../data/opticsDirectory';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
@@ -86,6 +87,7 @@ const copy = {
     contactRequired: 'Укажите телефон, email или имя пользователя в мессенджере.',
     consentRequired: 'Подтвердите согласие, чтобы продолжить.',
     leadError: 'Не удалось сохранить заявку. Проверьте соединение и повторите попытку.',
+    leadFallback: 'Backend недоступен. Открываем резервную форму заявки.',
     paymentError: 'Заявка сохранена, но тестовую оплату открыть не удалось. Повторите попытку.',
     retryPayment: 'Повторить открытие оплаты 429 ₽',
     requestLocked: 'Заявка сохранена. Данные зафиксированы; повторная кнопка откроет только ту же тестовую оплату.',
@@ -142,6 +144,7 @@ const copy = {
     contactRequired: 'Enter a phone number, email, or messenger username.',
     consentRequired: 'Confirm consent to continue.',
     leadError: 'Could not save the request. Check your connection and try again.',
+    leadFallback: 'The backend is unavailable. Opening the fallback request form.',
     paymentError: 'The request is saved, but test payment could not be opened. Try again.',
     retryPayment: 'Retry 429 RUB test payment',
     requestLocked: 'Request saved. Details are locked; retry opens only the same test payment.',
@@ -296,6 +299,26 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
 
       if (!lead.ok) {
         setStage('idle');
+        const leadFormUrl = buildLeadFormUrl({
+          city: draft.storePreference.mode === 'later' ? undefined : draft.storePreference.city,
+          contact_method: contactChannel,
+          contact: contactValue.trim(),
+          selected_count: draft.selectedFrames.length,
+          frames: draft.selectedFrames.map((frame) => frame.frameName).join(', '),
+          source: draft.sourcePage,
+        });
+        if (hasLeadForm() && leadFormUrl) {
+          window.open(leadFormUrl, '_blank', 'noopener,noreferrer');
+          setError(text.leadFallback);
+          trackEvent(AnalyticsEvent.ServiceCheckoutSubmitFailed, {
+            source: draft.sourcePage,
+            selected_frame_count: draft.selectedFrames.length,
+            store_choice_mode: draft.storePreference.mode,
+            locale: language,
+            error_code: 'tally_fallback',
+          });
+          return;
+        }
         setError(text.leadError);
         trackEvent(AnalyticsEvent.ServiceCheckoutSubmitFailed, {
           source: draft.sourcePage,

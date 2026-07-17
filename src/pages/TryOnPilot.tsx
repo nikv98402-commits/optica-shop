@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { ChangeEvent, CSSProperties, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { buildLeadFormUrl, hasLeadForm } from '../config/leads';
 import { useLanguage } from '../contexts/LanguageContext';
 import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
@@ -682,11 +683,25 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
       privacyVersion: 'privacy-v1-2026-07',
       sourcePage: '/tryon',
       selectedFrames: toVisitLeadFrames(selectedFrames, selectedGoal, activeFrameScore?.total),
-      comment: visitLeadForm.comment.trim() || undefined,
     });
 
     if (backendResult.ok) {
       setVisitLeadStatus('Подбор сохранен для подготовки визита. Фото, рецепт и точные координаты не отправлены.');
+      setIsSubmittingVisitLead(false);
+      return;
+    }
+
+    const leadFormUrl = buildLeadFormUrl({
+      city: visitLeadForm.city,
+      contact_method: visitLeadForm.contactMethod,
+      contact: visitLeadForm.contact.trim(),
+      goal: selectedGoal,
+      selected_count: selectedFrames.length,
+      frames: selectedFrames.map(frameLabel).join(', '),
+    });
+    if (hasLeadForm() && leadFormUrl) {
+      window.open(leadFormUrl, '_blank', 'noopener,noreferrer');
+      setVisitLeadStatus('Форма для визита открыта. Фото, рецепт и комментарий не передаются.');
       setIsSubmittingVisitLead(false);
       return;
     }

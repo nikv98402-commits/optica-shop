@@ -66,7 +66,6 @@ export interface SubmitVisitLeadRequest {
     campaign?: string;
   };
   selectedFrames: VisitLeadFramePayload[];
-  comment?: string;
 }
 
 export interface SubmitVisitLeadResponse {

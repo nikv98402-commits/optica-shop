@@ -92,6 +92,8 @@ VITE_TALLY_FORM_URL=https://tally.so/r/FORM_ID
 
 Если `VITE_TALLY_FORM_URL` задана, кнопка `Подготовить подбор к визиту` открывает Tally с prefill-параметрами: город, способ связи, контакт, цель подбора, количество выбранных оправ и названия оправ. Фото, рецепт, жалобы, точная геолокация и параметры зрения не передаются. Если Tally URL не задан, сайт использует безопасный fallback: копирует подбор в буфер обмена и ничего не отправляет на сервер.
 
+В backend-first checkout Tally также используется как аварийный fallback, если Supabase временно недоступен или frontend/backend находятся на разных этапах релиза. Порядок безопасного развертывания и rollback описан в [`docs/deployment/service-checkout-rollout.md`](docs/deployment/service-checkout-rollout.md).
+
 События аналитики централизованы в `src/lib/analyticsEvents.ts`. В Метрику уходят только безопасные параметры вроде `selected_count`, `city`, `contact_type`, `source`, `optic_id`; телефон, email, имя, рецепт, жалобы, пароль и фото фильтруются на уровне wrapper-функции.
 
 Более сильный вариант для следующего этапа:

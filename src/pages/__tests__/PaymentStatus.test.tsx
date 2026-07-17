@@ -5,11 +5,23 @@ import { LanguageProvider } from '../../contexts/LanguageContext';
 import { PaymentStatus } from '../PaymentStatus';
 
 const getPaymentStatus = vi.fn();
+const clearServiceCheckoutAttempt = vi.fn();
+const renewServiceCheckoutPaymentAttempt = vi.fn();
 
 vi.mock('../../services/paymentService', () => ({
   getPaymentStatus: (...args: unknown[]) => getPaymentStatus(...args),
+  getPaymentIdempotencyKey: () => 'renewed-payment-key',
   simulateLocalPaymentStatus: vi.fn(),
 }));
+
+vi.mock('../../services/serviceCheckout', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/serviceCheckout')>();
+  return {
+    ...actual,
+    clearServiceCheckoutAttempt: () => clearServiceCheckoutAttempt(),
+    renewServiceCheckoutPaymentAttempt: (...args: unknown[]) => renewServiceCheckoutPaymentAttempt(...args),
+  };
+});
 
 vi.mock('../../lib/analyticsEvents', () => ({
   AnalyticsEvent: new Proxy({}, { get: (_, key) => String(key) }),
@@ -45,6 +57,9 @@ describe('PaymentStatus', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     getPaymentStatus.mockReset();
+    clearServiceCheckoutAttempt.mockReset();
+    renewServiceCheckoutPaymentAttempt.mockReset();
+    window.localStorage.clear();
   });
 
   it('polls at most five times and then exposes a manual status check', async () => {
@@ -88,5 +103,29 @@ describe('PaymentStatus', () => {
     await userEvent.click(retry);
 
     await waitFor(() => expect(getPaymentStatus).toHaveBeenCalledTimes(2));
+  });
+
+  it('rotates the payment key before returning from a terminal failure', async () => {
+    vi.useRealTimers();
+    window.localStorage.setItem('vilu_service_checkout_draft_v1', JSON.stringify({
+      version: 1,
+      sourcePage: '/products',
+      selectedFrames: [{ frameId: 'aurora', frameName: 'Aurora Crystal' }],
+      storePreference: { mode: 'later' },
+      createdAt: new Date().toISOString(),
+    }));
+    getPaymentStatus.mockResolvedValue({
+      ...pendingReceipt(),
+      data: { ...pendingReceipt().data, status: 'failed' },
+    });
+    renderStatus();
+
+    await userEvent.click(await screen.findByRole('button', { name: /вернуться к оформлению/i }));
+
+    expect(renewServiceCheckoutPaymentAttempt).toHaveBeenCalledWith(
+      expect.any(String),
+      'renewed-payment-key',
+    );
+    expect(clearServiceCheckoutAttempt).not.toHaveBeenCalled();
   });
 });

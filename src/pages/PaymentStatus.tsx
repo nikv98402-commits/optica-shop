@@ -2,8 +2,12 @@ import { AlertCircle, ArrowRight, CheckCircle2, Clock3, RotateCcw, ShieldCheck }
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
-import { getPaymentStatus, simulateLocalPaymentStatus } from '../services/paymentService';
-import { readServiceCheckoutDraft } from '../services/serviceCheckout';
+import { getPaymentIdempotencyKey, getPaymentStatus, simulateLocalPaymentStatus } from '../services/paymentService';
+import {
+  clearServiceCheckoutAttempt,
+  readServiceCheckoutDraft,
+  renewServiceCheckoutPaymentAttempt,
+} from '../services/serviceCheckout';
 import type { PaymentIntentStatus, PublicPaymentStatusResponse } from '../types/backend';
 
 type PaymentPageMode = 'return' | 'success' | 'failed';
@@ -199,8 +203,12 @@ export function PaymentStatus({ mode, onNavigate, onOpenStores }: PaymentStatusP
 
   const continueJourney = () => {
     if (success) {
+      clearServiceCheckoutAttempt();
       onOpenStores();
       return;
+    }
+    if (failed && checkoutDraft) {
+      renewServiceCheckoutPaymentAttempt(checkoutDraft.createdAt, getPaymentIdempotencyKey());
     }
     onNavigate(nextPage);
   };

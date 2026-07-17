@@ -204,3 +204,9 @@ export function clearServiceCheckoutAttempt() {
     // The current in-memory attempt remains safe when storage is unavailable.
   }
 }
+
+export function renewServiceCheckoutPaymentAttempt(draftCreatedAt: string, idempotencyKey: string) {
+  const attempt = readServiceCheckoutAttempt(draftCreatedAt);
+  if (!attempt || !idempotencyKey) return false;
+  return saveServiceCheckoutAttempt({ ...attempt, idempotencyKey });
+}

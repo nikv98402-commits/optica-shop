@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   SERVICE_CHECKOUT_ATTEMPT_STORAGE_KEY,
+  clearServiceCheckoutAttempt,
   readServiceCheckoutAttempt,
+  renewServiceCheckoutPaymentAttempt,
   saveServiceCheckoutAttempt,
 } from '../serviceCheckout';
 
@@ -29,5 +31,17 @@ describe('service checkout attempt persistence', () => {
   it('rejects malformed attempts instead of persisting partial state', () => {
     expect(saveServiceCheckoutAttempt({ ...attempt, paymentCapabilityToken: '' })).toBe(false);
     expect(window.sessionStorage.getItem(SERVICE_CHECKOUT_ATTEMPT_STORAGE_KEY)).toBeNull();
+  });
+
+  it('renews only the payment key after a terminal payment status', () => {
+    expect(saveServiceCheckoutAttempt(attempt)).toBe(true);
+    expect(renewServiceCheckoutPaymentAttempt(attempt.draftCreatedAt, 'next-payment-key')).toBe(true);
+    expect(readServiceCheckoutAttempt(attempt.draftCreatedAt)).toEqual({
+      ...attempt,
+      idempotencyKey: 'next-payment-key',
+    });
+
+    clearServiceCheckoutAttempt();
+    expect(readServiceCheckoutAttempt(attempt.draftCreatedAt)).toBeNull();
   });
 });

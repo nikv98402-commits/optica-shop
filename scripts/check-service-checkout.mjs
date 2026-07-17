@@ -11,16 +11,20 @@ const [
   draftService,
   paymentTypes,
   paymentFunction,
+  leadFunction,
   paymentStatus,
   tryOn,
+  leadConfig,
   analytics,
 ] = await Promise.all([
   read('src/pages/Checkout.tsx'),
   read('src/services/serviceCheckout.ts'),
   read('src/types/backend.ts'),
   read('supabase/functions/create-payment-intent/index.ts'),
+  read('supabase/functions/submit-visit-lead/index.ts'),
   read('src/pages/PaymentStatus.tsx'),
   read('src/pages/TryOnPilot.tsx'),
+  read('src/config/leads.ts'),
   read('src/lib/analyticsEvents.ts'),
 ]);
 
@@ -104,10 +108,17 @@ assert.match(checkout, /leadId: leadIdRef\.current/);
 assert.match(paymentStatus, /\[0, 2_000, 5_000, 10_000, 20_000\]/);
 assert.match(paymentStatus, /clearPollTimer/);
 assert.match(paymentStatus, /pollingExhausted/);
+assert.match(paymentStatus, /renewServiceCheckoutPaymentAttempt/);
 assert.match(checkout, /consentPersonalData: true/);
 assert.doesNotMatch(checkout, /localStorage|sessionStorage|URLSearchParams/);
 
-assert.doesNotMatch(tryOn, /TALLY_FORM_URL|buildTallyUrl|contact_type:/);
+assert.match(tryOn, /buildLeadFormUrl/);
+assert.match(leadConfig, /VITE_TALLY_FORM_URL/);
+assert.match(leadFunction, /ALLOWED_WEB_ORIGINS/);
+assert.doesNotMatch(leadFunction, /Access-Control-Allow-Origin': '\*'/);
+assert.match(leadFunction, /MAX_BODY_BYTES/);
+assert.match(leadFunction, /RATE_LIMIT_MAX_REQUESTS/);
+assert.match(leadFunction, /SUPABASE_ANON_KEY/);
 assert.match(analytics, /\/contact\/i/);
 
 console.log('Service checkout contract checks passed.');
