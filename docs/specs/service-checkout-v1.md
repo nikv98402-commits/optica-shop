@@ -20,17 +20,18 @@ This change makes the payment promise unambiguous and adopts the useful part of 
 
 ## Verified current state
 
-Verified on 2026-07-17 at commit `d506b5f`.
+Verified on 2026-07-17 at commit `898b4ca`.
 
 | Component | Current behavior | Gap |
 |---|---|---|
-| `src/pages/Checkout.tsx` | Shows one product, its estimate, base lenses, store pickup, courier fulfillment, delivery amount, and the 429 RUB service | Mixes frame commerce and service checkout |
-| `src/pages/TryOnPilot.tsx` | Holds a local 1-3 frame shortlist and can create `visit_preparation_v1` directly | Does not use the same checkout information hierarchy |
-| `src/services/leadService.ts` | Submits a consented visit lead with 1-3 selected frames | Product checkout does not create or link a lead |
-| `src/services/paymentService.ts` | Creates an idempotent fixed-price payment intent and preserves a safe local receipt | No checkout-context restoration contract |
+| `src/pages/Checkout.tsx` | Implements the unified 429 RUB service checkout, consented lead creation, payment-intent creation, duplicate-submit guard, and safe draft restoration | Payment-creation retry currently restarts lead submission; validation is generic rather than field-linked |
+| `src/pages/TryOnPilot.tsx` | Holds a local 1-3 frame shortlist and routes it through the normalized service checkout | No hardening gap in this phase |
+| `src/services/leadService.ts` | Submits a consented visit lead with 1-3 selected frames and applies the privacy guard | No hardening gap in this phase |
+| `src/services/paymentService.ts` | Creates an idempotent fixed-price payment intent, preserves a safe receipt, and reads payment status | Caller must retain the successful `leadId` and idempotency key across payment retry |
 | `supabase/functions/create-payment-intent/index.ts` | Resolves `visit_preparation_v1` to 429 RUB on the server | Correct and must remain server-owned |
-| `src/pages/PaymentStatus.tsx` | Shows pending, test success, failed, and unknown states | Does not show the frame/store context or a concrete next step |
-| `src/App.tsx` | Keeps selected product and fitting cart in component state | Does not expose one normalized service-checkout draft |
+| `src/pages/PaymentStatus.tsx` | Shows pending, test success, failed, cancelled, and unknown states with safe restored context | Performs one automatic status request only; pending state requires bounded polling |
+| `src/services/serviceCheckout.ts` | Normalizes a safe 1-3-frame draft, rejects unsafe data, and expires it after 24 hours | Existing contract checks cover only part of the runtime behavior |
+| `scripts/check-service-checkout.mjs` | Checks source ordering, server-owned price, route presence, and pure draft behavior | No component-level or browser-level regression coverage |
 
 ## What's working well and must not change
 
@@ -86,6 +87,49 @@ Pending / test success / failure
 Show shortlist, store choice, and one next action
 ```
 
+### User journey and emotional arc
+
+| Step | User does | Desired feeling | UI support |
+|---|---|---|---|
+| 1. Opens checkout | Reviews the selected frames | Recognition: `These are my choices` | Frame images and names appear before forms or payment language |
+| 2. Reviews the service | Learns what 429 RUB buys | Clarity, not sales pressure | One fixed-price service definition plus a short exclusion list |
+| 3. Chooses store preference | Selects a store/city or postpones the choice | Control | `Choose later` is a valid option and geolocation is not requested |
+| 4. Enters contact | Provides the minimum operational contact | Trust | Visible purpose, consent, privacy link, and no browser persistence |
+| 5. Starts payment | Confirms the exact amount charged now | Certainty | Sticky/visible summary repeats `Amount charged now: 429 RUB` |
+| 6. Returns from payment | Waits for confirmation | Reassurance | Bounded automatic status checks, frame context, elapsed-time explanation, and safe retry |
+| 7. Sees success | Confirms what was received | Completion | Explicit test-success status and prepared shortlist preview |
+| 8. Continues service | Opens the visit preparation | Momentum | One primary action: `Open visit shortlist`; store discovery follows inside that flow |
+
+### Time-horizon design
+
+- **First 5 seconds:** the user recognizes their selected frames, the service name, and `429 RUB`.
+- **First 5 minutes:** the user can complete checkout, recover from validation/payment delays, and open the prepared shortlist without losing context.
+- **Long-term trust:** the interface consistently distinguishes a paid preparation service from frame purchase, medical care, reservation, and verified payment revenue.
+
+### Successful payment result
+
+The success screen must lead with:
+
+```text
+Test payment confirmed
+Your visit shortlist is ready
+```
+
+Show:
+
+1. The 1-3 selected frames.
+2. The chosen store/city preference or `Choose later`.
+3. A compact visit checklist.
+4. The test-mode limitation.
+
+Primary action:
+
+```text
+Open visit shortlist
+```
+
+Inside the prepared shortlist, the next primary action is store selection or route/contact for the already selected store. Secondary actions such as catalog, profile, or home must not compete with the success action.
+
 ### Entry rules
 
 | Entry | Selection | Source |
@@ -98,11 +142,108 @@ The normalized checkout accepts 1-3 frames. If more than 3 catalog items are sel
 
 ## Information architecture
 
+### Screen hierarchy
+
+The checkout must preserve the same decision order on every viewport:
+
+```text
+Checkout
+├── Header: service name and fixed price context
+├── Selected frames: 1-3 editable items
+├── Service scope: what 429 RUB includes and excludes
+├── Store preference: store, city, or choose later
+├── Contact and consent
+├── Order summary
+└── Primary action: continue to the 429 RUB test payment
+```
+
+If only three things fit in the first meaningful viewport, show:
+
+1. The selected frame shortlist.
+2. `Visit preparation — 429 RUB`.
+3. The next required action.
+
+Frame retail prices, technical payment terms, and secondary explanations must not compete with these three elements.
+
+### Desktop composition
+
+- Use a two-column layout at `1024px` and wider.
+- The editable flow occupies the main column as one continuous light workspace.
+- The order summary occupies a sticky secondary column and remains visible while the user completes store and contact sections.
+- The summary contains the fixed amount, test-mode label, primary CTA, and one compact trust statement.
+- Sticky behavior must stop before the page footer and must not overlap browser zoomed content.
+
+### Surface and container rules
+
+The checkout is an application workflow, not a marketing card grid.
+
+- Use one light main workspace for selection, service scope, store preference, and contact.
+- Separate workflow sections with headings, 24-32px vertical spacing, and thin dividers.
+- Do not wrap every workflow step in another large rounded card.
+- Frame items remain cards because each frame is an editable object.
+- The order summary remains a card because it is a persistent, actionable object.
+- Consent may use a compact trust surface, but it must not become a card nested inside another card.
+- Payment-result pages use one dominant status composition and one context region, not a dashboard mosaic.
+- Use radius hierarchy from `DESIGN.md`; do not apply the largest radius to every surface.
+- Remove any decorative icon that does not communicate status, safety, navigation, or action.
+
+### Design tokens and contrast contract
+
+The implementation must follow the active product tokens in `src/index.css` and `tailwind.config.js`:
+
+| Role | Token | Value | Required pairing |
+|---|---|---:|---|
+| Primary action | `vilu-lime` | `#d8ef4f` | `vilu-ink` text and icons |
+| Dark surface/text | `vilu-ink` | `#07110d` | `vilu-paper` text on dark surfaces |
+| Main page surface | `vilu-paper` | `#f8f3e8` | `vilu-ink` text |
+| Raised card | `vilu-card` | `#fffdf7` | `vilu-ink` text |
+| Trust/selection | `vilu-green` | `#2f6658` | Use for selected borders, trust labels, and non-CTA status |
+| Error | `vilu-error` | `#b91c1c` | Use with a text/icon cue; never color alone |
+
+Rules:
+
+- All primary checkout and payment-result CTAs use `vilu-lime` with `vilu-ink`.
+- Dark sections use `vilu-paper` for headings and body copy; inherited dark text is forbidden.
+- Light sections use `vilu-ink` for headings and body copy.
+- `vilu-green` communicates trust, confirmation, or selection; it is not a competing primary CTA color.
+- Amber is not introduced into this checkout flow.
+- Disabled controls use a neutral surface plus readable text and an explicit explanation; do not simulate disabled state using low contrast alone.
+- Body text and form labels meet WCAG AA `4.5:1`; large text and non-text controls meet at least `3:1`.
+- Every implementation review must test the computed foreground/background pair, not only the Tailwind class name, to catch inherited black-on-dark text.
+
+### Mobile composition
+
+At widths below `1024px`, use one continuous page in this exact order:
+
+1. Selected frames.
+2. Service deliverables and limitation.
+3. Store preference.
+4. Contact and consent.
+5. Expanded order summary.
+
+A fixed bottom action bar remains visible after the header leaves the viewport:
+
+```text
+To pay now: 429 RUB                 [Continue]
+```
+
+- The action bar respects `env(safe-area-inset-bottom)`.
+- The bar never covers the focused field, validation message, consent text, or final page content.
+- While the software keyboard is open, the bar may become non-fixed if the available visual viewport would be obstructed.
+- Before the form is valid, the button remains disabled and the nearest inline helper explains the missing requirement.
+- The disabled button must not be the only indication of what is missing.
+- The expanded summary remains in the document flow so price and service details are available to screen readers and users who dismiss or cannot use sticky positioning.
+
 ### Step 1: Your selection
 
 - Show frame image, name, brand, size, and optional preliminary Face-fit score.
 - Keep the selection editable.
 - Use the shortlist as the visual anchor.
+- On mobile, render all 1-3 frames as a compact vertical list; do not hide frames in a carousel or `+N` summary.
+- Each row uses a fixed thumbnail, brand, a frame name limited visually to two lines, size/score metadata, and a 44px removal control.
+- Preserve the full frame name in accessible text and in the prepared visit shortlist.
+- A long name or untranslated product value must wrap or truncate inside the row without changing thumbnail/control dimensions or causing horizontal scroll.
+- When only one frame remains, keep the removal control visible but disabled and explain that at least one frame is required.
 
 ### Step 2: Service for 429 RUB
 
@@ -265,6 +406,77 @@ stateDiagram-v2
   Failed --> Editing
 ```
 
+## Interaction state coverage
+
+Every state must preserve the user's orientation: selected frames, service name, and the fixed 429 RUB amount remain available unless the draft is invalid or expired.
+
+| Feature | Loading | Empty | Error | Success | Partial / delayed |
+|---|---|---|---|---|---|
+| Selected frames | Stable image placeholders that preserve card height | Explain that at least one frame is required and link back to catalog/try-on | Replace a failed image with a frame icon; keep frame text | Show 1-3 editable frames | Show the first 3 and explain the limit |
+| Store preference | Preserve selected control dimensions | `Choose later` is a valid warm default, not an error | Keep the previous selection and show an inline retry only if remote store data failed | Selected store/city is visibly marked | City is selected but exact store remains optional |
+| Contact form | Preserve values in memory and disable duplicate submission | Visible labels and neutral placeholders | Put a concise message next to the invalid field, move focus to the first error, and retain all entered values | Consent and contact are ready for submission | Contact is valid but consent or one required detail is missing |
+| Lead submission | Button copy changes to `Saving request...`; width does not change | Not applicable | Explain that payment has not started; offer retry without clearing the form | Continue automatically to payment creation | A slow response keeps the same loading state and prevents a second request |
+| Payment creation | Button copy changes to `Opening test payment...` | Not applicable | Explain that the request is saved but payment did not open; retry with the same idempotency key | Redirect to provider/test contour | Timeout is treated as unknown until the same intent can be checked or retried safely |
+| Payment return | Show `Checking payment status` with elapsed-time context | Missing token produces an unknown-state explanation, never success | Show failure/cancellation reason in user language and a route back to checkout | Show explicit test success and the next service step | Keep the pending screen, continue limited automatic checks, and expose manual recheck |
+| Draft restoration | Use a short skeleton only while safe local data is read | Explain that the selection expired and offer catalog/try-on actions | Continue without persistence and explain that return context may be lost | Restore frames and store preference | Never restore contact or consent from browser storage |
+
+### Pending payment behavior
+
+After returning from the payment contour:
+
+1. Show `Checking payment status` immediately.
+2. Poll the existing payment-status endpoint with the existing public token; never create a new payment intent.
+3. Use a bounded schedule, for example `0s`, `2s`, `5s`, `10s`, and `20s`.
+4. Keep selected-frame and store context visible while checking.
+5. Announce status changes through an `aria-live="polite"` region.
+6. Provide `Check again` after the first delayed response and keep it available after automatic checks stop.
+7. Disable the manual action while a check is active.
+8. After the bounded checks finish, show:
+
+```text
+Payment confirmation is taking longer than usual.
+Checking again will not create a new payment or charge you twice.
+```
+
+The user can leave the page and return through the safe receipt context. A pending client return never becomes verified success without a server-confirmed status.
+
+## Responsive and accessibility contract
+
+### Validation and focus
+
+- Keep visible labels above every input; placeholders are examples, never the only label.
+- On submit with invalid data, render an error summary before the contact section.
+- Move programmatic focus to the error-summary heading using `tabIndex="-1"`.
+- The summary lists each invalid field as a link that moves focus to that field.
+- Each invalid field keeps an inline error message until corrected.
+- Connect each inline message with `aria-describedby` and expose invalid state with `aria-invalid="true"`.
+- Announce submit, payment, and status errors through `role="alert"`; use `aria-live="polite"` for non-error progress.
+- Do not clear form values or selection when validation fails.
+
+### Keyboard and touch
+
+- All actions, store choices, frame-removal controls, consent, and status retries are reachable and operable by keyboard.
+- Visible focus indicators must have at least `3:1` contrast against adjacent colors and must not rely on color alone.
+- Touch targets are at least `44x44px`; the primary CTA is `48-52px` high.
+- Focus order follows the visual order and does not jump into the sticky summary before the related form content.
+- Sticky UI must not hide focused controls at `200%` browser zoom.
+- Escape must not discard checkout data; no modal is required for the core checkout flow.
+
+### Responsive verification
+
+Required manual and automated viewports:
+
+| Viewport | Required behavior |
+|---|---|
+| `320x568` | One column; full labels fit; no horizontal scroll; sticky CTA respects safe area |
+| `390x844` | One column; mobile keyboard does not cover focused field or error |
+| `768x1024` | One column or compact transitional layout; no narrow side panel |
+| `1024x768` | Two columns allowed; summary remains usable without covering footer |
+| `1440x900` | Two columns; main workspace and summary maintain readable line lengths |
+| `200% zoom` | Content reflows without clipping, lost controls, or overlapping sticky UI |
+
+Test both RU and EN at every shipping viewport. Long Russian button labels must be shortened before reducing type below the design-system minimum.
+
 ## Failure modes
 
 | Failure | User-visible behavior | Data behavior |
@@ -414,8 +626,306 @@ The normalized draft comes first because every UI and backend step depends on on
 
 Revert the implementation commits and restore the current product-specific checkout. Do not roll back or delete payment/lead migrations or audit records. The server-owned 429 RUB offer and existing payment status routes remain compatible throughout the rollback.
 
+## What already exists
+
+- A working catalog and try-on flow that can produce a shortlist of 1-3 frames.
+- A lead service, payment-intent service, payment-status route, and test-provider mode.
+- Shared ViLu navigation, localization, analytics helpers, and current lime/ink/paper tokens.
+- Local browser persistence patterns that can be narrowed to non-sensitive checkout context.
+- Smoke coverage for the main product routes.
+
+These foundations are reused. This phase does not introduce card collection, a second
+payment architecture, a new design system, or a competing checkout route.
+
+## Design review decisions
+
+| ID | Decision | Outcome |
+|---|---|---|
+| D2 | Mobile checkout structure | Sequential single-column page with one safe-area-aware sticky bottom action |
+| D3 | Pending payment behavior | Bounded polling at 0, 2, 5, 10, and 20 seconds plus a manual status check |
+| D4 | Success-page priority | Open the prepared visit shortlist; store choice follows inside that context |
+| D5 | Container hierarchy | One light workspace with dividers; cards only for frames and the order summary |
+| D6 | Palette | ViLu lime is the primary action color; ink, paper, card, and green retain semantic roles |
+| D7 | Validation | Focused error summary plus linked inline errors without clearing entered data |
+| D8 | Mobile frame selection | Show all 1-3 selected frames as a compact vertical list |
+| D9 | Global token-document conflict | Track the stale amber guidance in `TODOS.md`; do not widen this checkout change into a product-wide migration |
+
+Review outcome: the checkout now has a complete hierarchy, emotional arc, responsive
+model, state coverage, contrast contract, and accessible validation behavior. No
+design decision remains open for implementation.
+
+## Engineering review decisions
+
+| ID | Decision | Outcome |
+|---|---|---|
+| E1 | Scope | Harden the implemented checkout; do not rebuild its architecture or visual foundation |
+| E2 | Retry ownership | After lead success, retain `leadId` and the payment idempotency key in component memory; retry payment creation only |
+| E3 | Payment status | Poll at 0, 2, 5, 10, and 20 seconds, then stop and expose a manual status check |
+| E4 | Validation | Use field-level errors, `aria-invalid`, `aria-describedby`, a focused summary, and focus the first invalid field |
+| E5 | Automated coverage | Add Vitest, React Testing Library, and Playwright while retaining contract and route smoke scripts |
+| E6 | Design token debt | Keep the approved `TODOS.md` item for the stale amber guidance in `DESIGN.md`; do not widen this hardening phase |
+
+No engineering decision remains open.
+
+## Authoritative hardening scope
+
+The unified checkout foundation described earlier in this document is already present
+at commit `898b4ca`. The tasks below supersede the older build plan. Implementers must
+not recreate the checkout model, lead service, payment service, route adapters, or
+server-owned offer.
+
+### Component boundaries
+
+```mermaid
+flowchart LR
+  Entry["Catalog / try-on entry"] --> Draft["Safe service-checkout draft"]
+  Draft --> Checkout["Checkout page"]
+  Checkout -->|consented contact| Lead["Lead service"]
+  Lead -->|leadId retained in memory| Payment["Payment-intent service"]
+  Payment -->|confirmation / public token| Provider["Test provider boundary"]
+  Provider --> Status["Payment-status page"]
+  Status -->|bounded polling| StatusAPI["Payment-status API"]
+  Status --> Shortlist["Prepared visit shortlist"]
+```
+
+Trust boundaries:
+
+- Contact values cross the browser boundary only through the consented lead request.
+- Contact values, `leadId`, payment token, and provider identifiers never enter
+  analytics.
+- Only the safe draft may enter browser storage; contact values remain in memory.
+- The server remains the sole owner of amount, currency, offer code, and provider.
+- A browser return or local draft can restore context but can never assert `paid`.
+
+### Checkout sequence with payment retry
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant C as Checkout
+  participant L as Lead service
+  participant P as Payment service
+
+  U->>C: Submit valid contact and consent
+  C->>L: Create lead once
+  L-->>C: leadId
+  C->>P: Create intent(leadId, idempotencyKey)
+  alt payment intent succeeds
+    P-->>C: confirmation URL / public token
+    C-->>U: Redirect to payment contour
+  else payment intent fails or times out
+    P-->>C: recoverable error
+    C-->>U: Retry payment
+    U->>C: Retry
+    Note over C: Reuse retained leadId and idempotencyKey
+    C->>P: Create intent(leadId, same idempotencyKey)
+  end
+```
+
+The retained `leadId` is intentionally session-memory only. Reloading checkout may
+require a new lead; persistence of personal or operational lead state is not introduced
+in this phase.
+
+### Payment-status state machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> Loading
+  Loading --> Pending
+  Loading --> Paid
+  Loading --> Failed
+  Loading --> Cancelled
+  Loading --> Unknown
+  Pending --> Pending: Poll at 2s / 5s / 10s / 20s
+  Pending --> Paid
+  Pending --> Failed
+  Pending --> Cancelled
+  Pending --> ManualCheck: Poll budget exhausted
+  ManualCheck --> Loading: User checks again
+  Unknown --> Loading: User retries
+  Paid --> [*]
+  Failed --> [*]
+  Cancelled --> [*]
+```
+
+All scheduled timers are cancelled on terminal status and component unmount. Responses
+arriving after unmount or after a newer request must not update visible state.
+
+## Failure modes and recovery
+
+| Failure | User-visible behavior | System behavior | Required test |
+|---|---|---|---|
+| Invalid contact or missing consent | Linked inline message plus focused error summary | No network request | Component test |
+| Rapid double submit | One loading state | One lead request and one payment request | Component test |
+| Lead request fails | Recoverable lead error; entered values remain | No payment request | Component test |
+| Lead succeeds, payment fails | Payment-specific retry; entered values remain | Retain `leadId` and idempotency key; do not recreate lead | Component + E2E |
+| Payment request outcome is unknown | Explain that no second payment should be started blindly | Retry with the same key | Component test |
+| Status remains pending | Visible progress, then manual check | Poll at 0/2/5/10/20 seconds and stop | Fake-timer test |
+| Status API fails | Generic recoverable error, no false success | Stop automatic loop until manual retry | Component test |
+| Terminal status arrives | Stable paid/failed/cancelled result | Cancel timers and ignore stale responses | Fake-timer test |
+| Missing or expired public token | Unknown-result recovery state | Never infer payment | Component + E2E |
+| Safe draft is expired or invalid | Return to try-on/catalog with explanation | Reject draft and clear only unsafe context | Existing contract + E2E |
+
+## Test coverage map
+
+```text
+CODE PATHS                                      USER FLOWS
+[+] serviceCheckout draft                      [+] Product / try-on -> checkout
+  +-- [★★★ TESTED] valid / unsafe / expired      +-- [★ TESTED] route presence
+[+] Checkout submit                             +-- [GAP -> E2E] invalid form recovery
+  +-- [GAP] field validation                   [+] Lead -> payment intent
+  +-- [GAP] double-click guard                   +-- [GAP -> E2E] happy path
+  +-- [GAP] lead failure                         +-- [GAP -> E2E] payment-only retry
+  +-- [★ TESTED] lead before payment           [+] Payment return
+  +-- [GAP] payment-only retry                    +-- [GAP -> E2E] pending -> paid
+[+] PaymentStatus                                +-- [GAP -> E2E] failed / cancelled
+  +-- [★ TESTED] route presence                  +-- [GAP -> E2E] missing token
+  +-- [GAP] bounded polling
+  +-- [GAP] terminal cleanup
+  +-- [GAP] manual retry
+
+CURRENT: 3 behavior groups have meaningful checks; 13 runtime paths are gaps.
+TARGET: all listed gaps covered by RTL/Vitest or Playwright in T3.
+Legend: ★★★ behavior + edge + error | ★ smoke/static contract
+```
+
+### Code paths
+
+| Code path | Current coverage | Required coverage |
+|---|---|---|
+| Safe draft normalization, unsafe keys, and 24-hour expiry | Contract script | Retain contract script |
+| Invalid contact | Gap | RTL component test |
+| Missing consent | Gap | RTL component test |
+| Lead pending and double click | Gap | RTL component test |
+| Lead failure blocks payment | Static ordering check only | RTL component test |
+| Lead success creates payment intent | Static ordering check only | RTL component test |
+| Payment failure retains `leadId` and key | Gap | RTL component test |
+| Payment retry does not recreate lead | Gap | RTL component test |
+| Payment success redirect | Gap | RTL + Playwright |
+| Status initial request | Route smoke only | RTL component test |
+| Poll schedule 0/2/5/10/20 | Gap | Vitest fake-timer test |
+| Paid/failed/cancelled stops polling | Gap | Vitest fake-timer test |
+| Poll budget exhaustion and manual retry | Gap | RTL component test |
+| Unmount cancels timers and stale updates | Gap | Vitest fake-timer test |
+| RU/EN checkout and result copy | Manual | Playwright desktop/mobile |
+| 390 px and 1440 px layout | Manual | Playwright screenshot/overflow assertions |
+
+Current meaningful automated coverage is limited to the safe draft, source-order
+contract, and route presence. The hardening suite closes every behavior-changing path
+in this phase; no planned state is left silently untested.
+
+### User-flow matrix
+
+| Flow | Desktop | Mobile | RU | EN | Failure path |
+|---|---:|---:|---:|---:|---:|
+| Product -> checkout -> validation | Yes | Yes | Yes | Yes | Invalid contact / consent |
+| Try-on shortlist -> checkout | Yes | Yes | Yes | Yes | Expired draft |
+| Lead -> payment intent | Yes | Yes | Yes | Yes | Lead failure |
+| Payment failure -> retry | Yes | Yes | Yes | Yes | No duplicate lead |
+| Return pending -> paid | Yes | Yes | Yes | Yes | Poll exhaustion |
+| Failed/cancelled -> checkout | Yes | Yes | Yes | Yes | Missing token |
+
+## Code quality review
+
+- Keep orchestration explicit in the two page components for this narrow hardening
+  change; introducing a new workflow framework would increase abstraction without
+  reducing current complexity.
+- Name lead and payment phases separately. A single generic `stage` must not erase
+  whether a successful lead already exists.
+- Use one polling schedule constant and one cleanup path. Do not duplicate timer logic
+  across effects and manual retry handlers.
+- Mock service module boundaries in tests; do not add test flags to production service
+  implementations.
+- Add a short inline ASCII state comment only beside the payment-retry state and the
+  polling schedule, where future edits could otherwise reintroduce duplicate work.
+
+## Performance review
+
+- Automatic status traffic is capped at five requests per page visit. This avoids an
+  unbounded interval and requires no cache or realtime subscription.
+- Only one status request may be active at a time. A manual retry is disabled while a
+  request is pending.
+- Timer handles and stale async responses are released on unmount, preventing retained
+  component state and post-navigation updates.
+- Checkout retry reuses in-memory identifiers and sends no extra lead request after
+  lead success.
+- No N+1 database path, large asset, or memory-heavy processing is introduced.
+
+## Parallel implementation plan
+
+```text
+Lane A: Checkout state + accessible validation
+Lane B: Test tooling setup (Vitest / RTL / Playwright)
+              \              /
+               merge contracts
+                     |
+Lane C: Payment-status polling + component/E2E coverage
+                     |
+Docs, full verification, responsive QA
+```
+
+Lane A and the tooling-only part of Lane B can run in parallel because they touch
+separate files. Payment-status tests begin after the polling contract lands. Checkout
+tests begin after validation IDs and retry state are stable. `package.json` and
+`package-lock.json` have one owner.
+
+## Implementation Tasks
+
+- [ ] **T1 (P1, human: ~4h / Codex: ~60min) — Checkout hardening — Preserve lead identity and make validation accessible**
+  - Files: `src/pages/Checkout.tsx`.
+  - Dependencies: none.
+  - Verify: invalid field focus, linked errors, duplicate-submit guard, lead failure,
+    payment failure, and payment-only retry.
+
+  Separate lead and payment retry state. Once lead creation succeeds, retain `leadId`
+  and the generated payment idempotency key for the lifetime of the checkout instance.
+  A payment retry must call only payment-intent creation with those retained values.
+  Add field-specific validation, a focused summary, `aria-invalid`,
+  `aria-describedby`, and error preservation without clearing user input.
+
+- [ ] **T2 (P1, human: ~3h / Codex: ~45min) — Payment status — Add bounded polling and deterministic cleanup**
+  - Files: `src/pages/PaymentStatus.tsx`.
+  - Dependencies: none for implementation; merge before final status tests.
+  - Verify: fake-clock schedule, terminal stop, unmount cleanup, stale-response guard,
+    exhausted-budget state, and manual retry.
+
+  Fetch immediately, then at 2, 5, 10, and 20 seconds while status is pending. Cancel
+  all timers on terminal status or unmount. After the final pending response, show a
+  manual status check instead of polling indefinitely. Keep the prepared shortlist as
+  the primary success destination.
+
+- [ ] **T3 (P1, human: ~6h / Codex: ~90min) — Automated coverage — Add Vitest, RTL, and Playwright**
+  - Files: `package.json`, `package-lock.json`, `vitest.config.ts`,
+    `playwright.config.ts`, `src/test/setup.ts`,
+    `src/pages/__tests__/Checkout.test.tsx`,
+    `src/pages/__tests__/PaymentStatus.test.tsx`,
+    `e2e/service-checkout.spec.ts`.
+  - Dependencies: tooling setup may run with T1/T2; behavior assertions require T1/T2.
+  - Verify: new unit/component/E2E commands plus existing `test:checkout` and smoke
+    commands all pass.
+
+  Mock lead and payment boundaries rather than weakening production services. Cover
+  every code path in the coverage map, RU/EN, 390 px and 1440 px, double click,
+  payment-only retry, polling, terminal states, and horizontal overflow.
+
+- [ ] **T4 (P2, human: ~2h / Codex: ~25min) — Contract documentation — Record the hardened state machine and QA commands**
+  - Files: `docs/payments/yookassa-integration.md`, this specification.
+  - Dependencies: T1-T3.
+  - Verify: another engineer can reproduce the retry and polling contracts without
+    reading component internals.
+
+  Document lead retention, idempotency reuse, polling limits, test commands, test-mode
+  limitations, privacy boundary, and rollback. Keep the product-wide lime-token
+  documentation migration in `TODOS.md`.
+
 ## Out of scope
 
+- Rebuilding the implemented checkout architecture or visual hierarchy.
+- Persisting contact values, successful `leadId`, or retry state across page reloads.
+- Adding lead idempotency or deduplication schema changes on the server.
+- Supabase Realtime or unbounded payment-status polling.
+- A product-wide design-token migration; the stale `DESIGN.md` guidance remains tracked
+  in `TODOS.md`.
 - Real YooKassa charging or production credentials.
 - Production webhook processing.
 - Fiscal receipts, refunds, reconciliation, and accounting.
@@ -430,6 +940,30 @@ Revert the implementation commits and restore the current product-specific check
 - PR #35 — fixes the current checkout-to-payment transition.
 - `docs/specs/payment-return-status-v1.md`
 - `docs/payments/yookassa-integration.md`
+- `docs/qa/service-checkout-hardening-test-plan.md`
 - Official Lamoda delivery and fitting reference: https://academy.lamoda.ru/news/12-3-sposoby-dostavki/
 - Official Lamoda mobile order reference: https://www.lamoda.by/help/article/oformlenie-zakaza-v-mob-versii-sayta-by/
 
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | NOT RUN | No current review recorded |
+| Codex Review | `/codex review` | Independent 2nd opinion | 0 | NOT RUN | No current review recorded |
+| Eng Review | `/plan-eng-review` | Architecture & tests | 1 | CLEAR | Scope reduced to four hardening tasks; retry ownership, polling, accessibility, failure recovery, and automated coverage are locked |
+| Design Review | `/plan-design-review` | UI/UX gaps | 2 | CLEAR | Score: 8/10 to 10/10, 8 decisions; repeat audit found no new gaps |
+| DX Review | `/plan-devex-review` | Developer experience gaps | 0 | NOT RUN | No current review recorded |
+
+**VERDICT:** READY FOR HARDENING IMPLEMENTATION.
+
+Completion summary:
+
+- Engineering issues surfaced: 6.
+- User decisions recorded: 6.
+- Implementation tasks: 4 (3 P1, 1 P2).
+- Critical gaps flagged: 0 unresolved; all identified P1 paths have explicit remediation
+  and tests.
+- Performance risk: bounded to at most five automatic status requests per page visit.
+- Outside voice: skipped.
+
+NO UNRESOLVED DECISIONS
