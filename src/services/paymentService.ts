@@ -10,7 +10,6 @@ import type {
 import { assertBackendPayloadSafe } from './privacyGuard';
 
 const PAYMENT_RECEIPT_PREFIX = 'vilu_payment_receipt_';
-const IDEMPOTENCY_KEY = 'vilu_visit_preparation_idempotency_key';
 
 function randomId() {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -19,11 +18,7 @@ function randomId() {
 }
 
 export function getPaymentIdempotencyKey() {
-  const existing = window.sessionStorage.getItem(IDEMPOTENCY_KEY);
-  if (existing) return existing;
-  const created = randomId();
-  window.sessionStorage.setItem(IDEMPOTENCY_KEY, created);
-  return created;
+  return randomId();
 }
 
 function receiptKey(publicToken: string) {
@@ -31,11 +26,20 @@ function receiptKey(publicToken: string) {
 }
 
 function storeSafeReceipt(receipt: PublicPaymentStatusResponse) {
-  window.localStorage.setItem(receiptKey(receipt.publicToken), JSON.stringify(receipt));
+  try {
+    window.localStorage.setItem(receiptKey(receipt.publicToken), JSON.stringify(receipt));
+  } catch {
+    // Status can still be fetched from the backend when storage is unavailable.
+  }
 }
 
 function readSafeReceipt(publicToken: string): PublicPaymentStatusResponse | null {
-  const raw = window.localStorage.getItem(receiptKey(publicToken));
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(receiptKey(publicToken));
+  } catch {
+    return null;
+  }
   if (!raw) return null;
   try {
     return JSON.parse(raw) as PublicPaymentStatusResponse;
@@ -61,7 +65,12 @@ function demoIntent(): CreatePaymentIntentResponse {
 }
 
 export async function createPaymentIntent(payload: CreatePaymentIntentRequest): Promise<BackendResult<CreatePaymentIntentResponse>> {
-  if (payload.offerCode !== 'visit_preparation_v1' || !payload.idempotencyKey) {
+  if (
+    payload.offerCode !== 'visit_preparation_v1'
+    || !payload.leadId
+    || !payload.leadCapabilityToken
+    || !payload.idempotencyKey
+  ) {
     return { ok: false, reason: 'validation_failed', message: 'Payment payload is incomplete.' };
   }
 

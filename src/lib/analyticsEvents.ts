@@ -52,6 +52,12 @@ export const AnalyticsEvent = {
   BackendPaymentIntentCreated: 'backend_payment_intent_created',
   BackendPaymentIntentFailed: 'backend_payment_intent_failed',
   PaymentCheckoutOpened: 'payment_checkout_opened',
+  ServiceCheckoutOpened: 'service_checkout_opened',
+  ServiceCheckoutSelectionViewed: 'service_checkout_selection_viewed',
+  ServiceCheckoutStoreSelected: 'service_checkout_store_selected',
+  ServiceCheckoutContactCompleted: 'service_checkout_contact_completed',
+  ServiceCheckoutSubmitStarted: 'service_checkout_submit_started',
+  ServiceCheckoutSubmitFailed: 'service_checkout_submit_failed',
   PaymentStatusPending: 'payment_status_pending',
   PaymentStatusPaid: 'payment_status_paid',
   PaymentStatusCancelled: 'payment_status_cancelled',
@@ -64,7 +70,8 @@ export type AnalyticsEventName = (typeof AnalyticsEvent)[keyof typeof AnalyticsE
 type SafeEventParams = Record<string, string | number | boolean | undefined>;
 
 const blockedParamPatterns = [
-  /^contact$/i,
+  /contact/i,
+  /customer/i,
   /name/i,
   /phone/i,
   /email/i,
@@ -85,6 +92,14 @@ const blockedParamPatterns = [
   /diagnos/i,
   /medical/i,
   /health/i,
+  /lead.*id/i,
+  /payment.*id/i,
+  /public.*token/i,
+  /store.*address/i,
+  /latitude/i,
+  /longitude/i,
+  /^lat$/i,
+  /^lng$/i,
 ];
 
 function withoutSensitiveParams(params: SafeEventParams = {}) {

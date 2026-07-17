@@ -2,13 +2,17 @@ import { ArrowLeft, Check, ShieldCheck, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { VirtualTryOn } from '../components/VirtualTryOn';
 import { formatPrice, getProductById } from '../data/products';
+import { useLanguage } from '../contexts/LanguageContext';
+import type { ServiceCheckoutFrame } from '../types/backend';
 
 interface ProductDetailProps {
   productId: string;
   onNavigate: (page: string) => void;
+  onStartCheckout: (frame: ServiceCheckoutFrame) => void;
 }
 
-export function ProductDetail({ productId, onNavigate }: ProductDetailProps) {
+export function ProductDetail({ productId, onNavigate, onStartCheckout }: ProductDetailProps) {
+  const { language } = useLanguage();
   const product = getProductById(productId);
   const [purchaseType, setPurchaseType] = useState<'one-time' | 'subscription'>('subscription');
 
@@ -69,7 +73,25 @@ export function ProductDetail({ productId, onNavigate }: ProductDetailProps) {
                   <p className="text-xs font-bold uppercase tracking-[0.22em] text-vilu-green">Итого</p>
                   <p className="mt-1 text-4xl font-black">{formatPrice(activePrice)}</p>
                 </div>
-                <button onClick={() => onNavigate('checkout')} className="rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper">Оформить</button>
+                {product.category !== 'contact_lenses' ? (
+                  <button
+                    onClick={() => onStartCheckout({
+                      frameId: product.id,
+                      frameName: product.name,
+                      frameBrand: product.brand_name,
+                      frameCategory: product.category,
+                      framePriceRub: product.price,
+                      imageUrl: product.image_url,
+                    })}
+                    className="rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper"
+                  >
+                    {language === 'ru' ? 'Подготовить визит' : 'Prepare a visit'}
+                  </button>
+                ) : (
+                  <button onClick={() => onNavigate('products')} className="rounded-full bg-vilu-paper px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-ink">
+                    {language === 'ru' ? 'Вернуться в каталог' : 'Back to catalog'}
+                  </button>
+                )}
               </div>
             </div>
 

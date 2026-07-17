@@ -2,7 +2,7 @@
 
 Status: safe test contour implemented, real charging is not enabled
 
-Last reviewed: 2026-07-16
+Last reviewed: 2026-07-17
 
 Owner flow: `visit_preparation` / "Подготовить подбор к визиту"  
 Pilot price: 429 RUB
@@ -21,16 +21,37 @@ The frontend remains React/Vite on GitHub Pages. Payment creation, provider secr
 
 ### Already implemented
 
-- Test payment UI and safe analytics events in `src/pages/TryOnPilot.tsx`.
+- One service checkout at `/checkout` for entry from `/products`, product detail, and `/tryon`.
+- A versioned, 24-hour shortlist draft in `src/services/serviceCheckout.ts`.
+- The draft contains only 1-3 frame references and a store/city/later preference. It never contains a name, phone, email, messenger handle, or free-text contact.
+- Contact and consent exist only in React memory for the active checkout page.
+- The server creates the lead before it accepts a payment-intent request.
+- Test payment UI and safe analytics events in `src/pages/Checkout.tsx`.
 - Frontend payment adapter in `src/services/paymentService.ts`.
 - Shared contracts in `src/types/backend.ts`.
 - Server-owned 429 RUB offer in `supabase/functions/create-payment-intent/index.ts`.
 - Public-safe status lookup in `supabase/functions/get-payment-status/index.ts`.
 - RU/EN result pages at `/payment/return`, `/payment/success`, and `/payment/failed`.
 - Client-generated idempotency keys and opaque public status tokens.
+- A short-lived lead capability token that must match the lead before payment creation.
 - `payment_intents` table and enum states in `supabase/migrations/20260715120000_create_visit_preparation_backend.sql`.
+- Forward-only checkout integrity hardening in `supabase/migrations/20260717120000_harden_checkout_integrity.sql`.
 - RLS blocks direct public access to payment and lead tables.
 - Face photos stay in the browser and are not part of payment payloads.
+
+### Unified checkout contract
+
+1. The catalog or try-on flow normalizes 1-3 frames into `ServiceCheckoutDraft`.
+2. The frontend may persist that non-sensitive draft for 24 hours so a redirect or refresh can restore context.
+3. The checkout collects an optional name, one contact channel/value, and explicit consent in component state only.
+4. `submitVisitLead` validates the payload and creates a lead. No contact value is placed in a URL, browser storage, clipboard fallback, or analytics.
+5. Only a successful lead result supplies the required `leadId` and `paymentCapabilityToken` to `create-payment-intent`.
+6. The frontend stores those two technical values plus the idempotency key in `sessionStorage`; it never stores contact or selected-frame payloads there.
+7. The Edge Function validates the lead/capability pair and idempotency key, then writes a test intent with the server-owned amount of 429 RUB.
+8. The current provider remains `none`; no real payment request or card charge occurs.
+9. Payment status pages restore only the shortlist and store preference from the safe draft.
+
+Safe analytics dimensions are limited to source page, selected-frame count, store-choice mode, locale, offer code, provider mode, and non-sensitive error code. Internal lead IDs, payment IDs, public tokens, contact values, store addresses, and exact coordinates are forbidden.
 
 ### Not implemented yet
 
@@ -115,7 +136,8 @@ The client sends only:
 
 ```json
 {
-  "leadId": "optional-uuid",
+  "leadId": "required-uuid",
+  "leadCapabilityToken": "required-short-lived-uuid",
   "offerCode": "visit_preparation_v1",
   "sourcePage": "/tryon",
   "idempotencyKey": "client-generated-uuid"
@@ -130,13 +152,14 @@ The server resolves provider, price, currency, description, and return URL. The 
 
 Responsibilities:
 
-1. Validate origin, payload, rate limit, and optional `leadId`.
-2. Resolve `visit_preparation_v1` to 429 RUB on the server.
-3. Insert a `draft` payment intent.
-4. In the current test contour, save `draft` with provider `none` and return a ViLu status URL.
-5. In the future YooKassa contour, create a payment with the same idempotency key.
-6. Save `provider_payment_id` and transition to `provider_created` only after provider success.
-7. Return the hosted confirmation URL.
+1. Validate the required `leadId`, `leadCapabilityToken`, source page, offer code, and idempotency key.
+2. Verify that the capability token belongs to the supplied lead.
+3. Resolve `visit_preparation_v1` to 429 RUB on the server.
+4. Insert or safely recover the idempotent `draft` payment intent and reject key reuse for another lead/source pair.
+5. In the current test contour, save `draft` with provider `none` and return a ViLu status URL.
+6. In the future YooKassa contour, create a payment with the same idempotency key.
+7. Save `provider_payment_id` and transition to `provider_created` only after provider success.
+8. Return the hosted confirmation URL.
 
 Success response:
 
@@ -401,3 +424,40 @@ Real payments may be enabled only when:
 - YooKassa payment lifecycle: https://yookassa.ru/developers/payment-acceptance/getting-started/payment-process
 - YooKassa incoming notifications: https://yookassa.ru/developers/using-api/webhooks
 - Supabase Edge Functions secrets: https://supabase.com/docs/guides/functions/secrets
+
+## 17. Current Checkout Retry And Status Contract
+
+The current test contour deliberately separates lead creation from payment creation:
+
+1. Checkout validates contact and consent before any request.
+2. A successful lead response is retained in component memory and mirrored in
+   `sessionStorage` so a same-tab redirect or refresh can resume the attempt.
+3. Payment creation receives that `leadId` and one idempotency key.
+4. If payment creation fails, the retry reuses both values and does not create another
+   lead.
+5. The session record contains only `leadId`, a short-lived payment capability token,
+   the idempotency key, and the draft timestamp. It never contains the customer's name,
+   contact, selected-frame payload, prescription, or health data.
+6. Terminal payment states clear or rotate the stored attempt as appropriate. A new
+   browser session may create a new lead because contact data is never persisted.
+
+The Tally fallback opens without contact details in query parameters. The fallback form
+must ask the customer to enter their contact again, avoiding personal data in browser
+history, referrer headers, and access logs.
+
+The return page checks unfinished `draft` and `provider_created` statuses immediately,
+then at 2, 5, 10, and 20 seconds. It stops after five total requests, on a terminal
+status, on an API error, or when the component unmounts. After the polling budget is
+exhausted, the user can request one manual refresh.
+
+Regression commands:
+
+```powershell
+npm run typecheck
+npm run lint
+npm test
+npm run test:checkout
+npm run test:e2e
+npm run build
+npm run smoke
+```

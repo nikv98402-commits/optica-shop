@@ -10,7 +10,7 @@ The product is intended for fast demos on desktop and iPhone via GitHub Pages.
 - Home page: brand positioning, hero, featured products, Vision Hub block.
 - Catalog: eyeglasses, sunglasses, contact lenses, filters and fitting cart.
 - Product detail: price, stock, fitting availability and contact lens subscription choice.
-- Checkout: demo order flow, delivery choice and total calculation.
+- Checkout: unified 1-3-frame visit-preparation flow with store preference, consented lead submission, and a server-priced 429 RUB test payment contour.
 - Store locator: modal with city/address search.
 - Dashboard / Vision Hub: demo auth, client profile, prescription, eye exercises, progress metrics and personal offers.
 
@@ -21,6 +21,9 @@ npm install
 npm run typecheck
 npm run build
 npm run lint
+npm test
+npm run test:checkout
+npm run test:e2e
 ```
 
 If only documentation changes were made, typecheck/build are still useful but not mandatory if dependencies are unavailable.
