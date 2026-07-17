@@ -33,7 +33,9 @@ The frontend remains React/Vite on GitHub Pages. Payment creation, provider secr
 - Public-safe status lookup in `supabase/functions/get-payment-status/index.ts`.
 - RU/EN result pages at `/payment/return`, `/payment/success`, and `/payment/failed`.
 - Client-generated idempotency keys and opaque public status tokens.
+- A short-lived lead capability token that must match the lead before payment creation.
 - `payment_intents` table and enum states in `supabase/migrations/20260715120000_create_visit_preparation_backend.sql`.
+- Forward-only checkout integrity hardening in `supabase/migrations/20260717120000_harden_checkout_integrity.sql`.
 - RLS blocks direct public access to payment and lead tables.
 - Face photos stay in the browser and are not part of payment payloads.
 
@@ -43,10 +45,11 @@ The frontend remains React/Vite on GitHub Pages. Payment creation, provider secr
 2. The frontend may persist that non-sensitive draft for 24 hours so a redirect or refresh can restore context.
 3. The checkout collects an optional name, one contact channel/value, and explicit consent in component state only.
 4. `submitVisitLead` validates the payload and creates a lead. No contact value is placed in a URL, browser storage, clipboard fallback, or analytics.
-5. Only a successful lead result supplies the required `leadId` to `create-payment-intent`.
-6. The Edge Function validates the lead ID and idempotency key, then writes a test intent with the server-owned amount of 429 RUB.
-7. The current provider remains `none`; no real payment request or card charge occurs.
-8. Payment status pages restore only the shortlist and store preference from the safe draft.
+5. Only a successful lead result supplies the required `leadId` and `paymentCapabilityToken` to `create-payment-intent`.
+6. The frontend stores those two technical values plus the idempotency key in `sessionStorage`; it never stores contact or selected-frame payloads there.
+7. The Edge Function validates the lead/capability pair and idempotency key, then writes a test intent with the server-owned amount of 429 RUB.
+8. The current provider remains `none`; no real payment request or card charge occurs.
+9. Payment status pages restore only the shortlist and store preference from the safe draft.
 
 Safe analytics dimensions are limited to source page, selected-frame count, store-choice mode, locale, offer code, provider mode, and non-sensitive error code. Internal lead IDs, payment IDs, public tokens, contact values, store addresses, and exact coordinates are forbidden.
 
@@ -133,7 +136,8 @@ The client sends only:
 
 ```json
 {
-  "leadId": "optional-uuid",
+  "leadId": "required-uuid",
+  "leadCapabilityToken": "required-short-lived-uuid",
   "offerCode": "visit_preparation_v1",
   "sourcePage": "/tryon",
   "idempotencyKey": "client-generated-uuid"
@@ -148,13 +152,14 @@ The server resolves provider, price, currency, description, and return URL. The 
 
 Responsibilities:
 
-1. Validate origin, payload, rate limit, and optional `leadId`.
-2. Resolve `visit_preparation_v1` to 429 RUB on the server.
-3. Insert a `draft` payment intent.
-4. In the current test contour, save `draft` with provider `none` and return a ViLu status URL.
-5. In the future YooKassa contour, create a payment with the same idempotency key.
-6. Save `provider_payment_id` and transition to `provider_created` only after provider success.
-7. Return the hosted confirmation URL.
+1. Validate the required `leadId`, `leadCapabilityToken`, source page, offer code, and idempotency key.
+2. Verify that the capability token belongs to the supplied lead.
+3. Resolve `visit_preparation_v1` to 429 RUB on the server.
+4. Insert or safely recover the idempotent `draft` payment intent and reject key reuse for another lead/source pair.
+5. In the current test contour, save `draft` with provider `none` and return a ViLu status URL.
+6. In the future YooKassa contour, create a payment with the same idempotency key.
+7. Save `provider_payment_id` and transition to `provider_created` only after provider success.
+8. Return the hosted confirmation URL.
 
 Success response:
 

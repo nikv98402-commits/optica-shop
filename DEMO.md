@@ -2,11 +2,11 @@
 
 ## Goal
 
-Show VisionLux as a mobile-ready optical retail demo that combines eyewear catalog, fitting flow, demo checkout and Vision Hub client cabinet.
+Show ViLu as a mobile-ready optical retail demo that combines eyewear selection, online try-on, visit preparation, a non-charging payment contour, and the Vision Hub demo cabinet.
 
 ## Public demo URL
 
-https://nikv98402-commits.github.io/optica-shop/
+https://vilu.store/
 
 Open this URL on iPhone in Safari or Chrome. No laptop or installation is required after GitHub Pages deployment is active.
 
@@ -57,16 +57,17 @@ Show:
 Talking point:
 The product card is already structured for future ERP/stock integration.
 
-### 5. Demo checkout
+### 5. Visit-preparation checkout
 
 Show:
-- name and phone fields;
-- pickup / courier delivery;
-- order summary;
-- demo payment confirmation.
+- a shortlist of 1-3 selected frames;
+- city, store, or decide-later preference;
+- optional name, contact channel/value, and explicit consent;
+- the 429 RUB visit-preparation service separated from frame and lens pricing;
+- the test-payment return, success, and failure states.
 
 Talking point:
-The current checkout is intentionally demo-only. It validates the user journey before payment integration.
+The server owns the 429 RUB offer and creates an idempotent test intent only after a consented lead. No card details are requested and no real charge occurs until YooKassa and verified webhooks are connected.
 
 ### 6. Store locator
 
@@ -104,18 +105,16 @@ The demo auth is local-browser only and uses localStorage.
 
 ## Current limitations
 
-- Checkout uses a fixed demo product in the order summary.
+- Checkout accepts 1-3 selected frames but does not sell or reserve frames or lenses.
 - Auth and profile data are stored in localStorage.
 - Product data comes from `src/data/products.ts`.
-- Supabase files are present but real backend integration is not enabled.
-- Payment integration is not connected.
+- Lead and test payment-intent Edge Functions require configured Supabase variables; Tally remains the rollout fallback.
+- YooKassa charging, webhook-confirmed payment, receipts, refunds, and reconciliation are not connected.
 
 ## Recommended next corrections
 
-1. Make checkout accept the selected product instead of fixed `Aurora Crystal`.
-2. Add real cart / fitting summary page.
-3. Replace demo salon list with actual company cities and salons.
-4. Adapt visual identity from VisionLux to the target retail brand if needed.
-5. Add face scan / virtual try-on block as the main WOW feature.
-6. Connect order lead submission to CRM or backend.
-7. Add mobile QA checklist for iPhone Safari.
+1. Connect the YooKassa test shop and verified idempotent webhook.
+2. Complete receipt, refund, reconciliation, monitoring, and restricted-CORS readiness.
+3. Replace the demo salon list with confirmed partner locations and availability.
+4. Add an operator/admin workflow for consented visit-preparation leads.
+5. Add route-level code splitting for the current large JavaScript bundle.

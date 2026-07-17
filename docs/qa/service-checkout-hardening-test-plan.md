@@ -18,10 +18,13 @@ Branch: `codex/service-checkout-v1`
 - Submit an empty or invalid checkout and confirm the error summary receives focus,
   each invalid field is linked to its message, and no request is sent.
 - Submit valid consented contact data and confirm one lead and one payment intent are
-  created.
+  created, and payment creation requires the matching capability token returned by the
+  lead endpoint.
 - Double-click the primary action and confirm there are no duplicate requests.
 - Force payment-intent creation to fail after lead success, retry, and confirm the
   retained `leadId` and idempotency key are reused without another lead request.
+- Return from a terminal `failed` or `cancelled` status and confirm checkout retains the
+  lead/capability pair but rotates the idempotency key before creating a new intent.
 - Return to a pending payment and confirm status checks occur immediately and after
   2, 5, 10, and 20 seconds only.
 - Confirm paid, failed, and cancelled states stop polling.
@@ -50,6 +53,7 @@ Branch: `codex/service-checkout-v1`
 3. Pending result -> bounded polling -> paid -> prepared visit shortlist.
 4. Pending result -> exhausted polling -> manual check -> terminal result.
 5. Failed or cancelled result -> recover to checkout without false success.
+6. Failed or cancelled result -> retry with a rotated key and no duplicate lead.
 
 ## Regression Commands
 

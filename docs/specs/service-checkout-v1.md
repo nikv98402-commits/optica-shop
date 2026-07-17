@@ -365,6 +365,7 @@ Keep the existing request:
 {
   offerCode: 'visit_preparation_v1',
   leadId,
+  leadCapabilityToken,
   sourcePage,
   idempotencyKey
 }
@@ -381,7 +382,7 @@ The server continues to resolve:
 }
 ```
 
-`leadId` is required after successful consented lead submission. A new payment intent must not be created if lead submission failed.
+`leadId` and its short-lived `leadCapabilityToken` are required after successful consented lead submission. A new payment intent must not be created if lead submission failed or the capability does not match the lead.
 
 ## State machine
 
@@ -554,10 +555,10 @@ Existing payment events remain unchanged. Test status must never be counted as v
 7. A contact is submitted only after explicit personal-data consent.
 8. Name, contact values, internal IDs, payment tokens, health data, and exact location do not enter analytics.
 9. Name and contact values are never written to browser storage or URL parameters.
-10. A successful lead response supplies the `leadId` used to create the payment intent.
+10. A successful lead response supplies the `leadId` and matching `paymentCapabilityToken` used to create the payment intent.
 11. Lead failure prevents payment-intent creation and preserves recoverable in-memory form state.
 12. Double-clicking the CTA produces one lead submission and one payment intent.
-13. Retrying payment creation reuses the same idempotency key.
+13. A transient payment-creation retry reuses the same idempotency key; retry after a terminal failed or cancelled result rotates the key without creating another lead.
 14. The server, not the browser, determines the 429 RUB amount and RUB currency.
 15. The return URL cannot create a paid state.
 16. A valid non-sensitive checkout draft survives the test redirect and expires after 24 hours.
@@ -566,7 +567,7 @@ Existing payment events remain unchanged. Test status must never be counted as v
 19. RU remains the default language.
 20. At 390 px and 1440 px, the checkout and payment-result layouts have no clipping or horizontal overflow.
 21. Existing try-on, Face-fit score, frame saving, nearby optics, lead submission, catalog, dashboard, and knowledge routes continue to work.
-22. `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run smoke` pass.
+22. `npm run typecheck`, `npm run lint`, `npm run build`, `npm test`, `npm run test:checkout`, `npm run test:e2e`, and `npm run smoke` pass.
 
 ## Testing plan
 
@@ -575,7 +576,7 @@ Existing payment events remain unchanged. Test status must never be counted as v
 | Unit | Draft validation, 24-hour expiry, safe persistence, selection normalization | +8 |
 | Unit | Checkout state transitions and duplicate-submit guard | +6 |
 | Contract | Lead payload omits forbidden fields | +3 |
-| Contract | Payment payload contains only offer, lead, source, and idempotency key | +3 |
+| Contract | Payment payload contains only offer, lead/capability, source, and idempotency key | +3 |
 | Integration | Lead success to payment-intent creation | +2 |
 | Integration | Lead failure prevents payment creation | +2 |
 | E2E | Product to checkout to pending to test success/failure | +2 |
@@ -659,7 +660,7 @@ design decision remains open for implementation.
 | ID | Decision | Outcome |
 |---|---|---|
 | E1 | Scope | Harden the implemented checkout; do not rebuild its architecture or visual foundation |
-| E2 | Retry ownership | After lead success, retain `leadId` and the payment idempotency key in component memory; retry payment creation only |
+| E2 | Retry ownership | After lead success, retain the `leadId`, capability token, and payment idempotency key in session-scoped technical state; retry payment creation only |
 | E3 | Payment status | Poll at 0, 2, 5, 10, and 20 seconds, then stop and expose a manual status check |
 | E4 | Validation | Use field-level errors, `aria-invalid`, `aria-describedby`, a focused summary, and focus the first invalid field |
 | E5 | Automated coverage | Add Vitest, React Testing Library, and Playwright while retaining contract and route smoke scripts |
@@ -693,7 +694,7 @@ Trust boundaries:
 - Contact values cross the browser boundary only through the consented lead request.
 - Contact values, `leadId`, payment token, and provider identifiers never enter
   analytics.
-- Only the safe draft may enter browser storage; contact values remain in memory.
+- Browser storage may contain the safe draft plus a session-scoped technical attempt (`leadId`, capability token, idempotency key, draft timestamp); contact values remain in memory.
 - The server remains the sole owner of amount, currency, offer code, and provider.
 - A browser return or local draft can restore context but can never assert `paid`.
 
@@ -722,9 +723,11 @@ sequenceDiagram
   end
 ```
 
-The retained `leadId` is intentionally session-memory only. Reloading checkout may
-require a new lead; persistence of personal or operational lead state is not introduced
-in this phase.
+The current release mirrors `leadId`, the short-lived capability token, idempotency key,
+and draft timestamp into `sessionStorage` so a same-tab refresh can resume safely. The
+record contains no contact, name, selected-frame payload, prescription, or health data.
+Transient creation errors reuse the key; a terminal failed or cancelled result rotates
+it before a new intent is created for the same lead.
 
 ### Payment-status state machine
 
@@ -758,8 +761,9 @@ arriving after unmount or after a newer request must not update visible state.
 | Invalid contact or missing consent | Linked inline message plus focused error summary | No network request | Component test |
 | Rapid double submit | One loading state | One lead request and one payment request | Component test |
 | Lead request fails | Recoverable lead error; entered values remain | No payment request | Component test |
-| Lead succeeds, payment fails | Payment-specific retry; entered values remain | Retain `leadId` and idempotency key; do not recreate lead | Component + E2E |
+| Lead succeeds, payment creation fails transiently | Payment-specific retry; entered values remain | Retain `leadId`, capability token, and idempotency key; do not recreate lead | Component + E2E |
 | Payment request outcome is unknown | Explain that no second payment should be started blindly | Retry with the same key | Component test |
+| Payment reaches failed/cancelled | Return to checkout without false success | Retain lead/capability state and rotate the idempotency key before a new intent | Component + contract test |
 | Status remains pending | Visible progress, then manual check | Poll at 0/2/5/10/20 seconds and stop | Fake-timer test |
 | Status API fails | Generic recoverable error, no false success | Stop automatic loop until manual retry | Component test |
 | Terminal status arrives | Stable paid/failed/cancelled result | Cancel timers and ignore stale responses | Fake-timer test |
@@ -847,8 +851,8 @@ in this phase; no planned state is left silently untested.
   request is pending.
 - Timer handles and stale async responses are released on unmount, preventing retained
   component state and post-navigation updates.
-- Checkout retry reuses in-memory identifiers and sends no extra lead request after
-  lead success.
+- Checkout retry reuses session-scoped technical identifiers and sends no extra lead
+  request after lead success; terminal retries rotate only the idempotency key.
 - No N+1 database path, large asset, or memory-heavy processing is introduced.
 
 ## Parallel implementation plan
@@ -921,7 +925,7 @@ tests begin after validation IDs and retry state are stable. `package.json` and
 ## Out of scope
 
 - Rebuilding the implemented checkout architecture or visual hierarchy.
-- Persisting contact values, successful `leadId`, or retry state across page reloads.
+- Persisting contact values across page reloads. Only the non-sensitive technical attempt may be session-scoped.
 - Adding lead idempotency or deduplication schema changes on the server.
 - Supabase Realtime or unbounded payment-status polling.
 - A product-wide design-token migration; the stale `DESIGN.md` guidance remains tracked
