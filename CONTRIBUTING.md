@@ -26,6 +26,9 @@ Run these before opening or merging a PR:
 npm run typecheck
 npm run lint
 npm run build
+npm test
+npm run test:checkout
+npm run test:e2e
 ```
 
 For route-level smoke testing, start the dev server and run:
@@ -39,7 +42,8 @@ Known lint state: the project may show existing Fast Refresh warnings in context
 ## Product Safety Rules
 
 - Photos for try-on must stay in the browser.
-- Do not upload face photos, prescription data, complaints, phone numbers, emails, or names unless a future real-data mode is explicitly designed and approved.
+- Do not upload face photos, prescription data, complaints, or exact location. Names and contact values may cross the backend boundary only through the approved consented lead flow.
+- Never place names or contact values in browser storage, URL parameters, clipboard fallbacks, logs, or analytics.
 - Keep dashboard and profile data in demo/local mode unless privacy, consent, storage, and deletion flows are ready.
 - Do not send PII, prescription values, complaints, or uploaded-photo details to analytics.
 - User-facing copy must not promise diagnosis, exact PD measurement, or guaranteed fit.

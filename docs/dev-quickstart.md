@@ -71,7 +71,12 @@ Run before a PR or release:
 npm run typecheck
 npm run lint
 npm run build
+npm test
+npm run test:checkout
+npm run test:e2e
 ```
+
+`npm test` runs the Vitest suite, `npm run test:checkout` checks the checkout/backend contract, and `npm run test:e2e` runs the Playwright RU/EN desktop and iPhone-profile flows.
 
 Known state: `npm run lint` can show existing Fast Refresh warnings. Treat new warnings as regressions.
 
