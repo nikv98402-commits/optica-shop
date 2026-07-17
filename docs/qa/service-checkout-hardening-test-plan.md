@@ -58,5 +58,14 @@ Branch: `codex/service-checkout-v1`
 - `npm run build`
 - `npm run smoke`
 - `npm run test:checkout`
-- New Vitest component command introduced by the implementation.
-- New Playwright service-checkout command introduced by the implementation.
+- `npm test`
+- `npm run test:e2e`
+
+## Verified Result
+
+Verified on 2026-07-17:
+
+- 6 Vitest component tests passed.
+- 4 Playwright scenarios passed: RU/EN on desktop and iPhone-profile mobile.
+- Contract, typecheck, lint, production build, and route smoke checks passed.
+- Lint retains only the documented pre-existing Fast Refresh warnings.

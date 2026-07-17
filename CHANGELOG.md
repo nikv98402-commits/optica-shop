@@ -6,6 +6,8 @@ All notable ViLu MVP changes should be documented here.
 
 ### Added
 
+- Vitest/React Testing Library coverage for checkout validation, lead/payment orchestration, retry identity, and bounded payment-status polling.
+- Playwright RU/EN desktop and iPhone-profile checkout overflow checks.
 - Safe 429 RUB payment test contour with server-owned pricing, idempotent intent creation, opaque status tokens, and RU/EN return, success, and failure pages.
 - Public-safe payment status Edge Function and forward-only database hardening migration.
 - Engineering runbook for the planned YooKassa integration, including architecture, API contracts, payment states, security boundaries, test matrix, rollout, and rollback.
@@ -16,6 +18,8 @@ All notable ViLu MVP changes should be documented here.
 
 ### Changed
 
+- Payment-intent retry now reuses the successful lead and the original idempotency key instead of creating a duplicate lead.
+- Pending payment status now checks at 0, 2, 5, 10, and 20 seconds, then exposes a manual refresh.
 - Payment-result routes are excluded from search indexing and never treat a browser redirect as proof of payment.
 - Payment analytics record only technical funnel states and never payment tokens or personal data.
 - Auto-fit try-on copy now uses customer-facing language instead of implementation language.

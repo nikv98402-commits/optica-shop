@@ -419,3 +419,32 @@ Real payments may be enabled only when:
 - YooKassa payment lifecycle: https://yookassa.ru/developers/payment-acceptance/getting-started/payment-process
 - YooKassa incoming notifications: https://yookassa.ru/developers/using-api/webhooks
 - Supabase Edge Functions secrets: https://supabase.com/docs/guides/functions/secrets
+
+## 17. Current Checkout Retry And Status Contract
+
+The current test contour deliberately separates lead creation from payment creation:
+
+1. Checkout validates contact and consent before any request.
+2. A successful lead response is retained in component memory.
+3. Payment creation receives that `leadId` and one idempotency key.
+4. If payment creation fails, the retry reuses both values and does not create another
+   lead.
+5. Reloading checkout may create a new lead because contact and operational lead state
+   are intentionally not persisted in browser storage.
+
+The return page checks unfinished `draft` and `provider_created` statuses immediately,
+then at 2, 5, 10, and 20 seconds. It stops after five total requests, on a terminal
+status, on an API error, or when the component unmounts. After the polling budget is
+exhausted, the user can request one manual refresh.
+
+Regression commands:
+
+```powershell
+npm run typecheck
+npm run lint
+npm test
+npm run test:checkout
+npm run test:e2e
+npm run build
+npm run smoke
+```

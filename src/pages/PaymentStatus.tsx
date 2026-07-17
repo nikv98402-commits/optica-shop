@@ -1,5 +1,5 @@
 import { AlertCircle, ArrowRight, CheckCircle2, Clock3, RotateCcw, ShieldCheck } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 import { getPaymentStatus, simulateLocalPaymentStatus } from '../services/paymentService';
@@ -32,6 +32,7 @@ const copy = {
     noCharge: 'Это тестовый контур: реальные платежи и банковские данные не обрабатываются.',
     back: 'Вернуться к подбору',
     retry: 'Проверить еще раз',
+    pollingDone: 'Автоматическая проверка завершена. Статус можно обновить вручную.',
     demoSuccess: 'Показать успешный тест',
     demoFail: 'Показать неуспешный тест',
     selection: 'Ваш подбор',
@@ -58,6 +59,7 @@ const copy = {
     noCharge: 'This is a test contour: no real payments or bank card data are processed.',
     back: 'Back to selection',
     retry: 'Check again',
+    pollingDone: 'Automatic checking has stopped. You can refresh the status manually.',
     demoSuccess: 'Show successful test',
     demoFail: 'Show failed test',
     selection: 'Your selection',
@@ -75,6 +77,12 @@ function requestedStatus(mode: PaymentPageMode): PaymentIntentStatus | null {
   return null;
 }
 
+function isPendingStatus(status: PaymentIntentStatus) {
+  return status === 'draft' || status === 'provider_created';
+}
+
+const PAYMENT_STATUS_POLL_DELAYS_MS = [0, 2_000, 5_000, 10_000, 20_000] as const;
+
 export function PaymentStatus({ mode, onNavigate, onOpenStores }: PaymentStatusProps) {
   const { language } = useLanguage();
   const text = copy[language];
@@ -84,12 +92,25 @@ export function PaymentStatus({ mode, onNavigate, onOpenStores }: PaymentStatusP
   const [receipt, setReceipt] = useState<PublicPaymentStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(mode === 'return');
   const [hasError, setHasError] = useState(false);
+  const [pollingExhausted, setPollingExhausted] = useState(false);
+  const mountedRef = useRef(true);
+  const requestIdRef = useRef(0);
+  const timerRef = useRef<number | null>(null);
   const checkoutDraft = useMemo(() => readServiceCheckoutDraft(), []);
 
-  const loadStatus = async () => {
+  const clearPollTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const loadStatus = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setIsLoading(true);
     setHasError(false);
     const result = await getPaymentStatus(publicToken);
+    if (!mountedRef.current || requestId !== requestIdRef.current) return null;
     if (result.ok) {
       setReceipt(result.data);
       const event = result.data.status === 'paid'
@@ -108,15 +129,36 @@ export function PaymentStatus({ mode, onNavigate, onOpenStores }: PaymentStatusP
       setHasError(true);
     }
     setIsLoading(false);
-  };
+    return result.ok ? result.data : null;
+  }, [isDemo, publicToken]);
 
   useEffect(() => {
+    mountedRef.current = true;
+    setPollingExhausted(false);
     const stateFromRoute = requestedStatus(mode);
     if (isDemo && stateFromRoute) simulateLocalPaymentStatus(publicToken, stateFromRoute);
-    void loadStatus();
-    // The token and mode are fixed for the lifetime of this route.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, publicToken]);
+
+    const startedAt = Date.now();
+    const poll = async (index: number) => {
+      const nextReceipt = await loadStatus();
+      if (!mountedRef.current || !nextReceipt || !isPendingStatus(nextReceipt.status)) return;
+      const nextIndex = index + 1;
+      if (nextIndex >= PAYMENT_STATUS_POLL_DELAYS_MS.length) {
+        setPollingExhausted(true);
+        return;
+      }
+      const elapsed = Date.now() - startedAt;
+      const delay = Math.max(0, PAYMENT_STATUS_POLL_DELAYS_MS[nextIndex] - elapsed);
+      timerRef.current = window.setTimeout(() => void poll(nextIndex), delay);
+    };
+
+    void poll(0);
+    return () => {
+      mountedRef.current = false;
+      requestIdRef.current += 1;
+      clearPollTimer();
+    };
+  }, [clearPollTimer, isDemo, loadStatus, mode, publicToken]);
 
   useEffect(() => {
     const existing = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
@@ -179,12 +221,15 @@ export function PaymentStatus({ mode, onNavigate, onOpenStores }: PaymentStatusP
             <button type="button" onClick={continueJourney} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink">
               {nextLabel} <ArrowRight size={16} />
             </button>
-            {!success && !failed && !hasError && (
+            {!success && !failed && (hasError || pollingExhausted) && (
               <button type="button" onClick={() => void loadStatus()} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-card px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink ring-1 ring-vilu-ink/10">
                 <RotateCcw size={16} /> {text.retry}
               </button>
             )}
           </div>
+          {pollingExhausted && !success && !failed && !hasError && (
+            <p className="mt-4 text-sm leading-6 text-vilu-ink/65">{text.pollingDone}</p>
+          )}
         </article>
 
         <aside className="rounded-[2rem] bg-vilu-ink p-6 text-vilu-paper md:p-8">

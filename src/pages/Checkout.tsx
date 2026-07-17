@@ -82,6 +82,7 @@ const copy = {
     consentRequired: 'Подтвердите согласие, чтобы продолжить.',
     leadError: 'Не удалось сохранить заявку. Проверьте соединение и повторите попытку.',
     paymentError: 'Заявка сохранена, но тестовую оплату открыть не удалось. Повторите попытку.',
+    retryPayment: 'Повторить открытие оплаты 429 ₽',
     storageWarning: 'Браузер не разрешил сохранить подбор. Не закрывайте страницу до завершения теста.',
     safe: 'Контакт отправляется только после согласия и не сохраняется в браузере, URL или аналитике.',
   },
@@ -136,6 +137,7 @@ const copy = {
     consentRequired: 'Confirm consent to continue.',
     leadError: 'Could not save the request. Check your connection and try again.',
     paymentError: 'The request is saved, but test payment could not be opened. Try again.',
+    retryPayment: 'Retry 429 RUB test payment',
     storageWarning: 'The browser could not save the shortlist. Keep this page open until the test is complete.',
     safe: 'Contact is sent only after consent and is never stored in the browser, URL, or analytics.',
   },
@@ -158,6 +160,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
   const [error, setError] = useState('');
   const [storageWarning, setStorageWarning] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
+  const leadIdRef = useRef('');
   const idempotencyKeyRef = useRef('');
   const openedRef = useRef(false);
   const contactInputRef = useRef<HTMLInputElement>(null);
@@ -228,13 +231,6 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
 
     setShowValidation(false);
     setError('');
-    setStage('lead');
-    trackEvent(AnalyticsEvent.ServiceCheckoutContactCompleted, {
-      source: draft.sourcePage,
-      selected_frame_count: draft.selectedFrames.length,
-      store_choice_mode: draft.storePreference.mode,
-      locale: language,
-    });
     trackEvent(AnalyticsEvent.ServiceCheckoutSubmitStarted, {
       source: draft.sourcePage,
       selected_frame_count: draft.selectedFrames.length,
@@ -243,48 +239,60 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
       offer_code: 'visit_preparation_v1',
     });
 
-    const lead = await submitVisitLead({
-      locale: language,
-      customerName: customerName.trim() || undefined,
-      contactValue: contactValue.trim(),
-      contactChannel,
-      city: draft.storePreference.mode === 'later' ? undefined : draft.storePreference.city,
-      preferredStoreId: draft.storePreference.mode === 'store' ? draft.storePreference.storeId : undefined,
-      preferredStoreName: draft.storePreference.mode === 'store' ? draft.storePreference.storeName : undefined,
-      consentPersonalData: true,
-      consentVersion: CONSENT_VERSION,
-      privacyVersion: PRIVACY_VERSION,
-      sourcePage: draft.sourcePage,
-      selectedFrames: draft.selectedFrames.map((frame) => ({
-        frameId: frame.frameId,
-        frameName: frame.frameName,
-        frameBrand: frame.frameBrand,
-        frameCategory: frame.frameCategory,
-        frameSize: frame.frameSize,
-        framePriceRub: frame.framePriceRub,
-        fitScore: frame.fitScore,
-        useCase: frame.useCase,
-      })),
-    });
-
-    if (!lead.ok) {
-      setStage('idle');
-      setError(text.leadError);
-      trackEvent(AnalyticsEvent.ServiceCheckoutSubmitFailed, {
+    if (!leadIdRef.current) {
+      setStage('lead');
+      trackEvent(AnalyticsEvent.ServiceCheckoutContactCompleted, {
         source: draft.sourcePage,
         selected_frame_count: draft.selectedFrames.length,
         store_choice_mode: draft.storePreference.mode,
         locale: language,
-        error_code: errorCode(lead.reason),
       });
-      return;
+
+      const lead = await submitVisitLead({
+        locale: language,
+        customerName: customerName.trim() || undefined,
+        contactValue: contactValue.trim(),
+        contactChannel,
+        city: draft.storePreference.mode === 'later' ? undefined : draft.storePreference.city,
+        preferredStoreId: draft.storePreference.mode === 'store' ? draft.storePreference.storeId : undefined,
+        preferredStoreName: draft.storePreference.mode === 'store' ? draft.storePreference.storeName : undefined,
+        consentPersonalData: true,
+        consentVersion: CONSENT_VERSION,
+        privacyVersion: PRIVACY_VERSION,
+        sourcePage: draft.sourcePage,
+        selectedFrames: draft.selectedFrames.map((frame) => ({
+          frameId: frame.frameId,
+          frameName: frame.frameName,
+          frameBrand: frame.frameBrand,
+          frameCategory: frame.frameCategory,
+          frameSize: frame.frameSize,
+          framePriceRub: frame.framePriceRub,
+          fitScore: frame.fitScore,
+          useCase: frame.useCase,
+        })),
+      });
+
+      if (!lead.ok) {
+        setStage('idle');
+        setError(text.leadError);
+        trackEvent(AnalyticsEvent.ServiceCheckoutSubmitFailed, {
+          source: draft.sourcePage,
+          selected_frame_count: draft.selectedFrames.length,
+          store_choice_mode: draft.storePreference.mode,
+          locale: language,
+          error_code: errorCode(lead.reason),
+        });
+        return;
+      }
+
+      leadIdRef.current = lead.data.leadId;
     }
 
     setStage('payment');
     if (!idempotencyKeyRef.current) idempotencyKeyRef.current = getPaymentIdempotencyKey();
     const payment = await createPaymentIntent({
       offerCode: 'visit_preparation_v1',
-      leadId: lead.data.leadId,
+      leadId: leadIdRef.current,
       sourcePage: draft.sourcePage,
       idempotencyKey: idempotencyKeyRef.current,
     });
@@ -519,7 +527,13 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
             </div>
             <button type="button" onClick={() => void submit()} disabled={stage !== 'idle'} className="mt-7 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-paper disabled:cursor-wait disabled:opacity-65">
               <CreditCard size={17} />
-              {stage === 'lead' ? text.submittingLead : stage === 'payment' ? text.creatingPayment : text.submit}
+              {stage === 'lead'
+                ? text.submittingLead
+                : stage === 'payment'
+                  ? text.creatingPayment
+                  : leadIdRef.current
+                    ? text.retryPayment
+                    : text.submit}
             </button>
             <p className="mt-4 flex gap-2 text-xs leading-5 text-vilu-paper/68"><CheckCircle2 className="shrink-0 text-vilu-lime" size={17} /> {text.testDisclosure}</p>
             {storageWarning && <p className="mt-4 rounded-2xl bg-vilu-paper/8 p-4 text-xs leading-5 text-vilu-paper">{text.storageWarning}</p>}

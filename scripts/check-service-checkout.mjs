@@ -11,6 +11,7 @@ const [
   draftService,
   paymentTypes,
   paymentFunction,
+  paymentStatus,
   tryOn,
   analytics,
 ] = await Promise.all([
@@ -18,6 +19,7 @@ const [
   read('src/services/serviceCheckout.ts'),
   read('src/types/backend.ts'),
   read('supabase/functions/create-payment-intent/index.ts'),
+  read('src/pages/PaymentStatus.tsx'),
   read('src/pages/TryOnPilot.tsx'),
   read('src/lib/analyticsEvents.ts'),
 ]);
@@ -96,6 +98,12 @@ assert.match(paymentFunction, /provider: 'none'/);
 const leadCall = checkout.indexOf('await submitVisitLead(');
 const paymentCall = checkout.indexOf('await createPaymentIntent(');
 assert.ok(leadCall > -1 && paymentCall > leadCall, 'lead must be created before payment intent');
+assert.match(checkout, /const leadIdRef = useRef\(''\)/);
+assert.match(checkout, /if \(!leadIdRef\.current\)/);
+assert.match(checkout, /leadId: leadIdRef\.current/);
+assert.match(paymentStatus, /\[0, 2_000, 5_000, 10_000, 20_000\]/);
+assert.match(paymentStatus, /clearPollTimer/);
+assert.match(paymentStatus, /pollingExhausted/);
 assert.match(checkout, /consentPersonalData: true/);
 assert.doesNotMatch(checkout, /localStorage|sessionStorage|URLSearchParams/);
 

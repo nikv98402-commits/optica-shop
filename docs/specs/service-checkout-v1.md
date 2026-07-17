@@ -871,7 +871,7 @@ tests begin after validation IDs and retry state are stable. `package.json` and
 
 ## Implementation Tasks
 
-- [ ] **T1 (P1, human: ~4h / Codex: ~60min) — Checkout hardening — Preserve lead identity and make validation accessible**
+- [x] **T1 (P1, human: ~4h / Codex: ~60min) — Checkout hardening — Preserve lead identity and make validation accessible**
   - Files: `src/pages/Checkout.tsx`.
   - Dependencies: none.
   - Verify: invalid field focus, linked errors, duplicate-submit guard, lead failure,
@@ -883,7 +883,7 @@ tests begin after validation IDs and retry state are stable. `package.json` and
   Add field-specific validation, a focused summary, `aria-invalid`,
   `aria-describedby`, and error preservation without clearing user input.
 
-- [ ] **T2 (P1, human: ~3h / Codex: ~45min) — Payment status — Add bounded polling and deterministic cleanup**
+- [x] **T2 (P1, human: ~3h / Codex: ~45min) — Payment status — Add bounded polling and deterministic cleanup**
   - Files: `src/pages/PaymentStatus.tsx`.
   - Dependencies: none for implementation; merge before final status tests.
   - Verify: fake-clock schedule, terminal stop, unmount cleanup, stale-response guard,
@@ -894,7 +894,7 @@ tests begin after validation IDs and retry state are stable. `package.json` and
   manual status check instead of polling indefinitely. Keep the prepared shortlist as
   the primary success destination.
 
-- [ ] **T3 (P1, human: ~6h / Codex: ~90min) — Automated coverage — Add Vitest, RTL, and Playwright**
+- [x] **T3 (P1, human: ~6h / Codex: ~90min) — Automated coverage — Add Vitest, RTL, and Playwright**
   - Files: `package.json`, `package-lock.json`, `vitest.config.ts`,
     `playwright.config.ts`, `src/test/setup.ts`,
     `src/pages/__tests__/Checkout.test.tsx`,
@@ -908,7 +908,7 @@ tests begin after validation IDs and retry state are stable. `package.json` and
   every code path in the coverage map, RU/EN, 390 px and 1440 px, double click,
   payment-only retry, polling, terminal states, and horizontal overflow.
 
-- [ ] **T4 (P2, human: ~2h / Codex: ~25min) — Contract documentation — Record the hardened state machine and QA commands**
+- [x] **T4 (P2, human: ~2h / Codex: ~25min) — Contract documentation — Record the hardened state machine and QA commands**
   - Files: `docs/payments/yookassa-integration.md`, this specification.
   - Dependencies: T1-T3.
   - Verify: another engineer can reproduce the retry and polling contracts without
