@@ -36,8 +36,8 @@ serve(async (req) => {
   if (
     !body
     || body.offerCode !== OFFER_CODE
+    || !isUuid(body.leadId)
     || !isUuid(body.idempotencyKey)
-    || (body.leadId && !isUuid(body.leadId))
     || !['/tryon', '/products'].includes(body.sourcePage || '')
   ) {
     return json({ error: 'validation_failed' }, 400);
@@ -51,7 +51,7 @@ serve(async (req) => {
   const insert = await supabase
     .from('payment_intents')
     .upsert({
-      lead_id: body.leadId || null,
+      lead_id: body.leadId,
       service_type: 'visit_preparation',
       offer_code: OFFER_CODE,
       amount_rub: OFFER_PRICE_RUB,

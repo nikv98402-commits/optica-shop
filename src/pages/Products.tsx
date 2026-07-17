@@ -8,6 +8,7 @@ interface ProductsProps {
   onNavigate: (page: string, productId?: string) => void;
   fittingCart: string[];
   onToggleFitting: (id: string) => void;
+  onStartCheckout: () => void;
 }
 
 const categories = [
@@ -54,6 +55,8 @@ const productsCopy = {
     details: 'Подробнее',
     tryOn: 'Примерить',
     subscription: 'Подписка',
+    prepareVisit: 'Подготовить визит',
+    selectionLimit: 'До 3 оправ',
   },
   en: {
     heroLabel: 'Fitting catalog',
@@ -91,10 +94,12 @@ const productsCopy = {
     details: 'Details',
     tryOn: 'Try on',
     subscription: 'Subscription',
+    prepareVisit: 'Prepare a visit',
+    selectionLimit: 'Up to 3 frames',
   },
 };
 
-export function Products({ onNavigate, fittingCart, onToggleFitting }: ProductsProps) {
+export function Products({ onNavigate, fittingCart, onToggleFitting, onStartCheckout }: ProductsProps) {
   const { language } = useLanguage();
   const copy = productsCopy[language];
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -136,7 +141,7 @@ export function Products({ onNavigate, fittingCart, onToggleFitting }: ProductsP
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-vilu-ink/58">{copy.inFitting}</p>
-                <p className="mt-1 text-4xl font-black text-vilu-ink">{fittingCart.length} / 5</p>
+                <p className="mt-1 text-4xl font-black text-vilu-ink">{fittingCart.length} / 3</p>
               </div>
               <div className="rounded-full bg-vilu-lime px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink">{copy.faceFitReady}</div>
             </div>
@@ -148,6 +153,15 @@ export function Products({ onNavigate, fittingCart, onToggleFitting }: ProductsP
                 </div>
               ))}
             </div>
+            <p className="mt-4 text-xs font-bold uppercase tracking-[0.14em] text-vilu-ink/55">{copy.selectionLimit}</p>
+            <button
+              type="button"
+              onClick={onStartCheckout}
+              disabled={fittingCart.length === 0}
+              className="mt-4 w-full rounded-full bg-vilu-lime px-5 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper disabled:cursor-not-allowed disabled:bg-vilu-paper disabled:text-vilu-ink/45"
+            >
+              {copy.prepareVisit}
+            </button>
           </div>
         </div>
       </section>

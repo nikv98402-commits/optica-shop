@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 import { getPaymentStatus, simulateLocalPaymentStatus } from '../services/paymentService';
+import { readServiceCheckoutDraft } from '../services/serviceCheckout';
 import type { PaymentIntentStatus, PublicPaymentStatusResponse } from '../types/backend';
 
 type PaymentPageMode = 'return' | 'success' | 'failed';
@@ -10,6 +11,7 @@ type PaymentPageMode = 'return' | 'success' | 'failed';
 interface PaymentStatusProps {
   mode: PaymentPageMode;
   onNavigate: (page: string) => void;
+  onOpenStores: () => void;
 }
 
 const copy = {
@@ -32,6 +34,12 @@ const copy = {
     retry: 'Проверить еще раз',
     demoSuccess: 'Показать успешный тест',
     demoFail: 'Показать неуспешный тест',
+    selection: 'Ваш подбор',
+    store: 'Салон',
+    city: 'Город',
+    later: 'Вы выберете салон позже',
+    nextSuccess: 'Продолжить к салонам',
+    nextFailed: 'Вернуться к оформлению',
   },
   en: {
     test: 'Test mode',
@@ -52,6 +60,12 @@ const copy = {
     retry: 'Check again',
     demoSuccess: 'Show successful test',
     demoFail: 'Show failed test',
+    selection: 'Your selection',
+    store: 'Store',
+    city: 'City',
+    later: 'You will choose a store later',
+    nextSuccess: 'Continue to stores',
+    nextFailed: 'Back to checkout',
   },
 };
 
@@ -61,7 +75,7 @@ function requestedStatus(mode: PaymentPageMode): PaymentIntentStatus | null {
   return null;
 }
 
-export function PaymentStatus({ mode, onNavigate }: PaymentStatusProps) {
+export function PaymentStatus({ mode, onNavigate, onOpenStores }: PaymentStatusProps) {
   const { language } = useLanguage();
   const text = copy[language];
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -70,6 +84,7 @@ export function PaymentStatus({ mode, onNavigate }: PaymentStatusProps) {
   const [receipt, setReceipt] = useState<PublicPaymentStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(mode === 'return');
   const [hasError, setHasError] = useState(false);
+  const checkoutDraft = useMemo(() => readServiceCheckoutDraft(), []);
 
   const loadStatus = async () => {
     setIsLoading(true);
@@ -126,11 +141,26 @@ export function PaymentStatus({ mode, onNavigate }: PaymentStatusProps) {
   const Icon = success ? CheckCircle2 : failed || hasError ? AlertCircle : Clock3;
   const title = hasError ? text.unknownTitle : success ? (isDemo ? text.demoSuccessTitle : text.successTitle) : failed ? text.failedTitle : text.pendingTitle;
   const body = hasError ? text.unknownBody : success ? (isDemo ? text.demoSuccessBody : text.successBody) : failed ? text.failedBody : text.pendingBody;
+  const nextPage = checkoutDraft ? 'checkout' : 'tryon';
+  const nextLabel = success ? text.nextSuccess : failed || hasError ? text.nextFailed : text.back;
+  const storeSummary = checkoutDraft?.storePreference.mode === 'store'
+    ? `${text.store}: ${checkoutDraft.storePreference.storeName}`
+    : checkoutDraft?.storePreference.mode === 'city'
+      ? `${text.city}: ${checkoutDraft.storePreference.city}`
+      : text.later;
 
   const showDemoState = (next: 'success' | 'failed') => {
     const state: PaymentIntentStatus = next === 'success' ? 'paid' : 'failed';
     simulateLocalPaymentStatus(publicToken, state);
     window.location.href = `/payment/${next}?token=${encodeURIComponent(publicToken)}`;
+  };
+
+  const continueJourney = () => {
+    if (success) {
+      onOpenStores();
+      return;
+    }
+    onNavigate(nextPage);
   };
 
   return (
@@ -146,8 +176,8 @@ export function PaymentStatus({ mode, onNavigate }: PaymentStatusProps) {
           <p className="mt-5 max-w-2xl text-base leading-7 text-vilu-ink/70 md:text-lg">{isLoading ? text.pendingBody : body}</p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <button type="button" onClick={() => onNavigate('tryon')} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink">
-              {text.back} <ArrowRight size={16} />
+            <button type="button" onClick={continueJourney} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink">
+              {nextLabel} <ArrowRight size={16} />
             </button>
             {!success && !failed && !hasError && (
               <button type="button" onClick={() => void loadStatus()} className="inline-flex items-center justify-center gap-2 rounded-full bg-vilu-card px-6 py-4 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink ring-1 ring-vilu-ink/10">
@@ -162,6 +192,18 @@ export function PaymentStatus({ mode, onNavigate }: PaymentStatusProps) {
           <p className="mt-8 text-xs font-black uppercase tracking-[0.16em] text-vilu-lime">{text.price}</p>
           <p className="mt-2 text-5xl font-black">429 ₽</p>
           <p className="mt-6 text-sm leading-6 text-vilu-paper/75">{text.noCharge}</p>
+
+          {checkoutDraft && (
+            <div className="mt-7 border-t border-white/10 pt-6">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-lime">{text.selection}</p>
+              <div className="mt-3 grid gap-2">
+                {checkoutDraft.selectedFrames.map((frame) => (
+                  <p key={frame.frameId} className="rounded-2xl bg-vilu-paper/8 px-4 py-3 text-sm font-bold">{frame.frameName}</p>
+                ))}
+              </div>
+              <p className="mt-4 text-sm leading-6 text-vilu-paper/70">{storeSummary}</p>
+            </div>
+          )}
 
           {isDemo && mode === 'return' && (
             <div className="mt-8 grid gap-3">

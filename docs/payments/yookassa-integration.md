@@ -2,7 +2,7 @@
 
 Status: safe test contour implemented, real charging is not enabled
 
-Last reviewed: 2026-07-16
+Last reviewed: 2026-07-17
 
 Owner flow: `visit_preparation` / "Подготовить подбор к визиту"  
 Pilot price: 429 RUB
@@ -21,7 +21,12 @@ The frontend remains React/Vite on GitHub Pages. Payment creation, provider secr
 
 ### Already implemented
 
-- Test payment UI and safe analytics events in `src/pages/TryOnPilot.tsx`.
+- One service checkout at `/checkout` for entry from `/products`, product detail, and `/tryon`.
+- A versioned, 24-hour shortlist draft in `src/services/serviceCheckout.ts`.
+- The draft contains only 1-3 frame references and a store/city/later preference. It never contains a name, phone, email, messenger handle, or free-text contact.
+- Contact and consent exist only in React memory for the active checkout page.
+- The server creates the lead before it accepts a payment-intent request.
+- Test payment UI and safe analytics events in `src/pages/Checkout.tsx`.
 - Frontend payment adapter in `src/services/paymentService.ts`.
 - Shared contracts in `src/types/backend.ts`.
 - Server-owned 429 RUB offer in `supabase/functions/create-payment-intent/index.ts`.
@@ -31,6 +36,19 @@ The frontend remains React/Vite on GitHub Pages. Payment creation, provider secr
 - `payment_intents` table and enum states in `supabase/migrations/20260715120000_create_visit_preparation_backend.sql`.
 - RLS blocks direct public access to payment and lead tables.
 - Face photos stay in the browser and are not part of payment payloads.
+
+### Unified checkout contract
+
+1. The catalog or try-on flow normalizes 1-3 frames into `ServiceCheckoutDraft`.
+2. The frontend may persist that non-sensitive draft for 24 hours so a redirect or refresh can restore context.
+3. The checkout collects an optional name, one contact channel/value, and explicit consent in component state only.
+4. `submitVisitLead` validates the payload and creates a lead. No contact value is placed in a URL, browser storage, clipboard fallback, or analytics.
+5. Only a successful lead result supplies the required `leadId` to `create-payment-intent`.
+6. The Edge Function validates the lead ID and idempotency key, then writes a test intent with the server-owned amount of 429 RUB.
+7. The current provider remains `none`; no real payment request or card charge occurs.
+8. Payment status pages restore only the shortlist and store preference from the safe draft.
+
+Safe analytics dimensions are limited to source page, selected-frame count, store-choice mode, locale, offer code, provider mode, and non-sensitive error code. Internal lead IDs, payment IDs, public tokens, contact values, store addresses, and exact coordinates are forbidden.
 
 ### Not implemented yet
 

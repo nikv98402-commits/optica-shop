@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "smoke": "node scripts/smoke-routes.mjs",
+    "test:checkout": "node scripts/check-service-checkout.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
