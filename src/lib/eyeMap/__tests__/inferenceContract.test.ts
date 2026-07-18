@@ -4,6 +4,7 @@ import { validateEyeMapInferenceResult } from '../inferenceContract';
 const metadata = {
   modelVersion: 'eye-map-spike-1',
   artifactChecksum: 'sha256:abc123',
+  correlationId: 'eye-map-test-123',
   schemaVersion: 1 as const,
 };
 
@@ -95,6 +96,43 @@ describe('validateEyeMapInferenceResult', () => {
         'structures.left_iris.normalizedArea must be greater than 0 and at most 1',
         'structures.left_iris.points must be a non-empty array when present',
       ]),
+    });
+  });
+
+  it('rejects structures that carry confidence without geometry', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'success',
+      structures: {
+        left_iris: { confidence: 96 },
+        right_iris: { confidence: 95 },
+      },
+      limitations: [],
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining([
+        'structures.left_iris must include normalizedArea or points',
+        'structures.right_iris must include normalizedArea or points',
+      ]),
+    });
+  });
+
+  it('requires a non-sensitive correlation id', () => {
+    const metadataWithoutCorrelation = Object.fromEntries(
+      Object.entries(metadata).filter(([key]) => key !== 'correlationId'),
+    );
+    const result = validateEyeMapInferenceResult({
+      ...metadataWithoutCorrelation,
+      status: 'failure',
+      code: 'model_unavailable',
+      retryable: true,
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining(['correlationId is required']),
     });
   });
 

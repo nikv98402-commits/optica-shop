@@ -149,6 +149,7 @@ type EyeMapInferenceResult =
       limitations: string[];
       modelVersion: string;
       artifactChecksum: string;
+      correlationId: string;
       schemaVersion: 1;
     }
   | {
@@ -158,6 +159,7 @@ type EyeMapInferenceResult =
       limitations: string[];
       modelVersion: string;
       artifactChecksum: string;
+      correlationId: string;
       schemaVersion: 1;
     }
   | {
@@ -166,6 +168,7 @@ type EyeMapInferenceResult =
       retryable: boolean;
       modelVersion: string;
       artifactChecksum: string;
+      correlationId: string;
       schemaVersion: 1;
     };
 ```
@@ -193,6 +196,7 @@ interface CreatePhotoSessionResponse {
 
 interface EyeMapProductResult {
   sessionId: string;
+  correlationId: string;
   status: 'succeeded' | 'partial' | 'failed';
   quality: 'good' | 'borderline' | 'unavailable';
   overlayUrl?: string;

@@ -109,6 +109,10 @@ function parseStructure(
     }
   }
 
+  if (normalizedArea === undefined && points === undefined) {
+    issues.push(`structures.${name} must include normalizedArea or points`);
+  }
+
   if (issues.length > 0) {
     return null;
   }
@@ -164,6 +168,9 @@ export function validateEyeMapInferenceResult(
   }
   if (!isNonEmptyString(input.artifactChecksum)) {
     issues.push('artifactChecksum is required');
+  }
+  if (!isNonEmptyString(input.correlationId)) {
+    issues.push('correlationId is required');
   }
   if (input.schemaVersion !== 1) {
     issues.push('schemaVersion must equal 1');

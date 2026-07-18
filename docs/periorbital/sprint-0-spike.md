@@ -66,6 +66,7 @@ type EyeMapInferenceResult =
       structures: Record<string, unknown>;
       modelVersion: string;
       artifactChecksum: string;
+      correlationId: string;
     }
   | {
       status: 'partial';
@@ -74,6 +75,7 @@ type EyeMapInferenceResult =
       limitations: string[];
       modelVersion: string;
       artifactChecksum: string;
+      correlationId: string;
     }
   | {
       status: 'failure';
@@ -81,6 +83,7 @@ type EyeMapInferenceResult =
       retryable: boolean;
       modelVersion: string;
       artifactChecksum: string;
+      correlationId: string;
     };
 ```
 

@@ -54,6 +54,7 @@ export type EyeMapStructures = Partial<
 export interface EyeMapArtifactMetadata {
   modelVersion: string;
   artifactChecksum: string;
+  correlationId: string;
   schemaVersion: 1;
 }
 
@@ -93,6 +94,7 @@ export interface EyeMapInferenceError {
 
 export interface EyeMapProductResult {
   sessionId: string;
+  correlationId: string;
   status: 'succeeded' | 'partial' | 'failed';
   quality: 'good' | 'borderline' | 'unavailable';
   overlayUrl?: string;
