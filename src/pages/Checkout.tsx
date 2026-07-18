@@ -153,6 +153,21 @@ const copy = {
   },
 };
 
+const useCaseCopy: Record<string, { ru: string; en: string }> = {
+  'Для офиса': { ru: 'Для офиса', en: 'For office' },
+  'На каждый день': { ru: 'На каждый день', en: 'Everyday' },
+  'Солнцезащитные': { ru: 'Солнцезащитные', en: 'Sunglasses' },
+  'Для компьютера': { ru: 'Для компьютера', en: 'For computer' },
+  'Выразительная оправа': { ru: 'Выразительная оправа', en: 'Statement frame' },
+  'Минимализм': { ru: 'Минимализм', en: 'Minimalism' },
+};
+
+function formatUseCase(value: string | undefined, language: 'ru' | 'en') {
+  if (!value) return '';
+  const match = useCaseCopy[value] ?? Object.values(useCaseCopy).find((entry) => entry.en === value);
+  return match?.[language] ?? value;
+}
+
 function errorCode(reason: string) {
   return ['backend_disabled', 'privacy_payload_rejected', 'validation_failed', 'request_failed'].includes(reason)
     ? reason
@@ -419,7 +434,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                       <p className="text-xs font-black uppercase tracking-[0.14em] text-vilu-green">{frame.frameBrand || 'ViLu'}</p>
                       <h3 className="mt-1 text-xl font-black">{frame.frameName}</h3>
                       <p className="mt-2 text-sm text-vilu-ink/60">
-                        {[frame.frameSize, frame.useCase, frame.fitScore ? `Face-fit ${frame.fitScore}/100` : ''].filter(Boolean).join(' · ')}
+                        {[frame.frameSize, formatUseCase(frame.useCase, language), frame.fitScore ? `Face-fit ${frame.fitScore}/100` : ''].filter(Boolean).join(' · ')}
                       </p>
                       <p className="mt-2 text-xs font-bold text-vilu-ink/55">{text.framePrice}: {text.inStore}</p>
                     </div>

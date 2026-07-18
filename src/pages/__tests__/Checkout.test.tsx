@@ -140,4 +140,27 @@ describe('Checkout', () => {
     expect(createPaymentIntent).not.toHaveBeenCalled();
     open.mockRestore();
   });
+
+  it('localizes a stored Russian use case in the English checkout', () => {
+    window.localStorage.setItem('vilu_language', 'en');
+    const englishDraft: ServiceCheckoutDraft = {
+      ...draft,
+      selectedFrames: [{
+        frameId: 'aurora',
+        frameName: 'Aurora Crystal',
+        frameSize: '49-19-140',
+        fitScore: 87,
+        useCase: 'Для офиса',
+      }],
+    };
+
+    render(
+      <LanguageProvider>
+        <Checkout draft={englishDraft} onDraftChange={vi.fn()} onBack={vi.fn()} />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByText('49-19-140 · For office · Face-fit 87/100')).toBeVisible();
+    expect(screen.queryByText(/Для офиса/)).not.toBeInTheDocument();
+  });
 });
