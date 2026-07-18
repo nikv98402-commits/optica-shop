@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vilu.store/schemas/eye-map-golden-set-governance-v1.json",
+  "title": "ViLu Eye Map Sprint 0 golden-set governance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "datasetVersion",
+    "recordCount",
+    "consentBasis",
+    "storageLocation",
+    "encryptionVerified",
+    "deletionControlsVerified",
+    "records"
+  ],
+  "properties": {
+    "datasetVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recordCount": {
+      "const": 150
+    },
+    "consentBasis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "storageLocation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Private encrypted offline location. Never a public-repository path."
+    },
+    "encryptionVerified": {
+      "const": true
+    },
+    "deletionControlsVerified": {
+      "const": true
+    },
+    "records": {
+      "type": "array",
+      "minItems": 150,
+      "maxItems": 150,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subjectPseudonym",
+          "photoChecksum",
+          "consentRecordedAt",
+          "consentScope",
+          "qualityGate",
+          "cohortTags",
+          "deletionState"
+        ],
+        "properties": {
+          "subjectPseudonym": {
+            "type": "string",
+            "minLength": 1
+          },
+          "photoChecksum": {
+            "type": "string",
+            "pattern": "^sha256:[a-fA-F0-9]{64}$"
+          },
+          "consentRecordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "consentScope": {
+            "const": "offline-eye-map-validation"
+          },
+          "qualityGate": {
+            "enum": ["passed", "rejected"]
+          },
+          "cohortTags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "deletionState": {
+            "enum": ["retained", "deletion_requested", "deleted"]
+          }
+        }
+      }
+    }
+  }
+}

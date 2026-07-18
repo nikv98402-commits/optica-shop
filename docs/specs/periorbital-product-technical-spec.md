@@ -65,13 +65,18 @@ The production flag remains off until all of the following are recorded:
 
 1. Code, package, dataset, weights, and paper are pinned in the asset manifest.
 2. Licences for code, data, and weights are independently approved.
-3. A consented 100-200 image internal test set exists.
+3. A governed set of exactly 150 explicitly consented real photos exists.
 4. Pipeline success is at least 90% after the quality gate.
 5. End-to-end p95 is at most 30 seconds in pilot-like infrastructure.
 6. NaN, zero-coordinate, missing-iris, missing-brow, and impossible-mask outputs
    become explicit failures.
 7. Medical/legal reviewers approve RU and EN copy, red-flag flow, consent,
    retention, and deletion wording.
+8. Eye Map improves usable results by at least 10 percentage points or reduces
+   retakes by at least 20% relative to the current MediaPipe baseline.
+9. No unexplained cohort regression exceeds five percentage points.
+10. Two blinded reviewers complete the fixed rubric and a third reviewer
+    adjudicates disagreements.
 
 ## Architecture decision
 
@@ -84,6 +89,33 @@ The production flag remains off until all of the following are recorded:
 - Every output carries `modelVersion`, `artifactChecksum`, `schemaVersion`, and
   a non-sensitive `correlationId`.
 - Feature flag `VITE_FEATURE_EYE_MAP` defaults to `false`.
+- Sprint 0 runs offline in a separate private `vilu-eye-map-ml` repository.
+- The upstream package is wrapped by a strict ViLu adapter and controlled fork.
+- No upload API, cloud photo processing, or user-facing route is implemented
+  before a signed Go ADR.
+
+## Engineering review decisions
+
+1. **Scope:** Sprint 0 is an offline validation spike; production architecture
+   remains a target, not current work.
+2. **Value gate:** Eye Map must improve usable results by at least 10 percentage
+   points or reduce retakes by at least 20%.
+3. **Dataset:** benchmark exactly 150 consented real photos with governed
+   deletion and separate identity records.
+4. **Dependency boundary:** use a strict adapter and controlled fork instead of
+   importing the upstream package into product code.
+5. **Repository boundary:** ML code lives in private `vilu-eye-map-ml`;
+   `optica-shop` keeps contracts and documentation.
+6. **Processing boundary:** Sprint 0 is offline on controlled encrypted storage.
+7. **Result model:** every inference is `success`, `partial`, or `failure`;
+   missing data is never represented by a valid-looking zero.
+8. **Review:** two independent blinded reviewers use one rubric, with a third
+   adjudicator.
+9. **Performance:** Sprint 0 reference-CPU p95 is at most 30 seconds; a later
+   user pilot requires model p95 at most 5 seconds and end-to-end p95 at most
+   10 seconds.
+10. **Release control:** a signed Go/No-go ADR is mandatory before Sprint 1;
+    production contains no Eye Map route or loaded ML code until then.
 
 ## State model
 
@@ -105,7 +137,44 @@ disabled
 Reloads must resume from a non-sensitive session identifier. Repeated completion
 requests must use an idempotency key and create at most one inference job.
 
-## Public contract (target after Sprint 0)
+## Private inference-adapter contract (Sprint 0)
+
+The isolated adapter emits only a versioned discriminated result:
+
+```ts
+type EyeMapInferenceResult =
+  | {
+      status: 'success';
+      structures: EyeMapStructures;
+      limitations: string[];
+      modelVersion: string;
+      artifactChecksum: string;
+      schemaVersion: 1;
+    }
+  | {
+      status: 'partial';
+      structures: EyeMapStructures;
+      missing: EyeMapStructureName[];
+      limitations: string[];
+      modelVersion: string;
+      artifactChecksum: string;
+      schemaVersion: 1;
+    }
+  | {
+      status: 'failure';
+      code: EyeMapInferenceFailureCode;
+      retryable: boolean;
+      modelVersion: string;
+      artifactChecksum: string;
+      schemaVersion: 1;
+    };
+```
+
+Runtime validation lives in `src/lib/eyeMap/inferenceContract.ts`. Empty,
+zero-area, non-finite, missing, and schema-incompatible artifacts cannot be
+silently treated as success.
+
+## Public product contract (target after Sprint 0)
 
 ```ts
 interface CreatePhotoSessionRequest {
@@ -122,7 +191,7 @@ interface CreatePhotoSessionResponse {
   correlationId: string;
 }
 
-interface EyeMapResult {
+interface EyeMapProductResult {
   sessionId: string;
   status: 'succeeded' | 'partial' | 'failed';
   quality: 'good' | 'borderline' | 'unavailable';
@@ -130,11 +199,14 @@ interface EyeMapResult {
   normalizedFeatures?: Record<string, number>;
   limitations: string[];
   modelVersion: string;
+  artifactChecksum: string;
   schemaVersion: 1;
 }
 ```
 
-Physical millimetres are intentionally absent.
+The adapter and product contracts are deliberately different. The BFF may map
+validated `success` to product-level `succeeded`, but the private adapter does
+not expose sessions or URLs. Physical millimetres are intentionally absent.
 
 ## Trust boundaries
 
@@ -165,11 +237,13 @@ Physical millimetres are intentionally absent.
 1. Pin source artifacts and licences in
    `docs/periorbital/asset-manifest.json`.
 2. Reproduce package `0.1.3` in an isolated Python environment.
-3. Build a consented 100-200 image golden set and record its governance.
-4. Benchmark CPU/GPU latency, memory, success, and failure distribution.
+3. Build the governed 150-photo golden set and verify deletion controls.
+4. Benchmark MediaPipe and Eye Map on the same inputs, including usable-result
+   and retake rates, cohorts, CPU latency, memory, model size, and failures.
 5. Add post-processing checks for two irises, brow availability, mask area,
    finite values, and compatible output schema.
-6. Produce a signed Go/No-go ADR.
+6. Run the two-reviewer blinded rubric and adjudicate disagreements.
+7. Produce a signed Go/No-go ADR.
 
 ### Sprint 1: consent and capture
 
@@ -210,6 +284,36 @@ vision passport, then explicitly consented booking.
 | E2E | Retake, consent, resume, timeout, fallback, deletion, RU/EN, mobile |
 | Security | MIME spoofing, oversized/decompression inputs, authz, URL expiry, PII log scan |
 
+## Sprint 0 execution lanes
+
+```mermaid
+flowchart TD
+    L1["Lane 1: licences and artifacts"] --> G["Gate review"]
+    L2["Lane 2: adapter and controlled fork"] --> G
+    L3["Lane 3: golden-set governance"] --> B["Comparative benchmark"]
+    L2 --> B
+    L4["Lane 4: blinded review tooling"] --> B
+    G --> ADR["Signed Go/No-go ADR"]
+    B --> ADR
+```
+
+Lanes 1, 2, 3, and 4 may begin in parallel. The benchmark is sequential after
+the adapter and golden set are ready. Sprint 1 is sequential after the ADR.
+
+## Engineering acceptance matrix
+
+| Concern | Evidence | Blocking criterion |
+| --- | --- | --- |
+| Licence | Approved manifest with versions and checksums | Any unresolved weight right/checksum |
+| Privacy | Consent ledger and deletion test | Missing consent, owner, retention, or deletion |
+| Contract | Adapter unit and failure-injection tests | Ambiguous status or zero sentinel |
+| Product value | Comparative MediaPipe/Eye Map report | Neither value threshold is met |
+| Fairness | Per-cohort report | Unexplained regression over 5 pp |
+| Reliability | Success and failure distribution | Success below 90% |
+| Performance | CPU p50/p95, peak memory, model size | Sprint 0 p95 over 30 seconds |
+| Human quality | Blinded rubric and adjudication | Review incomplete |
+| Product safety | Existing ViLu CI and feature flag check | Existing flow regresses or route leaks |
+
 ## Rollback
 
 The Sprint 0 code is inert by default. Rollback is a normal commit revert. If a
@@ -224,3 +328,17 @@ Face-fit, catalogue, and optical-store flows remain available.
 - Real millimetre measurements from selfies.
 - Notifications, partner sharing, or longitudinal photo history.
 - Downloading model weights or the 190 MB dataset into Git.
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+| --- | --- | --- | ---: | --- | --- |
+| CEO Review | Not run in this pass | Product premise already established | 0 | NOT RUN | - |
+| Design Review | Not run in this pass | No user-facing UI is authorized | 0 | NOT RUN | - |
+| Eng Review | Requested | Lock Sprint 0 architecture and evidence gates | 1 | CLEAR (PLAN) | 10 decisions folded, 0 unresolved |
+| Diff Review | Not run | Documentation-only plan update | 0 | NOT RUN | - |
+
+- **VERDICT:** ENG CLEARED - Sprint 0 is executable; Sprint 1 remains blocked
+  until the signed ADR records `Go`.
+
+NO UNRESOLVED DECISIONS

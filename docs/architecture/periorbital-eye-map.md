@@ -1,15 +1,65 @@
 # Eye Map architecture and trust boundaries
 
-## Component diagram
+## Current architecture: Sprint 0
+
+Sprint 0 is an offline experiment, not a production vertical slice.
+
+```mermaid
+flowchart LR
+    P["Consented photo set"] --> MP["Current MediaPipe baseline"]
+    P --> E["Eye Map adapter"]
+    E --> F["Controlled fork in private ML repo"]
+    MP --> B["Comparative benchmark"]
+    F --> B
+    B --> ADR["Signed Go/No-go ADR"]
+    ADR -->|No-go| KEEP["Keep current ViLu MVP"]
+    ADR -->|Go| PLAN["Authorize Sprint 1 planning"]
+```
+
+Repository boundary:
+
+- `optica-shop`: public contracts, feature flag, architecture, and tests;
+- private `vilu-eye-map-ml`: pinned Python runtime, adapter, controlled fork,
+  artifact checks, and benchmark code;
+- encrypted controlled storage: consented photos and all derived assets.
+
+Sprint 0 has no browser upload, BFF, queue, cloud inference, or user-facing Eye
+Map route. Production continues to use the existing browser MediaPipe engine.
+
+## Sprint 0 sequence
+
+```mermaid
+sequenceDiagram
+    participant O as Dataset owner
+    participant G as Encrypted golden set
+    participant M as MediaPipe baseline
+    participant E as Eye Map adapter
+    participant R as Review and benchmark
+    participant A as ADR approvers
+
+    O->>G: Add consented photo and governance record
+    G->>M: Run current baseline
+    G->>E: Run pinned Eye Map artifacts
+    M-->>R: Baseline output, latency, retake reason
+    E-->>R: Success, partial, or explicit failure
+    R->>R: Compare metrics and blinded rubric
+    R->>A: Evidence package
+    A-->>R: Signed Go or No-go
+```
+
+## Target architecture after Go
+
+The following is a target for later design. It is not authorized for
+implementation until the Go/No-go ADR is signed.
 
 ```mermaid
 flowchart LR
     U["User browser"] --> MP["Existing MediaPipe precheck"]
     MP --> T["Existing try-on and Face-fit fallback"]
-    MP -->|eligible + feature enabled + consent| BFF["Supabase Edge Function / BFF"]
+    MP -->|eligible + flag + consent| BFF["Supabase Edge Function / BFF"]
     BFF --> OS["Private object storage"]
     BFF --> Q["Async job boundary"]
-    Q --> ML["Replaceable Python ML adapter"]
+    Q --> ML["Versioned Eye Map adapter"]
     ML --> OS
     ML --> DB["Supabase Postgres metadata"]
     BFF --> DB
@@ -18,46 +68,15 @@ flowchart LR
     U --> A["Allowlisted analytics"]
 ```
 
-The current frontend never imports the Python package. It talks to a versioned
-contract, so the model can be replaced without rewriting the product.
+The frontend never imports the Python package. It consumes a versioned result
+contract so the model can be replaced without rewriting the product.
 
-## Data flow
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant W as Web app
-    participant M as MediaPipe
-    participant B as BFF
-    participant S as Private storage
-    participant P as Python ML
-
-    U->>W: Select or capture photo
-    W->>M: Local precheck
-    alt precheck fails
-        M-->>W: Retake reason
-        W-->>U: Retake or continue existing try-on
-    else eligible and feature flag on
-        W-->>U: Purpose consent
-        U->>W: Grant selected purposes
-        W->>B: Create session
-        B-->>W: Short-lived signed upload URL
-        W->>S: Upload directly
-        W->>B: Complete session with idempotency key
-        B->>P: Queue object key + pinned model version
-        P->>S: Read original, write derived assets
-        P-->>B: Versioned result or explicit failure
-        B-->>W: User-safe result
-        W-->>U: Baseline, limitations, next action
-    end
-```
-
-## State transitions
+## Target state transitions
 
 ```mermaid
 stateDiagram-v2
     [*] --> Disabled
-    Disabled --> Precheck: feature enabled
+    Disabled --> Precheck: ADR Go and feature enabled
     Precheck --> Blocked: unsuitable photo
     Blocked --> Precheck: retake
     Blocked --> Fallback: continue without Eye Map
@@ -80,10 +99,14 @@ stateDiagram-v2
     Fallback --> [*]
 ```
 
-## Failure codes
+## Result contract invariant
 
-The ML adapter must return machine-readable codes. UI copy is resolved in the
-web app and never exposes internal stack traces.
+The adapter returns exactly one discriminated status: `success`, `partial`, or
+`failure`. Missing structures are explicit. Invalid numbers, absent irises,
+absent brows, and empty masks can never become valid zero values. UI copy is
+resolved by the web app and never exposes internal stack traces.
+
+## Failure codes
 
 | Code | Recoverable | Handling |
 | --- | --- | --- |
@@ -95,13 +118,26 @@ web app and never exposes internal stack traces.
 | `schema_incompatible` | no | Disable Eye Map and alert engineering |
 | `consent_revoked` | no | Stop and delete by scope |
 
+## Trust boundaries
+
+| Boundary | Allowed | Forbidden |
+| --- | --- | --- |
+| Sprint 0 Git repos | Code, contracts, aggregate metrics | Photos, weights, PII |
+| Governance registry | Consent and deletion metadata | Model output in identity records |
+| Offline runner | Encrypted object ID, pinned model | Contact data and analytics |
+| Browser to analytics | Event, locale, reason code, latency bucket | Photo, answers, free text, measurements |
+| Browser to future BFF | Consented upload metadata | Secrets, provider credentials |
+| Future BFF to ML | Private object key, model version, correlation ID | User contact, questionnaire answers |
+| ML to future BFF | Masks, normalized features, explicit failure codes | Diagnosis, treatment eligibility |
+
 ## Privacy invariants
 
-1. Public buckets are forbidden.
-2. Signed URLs are short-lived and purpose-scoped.
-3. Original, thumbnail, mask, and overlay are separate assets with deletion
-   state.
+1. Sprint 0 photos remain on controlled encrypted storage.
+2. Photos and weights never enter Git.
+3. Identity/contact data is separate from image and output records.
 4. No identity embeddings are generated.
 5. Raw images and health-context values never enter analytics, URLs, logs, or
    partner payloads.
 6. Model and rule versions are recorded for reproducibility.
+7. Consent withdrawal deletes originals and all derived assets by scope.
+8. Public storage buckets are forbidden in any later pilot.
