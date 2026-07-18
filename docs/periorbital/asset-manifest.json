@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-18",
+  "approval": {
+    "status": "blocked",
+    "approvedAt": null,
+    "approvedBy": null,
+    "blockers": [
+      "Pin the Git repository commit SHA.",
+      "Record checksums and licence for every selected Hugging Face weight/config file.",
+      "Confirm dataset, weights, output classes, and preprocessing compatibility.",
+      "Complete legal review for commercial product use and attribution.",
+      "Create and govern a consented representative golden set."
+    ]
+  },
+  "artifacts": [
+    {
+      "id": "aiolab-periorbital-code",
+      "kind": "source",
+      "sourceUrl": "https://github.com/aiolab/periorbital-dataset",
+      "version": "main",
+      "checksum": null,
+      "license": "MIT",
+      "verified": false,
+      "notes": "Repository advertises an MIT licence; exact commit SHA is still required."
+    },
+    {
+      "id": "periorbital-package",
+      "kind": "python-package",
+      "sourceUrl": "https://pypi.org/project/periorbital-package/0.1.3/",
+      "version": "0.1.3",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "17b8382db684953e6b6c4bab719e7ee651fd21e9391b35eea563be70ac48f1d9",
+        "file": "periorbital_package-0.1.3.tar.gz"
+      },
+      "license": "MIT",
+      "verified": true,
+      "notes": "PyPI states Python >=3.8. Upstream documents hard failure when both irises are not segmented and zero brow coordinates when brow segmentation fails."
+    },
+    {
+      "id": "periorbital-dataset",
+      "kind": "dataset",
+      "sourceUrl": "https://zenodo.org/records/13916845",
+      "version": "v1",
+      "checksum": {
+        "algorithm": "md5",
+        "value": "6d4dedd89604696258f36048b809c0b9",
+        "file": "periorbital_dataset.zip"
+      },
+      "license": "CC-BY-4.0",
+      "verified": true,
+      "notes": "190.1 MB. Attribution and commercial-use interpretation require project legal review."
+    },
+    {
+      "id": "periorbital-model-weights",
+      "kind": "model",
+      "sourceUrl": "https://huggingface.co/grnahass/periorbital_segmentation/tree/main",
+      "version": null,
+      "checksum": null,
+      "license": null,
+      "verified": false,
+      "notes": "Do not download or deploy until exact files, checksums, configuration, preprocessing, output classes, and licence are recorded."
+    },
+    {
+      "id": "periorbital-paper",
+      "kind": "publication",
+      "sourceUrl": "https://arxiv.org/abs/2409.20407",
+      "version": "2409.20407",
+      "checksum": null,
+      "license": null,
+      "verified": true,
+      "notes": "Use as technical description, not as evidence that ViLu has clinical validity."
+    }
+  ]
+}
