@@ -6,9 +6,9 @@ Scope: Eye Map Sprint 0 production boundary and adjacent RU/EN customer flows
 
 ## Result
 
-Health score: 96/100
+Health score: 98/100
 
-The Sprint 0 boundary is intact: `/eye-map` does not expose an Eye Map product UI, the production feature flag remains off, and no ML dependency is included. The main try-on and checkout flows work on desktop and mobile without horizontal overflow.
+The Sprint 0 boundary is intact: `/eye-map` does not expose an Eye Map product UI, the production feature flag remains off, and no ML dependency is included. Eye Map benchmark counts and inference artifacts are now validated more strictly. The main try-on and checkout flows work on desktop and mobile without horizontal overflow.
 
 ## Browser coverage
 
@@ -25,6 +25,24 @@ Tested with the in-app Chromium browser:
 No runtime console errors were observed.
 
 ## Fixed findings
+
+### 1. Benchmark counts could exceed the governed photo set
+
+Severity: High
+
+Fix: the benchmark gate now rejects `qualityPassedImageCount` values above `governedPhotoCount`. Added a regression unit test.
+
+Commit: `3b9017c`
+
+### 2. Successful inference artifacts could omit geometry and correlation
+
+Severity: High
+
+Fix: successful structure results now require `normalizedArea` or landmark `points`, and every inference artifact requires a non-sensitive `correlationId`. Types, technical specs, and regression tests were updated together.
+
+Commit: `286333d`
+
+## Earlier fixed findings
 
 ### 1. Home page kept a Russian Vision care label in English mode
 
@@ -58,7 +76,7 @@ Commit: `ec139b6`
 
 ## Automated verification
 
-- `npm test -- --run`: 7 files, 36 tests passed
+- `npm test`: 7 files, 39 tests passed
 - `npm run typecheck`: passed
 - `npm run lint`: passed with 4 pre-existing Fast Refresh warnings
 - `npm run build`: passed
