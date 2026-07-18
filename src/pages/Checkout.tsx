@@ -389,6 +389,14 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
     );
   }
 
+  const submitButtonLabel = stage === 'lead'
+    ? text.submittingLead
+    : stage === 'payment'
+      ? text.creatingPayment
+      : checkoutAttempt
+        ? text.retryPayment
+        : text.submit;
+
   return (
     <div className="kinetic-surface min-h-screen px-4 py-10 text-vilu-ink md:px-6 md:py-14">
       <div className="mx-auto max-w-6xl">
@@ -521,7 +529,7 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
               <p className="mt-4 flex items-center gap-2 text-sm text-vilu-ink/58"><MapPin size={16} /> {text.storeHint}</p>
             </section>
 
-            <section className="rounded-[2rem] bg-vilu-card p-5 ring-1 ring-vilu-line md:p-8">
+            <section data-testid="checkout-contact-step" className="rounded-[2rem] bg-vilu-card p-5 ring-1 ring-vilu-line md:p-8">
               <h2 className="text-2xl font-black tracking-tight">{text.contact}</h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <label className="grid gap-2">
@@ -572,6 +580,22 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
                 <p id="checkout-consent-error" className="mt-2 text-sm font-bold text-red-700">{text.consentRequired}</p>
               )}
               <p className="mt-4 flex gap-2 text-sm leading-6 text-vilu-ink/60"><ShieldCheck className="mt-0.5 shrink-0 text-vilu-green" size={18} /> {text.safe}</p>
+              <button
+                data-testid="checkout-primary-cta"
+                type="button"
+                onClick={() => void submit()}
+                disabled={stage !== 'idle'}
+                className="mt-6 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper disabled:cursor-wait disabled:opacity-65"
+              >
+                <CreditCard size={17} />
+                {submitButtonLabel}
+              </button>
+              <p className="mt-3 flex gap-2 text-xs leading-5 text-vilu-ink/62">
+                <CheckCircle2 className="shrink-0 text-vilu-green" size={17} />
+                {text.testDisclosure}
+              </p>
+              {storageWarning && <p className="mt-4 rounded-2xl bg-vilu-paper p-4 text-xs leading-5 text-vilu-ink ring-1 ring-vilu-line">{text.storageWarning}</p>}
+              {error && <p role="alert" className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold leading-6 text-red-800 ring-1 ring-red-200">{error}</p>}
               {requestLocked && (
                 <p className="mt-4 rounded-2xl bg-vilu-lime/20 p-4 text-sm font-bold leading-6 text-vilu-ink ring-1 ring-vilu-lime/45">
                   {text.requestLocked}
@@ -590,19 +614,17 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
               <div className="flex justify-between gap-4 border-t border-white/10 pt-4"><span className="text-vilu-paper/65">{text.summaryService}</span><strong>429 ₽</strong></div>
               <div className="flex justify-between gap-4 border-t border-white/10 pt-5 text-xl"><span>{text.summaryNow}</span><strong>429 ₽</strong></div>
             </div>
-            <button type="button" onClick={() => void submit()} disabled={stage !== 'idle'} className="mt-7 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-paper disabled:cursor-wait disabled:opacity-65">
+            <button
+              type="button"
+              aria-label={language === 'ru' ? 'Быстрый переход к тестовой оплате' : 'Quick access to test payment'}
+              onClick={() => void submit()}
+              disabled={stage !== 'idle'}
+              className="mt-7 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-paper disabled:cursor-wait disabled:opacity-65"
+            >
               <CreditCard size={17} />
-              {stage === 'lead'
-                ? text.submittingLead
-                : stage === 'payment'
-                  ? text.creatingPayment
-                  : checkoutAttempt
-                    ? text.retryPayment
-                    : text.submit}
+              {submitButtonLabel}
             </button>
             <p className="mt-4 flex gap-2 text-xs leading-5 text-vilu-paper/68"><CheckCircle2 className="shrink-0 text-vilu-lime" size={17} /> {text.testDisclosure}</p>
-            {storageWarning && <p className="mt-4 rounded-2xl bg-vilu-paper/8 p-4 text-xs leading-5 text-vilu-paper">{text.storageWarning}</p>}
-            {error && <p role="alert" className="mt-4 rounded-2xl bg-red-950/55 p-4 text-sm font-bold leading-6 text-white">{error}</p>}
             <div className="mt-6 grid gap-2 border-t border-white/10 pt-5 text-xs text-vilu-paper/62">
               {text.deliverables.slice(0, 3).map((item) => <p key={item} className="flex gap-2"><Check size={15} className="shrink-0 text-vilu-lime" /> {item}</p>)}
             </div>
