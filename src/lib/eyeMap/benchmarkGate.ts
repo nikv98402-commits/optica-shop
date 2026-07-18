@@ -79,6 +79,7 @@ export function evaluateEyeMapBenchmark(
     input.governedPhotoCount >= 0 &&
     Number.isInteger(input.qualityPassedImageCount) &&
     input.qualityPassedImageCount >= 0 &&
+    input.qualityPassedImageCount <= input.governedPhotoCount &&
     Number.isInteger(input.pipelineSuccessCount) &&
     input.pipelineSuccessCount >= 0 &&
     input.pipelineSuccessCount <= input.qualityPassedImageCount &&
@@ -127,7 +128,8 @@ export function evaluateEyeMapBenchmark(
       id: 'input_integrity',
       passed: inputIntegrityPassed,
       actual: `quality=${input.qualityPassedImageCount}, success=${input.pipelineSuccessCount}, invalid=${input.invalidArtifactCount}, handled=${input.explicitlyHandledArtifactCount}`,
-      required: 'finite percentages and non-negative counts with valid numerators',
+      required:
+        'finite percentages and non-negative counts bounded by the governed set',
     },
     {
       id: 'artifacts',

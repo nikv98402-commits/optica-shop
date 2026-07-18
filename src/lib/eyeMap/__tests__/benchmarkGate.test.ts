@@ -112,4 +112,17 @@ describe('evaluateEyeMapBenchmark', () => {
     expect(result.decision).toBe('no-go');
     expect(result.failedGateIds).toContain('input_integrity');
   });
+
+  it('rejects a quality-passed count above the governed set', () => {
+    const result = evaluateEyeMapBenchmark(
+      passingInput({
+        governedPhotoCount: 150,
+        qualityPassedImageCount: 151,
+        pipelineSuccessCount: 140,
+      }),
+    );
+
+    expect(result.decision).toBe('no-go');
+    expect(result.failedGateIds).toContain('input_integrity');
+  });
 });
