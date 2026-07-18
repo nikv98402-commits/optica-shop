@@ -100,7 +100,35 @@ function frameLabel(frame: PilotFrame) {
   return `${frame.brand} ${frame.model}`;
 }
 
-function frameUseCase(frame: PilotFrame, selectedGoal: string) {
+const frameColorCopy: Record<string, string> = {
+  'Прозрачный кристалл': 'Transparent crystal',
+  'Графитовый черный': 'Graphite black',
+  'Медовый': 'Honey',
+  'Матовая сталь': 'Matte steel',
+  'Пыльная роза': 'Dusty rose',
+  'Темная черепаха': 'Dark tortoiseshell',
+};
+
+const goalCopy: Record<string, string> = {
+  'Для офиса': 'For office',
+  'На каждый день': 'Everyday',
+  'Солнцезащитные': 'Sunglasses',
+  'Для компьютера': 'For computer',
+  'Выразительная оправа': 'Statement frame',
+  'Минимализм': 'Minimalism',
+};
+
+function localizeFrameColor(color: string, language: 'ru' | 'en') {
+  return language === 'en' ? frameColorCopy[color] ?? color : color;
+}
+
+function frameUseCase(frame: PilotFrame, selectedGoal: string, language: 'ru' | 'en' = 'ru') {
+  if (language === 'en') {
+    if (frame.category === 'sunglasses') return 'walking / driving';
+    if (frame.material.toLowerCase().includes('металл')) return 'minimalism / office';
+    return selectedGoal ? (goalCopy[selectedGoal] ?? selectedGoal).toLowerCase() : 'office / everyday';
+  }
+
   if (frame.category === 'sunglasses') return 'прогулки / вождение';
   if (frame.material.toLowerCase().includes('металл')) return 'минимализм / офис';
   return selectedGoal ? selectedGoal.toLowerCase() : 'офис / каждый день';
@@ -857,7 +885,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
                       {autoFitStageLabel(faceFitMeasurement, autoFitApplied)}
                     </span>
                     <span className={`inline-flex rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] ${photoQuality.className}`}>
-                      Фото: {photoQuality.label}
+                      {language === 'ru' ? 'Фото' : 'Photo'}: {photoQuality.label}
                     </span>
                   </div>
 
@@ -1088,9 +1116,13 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
             <div className="mt-6 grid gap-3">
               {selectedFrames.length > 0 ? selectedFrames.map((frame, index) => (
                 <div key={frame.id} className="rounded-3xl bg-vilu-paper p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Вариант {index + 1}</p>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">
+                    {language === 'ru' ? 'Вариант' : 'Option'} {index + 1}
+                  </p>
                   <p className="mt-2 font-black">{frameLabel(frame)}</p>
-                  <p className="mt-1 text-sm leading-6 text-vilu-ink/55">{frame.color} - {frameUseCase(frame, selectedGoal)}</p>
+                  <p className="mt-1 text-sm leading-6 text-vilu-ink/55">
+                    {localizeFrameColor(frame.color, language)} - {frameUseCase(frame, selectedGoal, language)}
+                  </p>
                 </div>
               )) : (
                 <div className="rounded-3xl bg-vilu-paper p-5 text-sm leading-6 text-vilu-ink/55">Пока нет сохраненных оправ. Нажмите “Сохранить в подбор” после Face-fit score или выберите оправу в каталоге.</div>
@@ -1329,7 +1361,9 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
                 <div key={frame.id} className="rounded-3xl bg-vilu-card p-4 ring-1 ring-vilu-ink/10">
                   <p className="text-xs font-black uppercase tracking-[0.16em] text-vilu-ink/42">Оправа {index + 1}</p>
                   <p className="mt-1 font-black text-vilu-ink">{frameLabel(frame)}</p>
-                  <p className="mt-1 text-sm leading-6 text-vilu-ink/55">{frame.color} - {frameUseCase(frame, selectedGoal)}</p>
+                  <p className="mt-1 text-sm leading-6 text-vilu-ink/55">
+                    {localizeFrameColor(frame.color, language)} - {frameUseCase(frame, selectedGoal, language)}
+                  </p>
                 </div>
               ))}
             </div>
