@@ -253,8 +253,8 @@ export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCame
           </button>
         </div>
 
-        <div className="min-h-0 overflow-y-auto p-3 sm:p-6">
-          <div className="relative mx-auto aspect-[3/4] max-h-[62vh] w-full max-w-xl overflow-hidden rounded-[1.75rem] bg-black sm:aspect-[4/3]">
+        <div className="min-h-0 overflow-y-auto p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6">
+          <div className="relative mx-auto aspect-[3/4] max-h-[48dvh] w-full max-w-xl overflow-hidden rounded-[1.75rem] bg-black sm:aspect-[4/3] sm:max-h-[62vh]">
             <video ref={videoRef} muted playsInline className={`h-full w-full scale-x-[-1] object-cover ${cameraState === 'live' ? 'opacity-100' : 'opacity-20'}`} />
 
             {cameraState === 'live' ? (
