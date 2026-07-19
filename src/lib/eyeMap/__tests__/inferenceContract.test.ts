@@ -29,6 +29,28 @@ describe('validateEyeMapInferenceResult', () => {
     expect(result.valid).toBe(true);
   });
 
+  it('strips unknown fields from valid inference payloads', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'success',
+      contact: '+7 000 000-00-00',
+      structures: {
+        left_iris: { ...iris, rawMask: 'sensitive-debug-data' },
+        right_iris: { ...iris, points: [{ x: 0.6, y: 0.5 }] },
+      },
+      limitations: [],
+    });
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.value).not.toHaveProperty('contact');
+      expect(result.value.status).toBe('success');
+      if (result.value.status === 'success') {
+        expect(result.value.structures.left_iris).not.toHaveProperty('rawMask');
+      }
+    }
+  });
+
   it('rejects success when a required iris is absent', () => {
     const result = validateEyeMapInferenceResult({
       ...metadata,
@@ -145,6 +167,21 @@ describe('validateEyeMapInferenceResult', () => {
     });
 
     expect(result.valid).toBe(true);
+  });
+
+  it('strips unknown fields from valid failure payloads', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'failure',
+      code: 'model_unavailable',
+      retryable: true,
+      debugTrace: 'internal-only',
+    });
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.value).not.toHaveProperty('debugTrace');
+    }
   });
 
   it('rejects failure payloads that smuggle valid-looking structures', () => {

@@ -117,7 +117,20 @@ function parseStructure(
     return null;
   }
 
-  return value as unknown as EyeMapStructure;
+  const structure: EyeMapStructure = {
+    confidence: confidence as number,
+  };
+  if (typeof normalizedArea === 'number') {
+    structure.normalizedArea = normalizedArea;
+  }
+  if (Array.isArray(points)) {
+    structure.points = points.map((point) => ({
+      x: (point as Record<string, number>).x,
+      y: (point as Record<string, number>).y,
+    }));
+  }
+
+  return structure;
 }
 
 function parseStructures(
@@ -195,9 +208,22 @@ export function validateEyeMapInferenceResult(
       issues.push('failure result must not contain structures');
     }
 
-    return issues.length === 0
-      ? { valid: true, value: input as unknown as EyeMapInferenceResult }
-      : { valid: false, issues };
+    if (issues.length > 0) {
+      return { valid: false, issues };
+    }
+
+    return {
+      valid: true,
+      value: {
+        modelVersion: input.modelVersion as string,
+        artifactChecksum: input.artifactChecksum as string,
+        correlationId: input.correlationId as string,
+        schemaVersion: 1,
+        status: 'failure',
+        code: input.code as EyeMapInferenceFailureCode,
+        retryable: input.retryable as boolean,
+      },
+    };
   }
 
   const structures = parseStructures(input.structures, issues);
@@ -232,7 +258,37 @@ export function validateEyeMapInferenceResult(
     }
   }
 
-  return issues.length === 0
-    ? { valid: true, value: input as unknown as EyeMapInferenceResult }
-    : { valid: false, issues };
+  if (issues.length > 0 || !structures) {
+    return { valid: false, issues };
+  }
+
+  const metadata = {
+    modelVersion: input.modelVersion as string,
+    artifactChecksum: input.artifactChecksum as string,
+    correlationId: input.correlationId as string,
+    schemaVersion: 1 as const,
+  };
+
+  if (input.status === 'partial') {
+    return {
+      valid: true,
+      value: {
+        ...metadata,
+        status: 'partial',
+        structures,
+        missing: [...(input.missing as EyeMapStructureName[])],
+        limitations: [...(input.limitations as string[])],
+      },
+    };
+  }
+
+  return {
+    valid: true,
+    value: {
+      ...metadata,
+      status: 'success',
+      structures,
+      limitations: [...(input.limitations as string[])],
+    },
+  };
 }

@@ -95,7 +95,11 @@ export function evaluateEyeMapBenchmark(
       input.eyeMapRetakeRatePct,
     ].every(
       (value) => Number.isFinite(value) && value >= 0 && value <= 100,
-    );
+    ) &&
+    Number.isFinite(input.maximumCohortRegressionPp) &&
+    input.maximumCohortRegressionPp >= 0 &&
+    Number.isFinite(input.referenceCpuP95Seconds) &&
+    input.referenceCpuP95Seconds >= 0;
   const pipelineSuccessPct = finiteOrZero(
     percentage(input.pipelineSuccessCount, input.qualityPassedImageCount),
   );
@@ -169,6 +173,7 @@ export function evaluateEyeMapBenchmark(
       id: 'cohort_safety',
       passed:
         Number.isFinite(input.maximumCohortRegressionPp) &&
+        input.maximumCohortRegressionPp >= 0 &&
         input.maximumCohortRegressionPp <=
           EYE_MAP_SPRINT_ZERO_THRESHOLDS.maximumCohortRegressionPp,
       actual: `${input.maximumCohortRegressionPp.toFixed(1)} pp maximum regression`,
@@ -178,6 +183,7 @@ export function evaluateEyeMapBenchmark(
       id: 'performance',
       passed:
         Number.isFinite(input.referenceCpuP95Seconds) &&
+        input.referenceCpuP95Seconds >= 0 &&
         input.referenceCpuP95Seconds <=
           EYE_MAP_SPRINT_ZERO_THRESHOLDS.maximumReferenceCpuP95Seconds,
       actual: `${input.referenceCpuP95Seconds.toFixed(1)} seconds p95`,

@@ -113,6 +113,24 @@ describe('evaluateEyeMapBenchmark', () => {
     expect(result.failedGateIds).toContain('input_integrity');
   });
 
+  it('rejects negative regression and latency metrics', () => {
+    const result = evaluateEyeMapBenchmark(
+      passingInput({
+        maximumCohortRegressionPp: -1,
+        referenceCpuP95Seconds: -1,
+      }),
+    );
+
+    expect(result.decision).toBe('no-go');
+    expect(result.failedGateIds).toEqual(
+      expect.arrayContaining([
+        'input_integrity',
+        'cohort_safety',
+        'performance',
+      ]),
+    );
+  });
+
   it('rejects a quality-passed count above the governed set', () => {
     const result = evaluateEyeMapBenchmark(
       passingInput({
