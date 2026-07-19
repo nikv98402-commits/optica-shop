@@ -24,6 +24,7 @@ import { pilotFrames, PilotFrame } from '../data/pilotOptics';
 import { analyzeFacePhoto, type FaceFitMeasurement, unsupportedPhotoMeasurement } from '../lib/faceFitEngine';
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
+import { PhotoRequestGate } from '../lib/photoRequestGate';
 import { submitVisitLead as submitVisitLeadToBackend } from '../services/leadService';
 import { toVisitLeadFrames } from '../services/selectionService';
 import type { ServiceCheckoutFrame } from '../types/backend';
@@ -421,6 +422,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
   const paymentDialogRef = useRef<HTMLDivElement>(null);
   const paymentTriggerRef = useRef<HTMLElement | null>(null);
   const photoObjectUrlRef = useRef('');
+  const photoRequestGateRef = useRef(new PhotoRequestGate());
 
   const activeFrame = frames.find((frame) => frame.id === activeFrameId) ?? frames[0];
   const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
@@ -434,6 +436,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
   }, [selectedFrameIds]);
 
   useEffect(() => () => {
+    photoRequestGateRef.current.invalidate();
     if (photoObjectUrlRef.current) URL.revokeObjectURL(photoObjectUrlRef.current);
   }, []);
 
@@ -480,17 +483,29 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
   };
 
   const processPhoto = async (file: File, source: 'upload' | 'camera') => {
-    if (isLikelyUnsupportedPhoto(file)) {
+    const requestId = photoRequestGateRef.current.begin();
+
+    const clearCurrentPhoto = () => {
+      if (photoObjectUrlRef.current) URL.revokeObjectURL(photoObjectUrlRef.current);
+      photoObjectUrlRef.current = '';
       setPhotoUrl('');
+    };
+
+    if (isLikelyUnsupportedPhoto(file)) {
+      clearCurrentPhoto();
       setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
       return;
     }
 
     const nextPhotoUrl = URL.createObjectURL(file);
     const imageSize = await getDecodedImageSize(nextPhotoUrl);
+    if (!photoRequestGateRef.current.isCurrent(requestId)) {
+      URL.revokeObjectURL(nextPhotoUrl);
+      return;
+    }
     if (!imageSize) {
       URL.revokeObjectURL(nextPhotoUrl);
-      setPhotoUrl('');
+      clearCurrentPhoto();
       setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
       return;
     }
@@ -503,17 +518,18 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
     setAutoFitApplied(false);
     setShowLandmarks(false);
     trackEvent(AnalyticsEvent.PhotoUploaded, { source });
-    analyzeFacePhoto(nextPhotoUrl).then((measurement) => {
-      setFaceFitMeasurement(measurement);
-      if (measurement.status === 'ready') {
-        applyAutoFit(measurement);
-        trackEvent(AnalyticsEvent.FaceLandmarkerAnalyzed, {
-          status: measurement.status,
-          confidence: measurement.confidence,
-          face_count: measurement.faceCount,
-        });
-      }
-    });
+    const measurement = await analyzeFacePhoto(nextPhotoUrl);
+    if (!photoRequestGateRef.current.isCurrent(requestId) || photoObjectUrlRef.current !== nextPhotoUrl) return;
+
+    setFaceFitMeasurement(measurement);
+    if (measurement.status === 'ready') {
+      applyAutoFit(measurement);
+      trackEvent(AnalyticsEvent.FaceLandmarkerAnalyzed, {
+        status: measurement.status,
+        confidence: measurement.confidence,
+        face_count: measurement.faceCount,
+      });
+    }
   };
 
   const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {

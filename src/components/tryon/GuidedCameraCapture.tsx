@@ -32,6 +32,7 @@ const COPY = {
     close: 'Закрыть камеру',
     capture: 'Сделать фото',
     captureAnyway: 'Снять сейчас',
+    capturing: 'Сохраняем фото...',
     waitingTitle: 'Расположите лицо в рамке',
     waitingDetail: 'Смотрите прямо, держите телефон на уровне глаз.',
     noFaceTitle: 'Лицо не найдено',
@@ -61,6 +62,7 @@ const COPY = {
     close: 'Close camera',
     capture: 'Take photo',
     captureAnyway: 'Capture now',
+    capturing: 'Saving photo...',
     waitingTitle: 'Place your face in the guide',
     waitingDetail: 'Look straight ahead and hold the phone at eye level.',
     noFaceTitle: 'Face not found',
@@ -116,13 +118,60 @@ function canvasToBlob(canvas: HTMLCanvasElement, quality = 0.9) {
 
 export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCameraCaptureProps) {
   const copy = COPY[language];
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analyzingRef = useRef(false);
+  const captureInFlightRef = useRef(false);
   const [cameraState, setCameraState] = useState<CameraState>('requesting');
   const [measurement, setMeasurement] = useState<FaceFitMeasurement | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const guidance = useMemo(() => getCameraGuidance(measurement, language), [language, measurement]);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, [onClose]);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,6 +243,7 @@ export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCame
         timer = window.setInterval(analyzeFrame, 850);
         void analyzeFrame();
       } catch (error) {
+        stopStream();
         const errorName = error instanceof DOMException ? error.name : '';
         setCameraState(errorName === 'NotAllowedError' || errorName === 'SecurityError' ? 'denied' : 'error');
         trackEvent(AnalyticsEvent.CameraOpenFailed, { reason: errorName || 'unknown' });
@@ -209,26 +259,34 @@ export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCame
   }, [retryKey]);
 
   const capture = async () => {
+    if (captureInFlightRef.current) return;
     const video = videoRef.current;
     if (!video || video.videoWidth === 0) return;
-    const canvas = document.createElement('canvas');
-    const maxWidth = 1600;
-    const scale = Math.min(1, maxWidth / video.videoWidth);
-    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    context.translate(canvas.width, 0);
-    context.scale(-1, 1);
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await canvasToBlob(canvas);
-    if (!blob) return;
-    const file = new File([blob], `vilu-camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
-    trackEvent(AnalyticsEvent.CameraPhotoCaptured, {
-      guidance: guidance.tone,
-      confidence: guidance.measurement?.confidence ?? 0,
-    });
-    await onCapture(file);
+    captureInFlightRef.current = true;
+    setIsCapturing(true);
+    try {
+      const canvas = document.createElement('canvas');
+      const maxWidth = 1600;
+      const scale = Math.min(1, maxWidth / video.videoWidth);
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+      const context = canvas.getContext('2d');
+      if (!context) return;
+      context.translate(canvas.width, 0);
+      context.scale(-1, 1);
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await canvasToBlob(canvas);
+      if (!blob) return;
+      const file = new File([blob], `vilu-camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      trackEvent(AnalyticsEvent.CameraPhotoCaptured, {
+        guidance: guidance.tone,
+        confidence: guidance.measurement?.confidence ?? 0,
+      });
+      await onCapture(file);
+    } finally {
+      captureInFlightRef.current = false;
+      setIsCapturing(false);
+    }
   };
 
   const errorMessage =
@@ -241,14 +299,14 @@ export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCame
           : copy.requesting;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-vilu-ink/95 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="guided-camera-title">
+    <div ref={dialogRef} className="fixed inset-0 z-[120] flex items-center justify-center bg-vilu-ink/95 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="guided-camera-title">
       <div className="flex max-h-[96vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] bg-vilu-ink text-vilu-paper ring-1 ring-vilu-paper/20">
         <div className="flex items-start justify-between gap-4 border-b border-vilu-paper/10 p-4 sm:p-6">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-vilu-lime">ViLu camera guide</p>
             <h2 id="guided-camera-title" className="mt-1 text-xl font-black sm:text-2xl">{copy.title}</h2>
           </div>
-          <button type="button" onClick={onClose} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-vilu-paper text-vilu-ink" aria-label={copy.close}>
+          <button ref={closeButtonRef} type="button" onClick={onClose} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-vilu-paper text-vilu-ink" aria-label={copy.close}>
             <X size={20} />
           </button>
         </div>
@@ -292,10 +350,10 @@ export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCame
             <button
               type="button"
               onClick={capture}
-              disabled={cameraState !== 'live' || measurement?.status !== 'ready'}
+              disabled={cameraState !== 'live' || measurement?.status !== 'ready' || isCapturing}
               className="min-h-14 rounded-full bg-vilu-lime px-6 py-4 text-sm font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-card disabled:cursor-not-allowed disabled:bg-vilu-paper/15 disabled:text-vilu-paper/45"
             >
-              {guidance.tone === 'ready' ? copy.capture : copy.captureAnyway}
+              {isCapturing ? copy.capturing : guidance.tone === 'ready' ? copy.capture : copy.captureAnyway}
             </button>
             <div className="flex items-start justify-center gap-2 text-xs leading-5 text-vilu-paper/55">
               <ShieldCheck className="mt-0.5 shrink-0 text-vilu-lime" size={16} />
