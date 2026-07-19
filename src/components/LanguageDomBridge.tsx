@@ -199,6 +199,7 @@ const textTranslations: Record<string, string> = {
   'Проверка зрения': 'Eye Check',
   'ViLu Проверка зрения': 'ViLu Eye Check',
   'Проверка зрения ViLu': 'ViLu Eye Check',
+  'Забота о зрении': 'Vision care',
   'Забота о зрении до визита в салон': 'Vision care before the store visit',
   'ViLu помогает подготовиться к проверке зрения и выбору очков: онлайн-примерка, предварительный Face-fit score, чеклист для визита и оптики рядом. Это справочный lifestyle-сценарий, а не диагностика и не замена консультации специалиста.': 'ViLu helps you prepare for an eye check and glasses selection: online try-on, preliminary Face-fit score, visit checklist, and nearby optical stores. This is an informational lifestyle flow, not diagnosis or a replacement for a specialist consultation.',
   'Self-check перед очной проверкой': 'Self-check before an in-person eye check',

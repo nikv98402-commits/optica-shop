@@ -2,6 +2,32 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.1.0.0] - 2026-07-19
+
+### Added
+
+- Added the guarded Eye Map Sprint 0 foundation: feature flag, typed quality,
+  inference, benchmark, governance, and go/no-go contracts with automated tests.
+- Added the periorbital architecture, private ML repository boundary, golden-set
+  governance, artifact manifest, benchmark templates, review rubric, and source
+  technical specification required for an auditable research spike.
+- Added a production-boundary check that keeps Eye Map disabled, unrouted, and
+  free of server-side ML dependencies until the release gates are approved.
+
+### Changed
+
+- Improved Russian and English localization of try-on scenarios, frame details,
+  checkout use cases, and vision-care labels.
+- Hardened the ML trust boundary by returning sanitized inference objects and
+  rejecting impossible benchmark counts, negative latency, and regression data.
+
+### Fixed
+
+- Prevented unknown ML response fields and internal debug data from crossing the
+  validated Eye Map inference boundary.
+- Prevented incomplete artifact manifests and invalid benchmark samples from
+  producing a false go decision.
+
 ## Unreleased
 
 - Hardened the service-checkout release gate: terminal payment retries now rotate idempotency keys, the lead endpoint enforces origin/auth/size/rate boundaries, and Tally fallback protects mixed-version rollouts.

@@ -1,7 +1,7 @@
 {
   "name": "visionlux-optica-shop",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,7 @@
     "smoke": "node scripts/smoke-routes.mjs",
     "test": "vitest run",
     "test:checkout": "node scripts/check-service-checkout.mjs",
+    "test:eye-map-boundary": "node scripts/check-eye-map-boundary.mjs",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },

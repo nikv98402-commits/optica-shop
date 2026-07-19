@@ -1,0 +1,203 @@
+import { describe, expect, it } from 'vitest';
+import { validateEyeMapInferenceResult } from '../inferenceContract';
+
+const metadata = {
+  modelVersion: 'eye-map-spike-1',
+  artifactChecksum: 'sha256:abc123',
+  correlationId: 'eye-map-test-123',
+  schemaVersion: 1 as const,
+};
+
+const iris = {
+  confidence: 96,
+  normalizedArea: 0.02,
+  points: [{ x: 0.4, y: 0.5 }],
+};
+
+describe('validateEyeMapInferenceResult', () => {
+  it('accepts a full result with both irises', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'success',
+      structures: {
+        left_iris: iris,
+        right_iris: { ...iris, points: [{ x: 0.6, y: 0.5 }] },
+      },
+      limitations: [],
+    });
+
+    expect(result.valid).toBe(true);
+  });
+
+  it('strips unknown fields from valid inference payloads', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'success',
+      contact: '+7 000 000-00-00',
+      structures: {
+        left_iris: { ...iris, rawMask: 'sensitive-debug-data' },
+        right_iris: { ...iris, points: [{ x: 0.6, y: 0.5 }] },
+      },
+      limitations: [],
+    });
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.value).not.toHaveProperty('contact');
+      expect(result.value.status).toBe('success');
+      if (result.value.status === 'success') {
+        expect(result.value.structures.left_iris).not.toHaveProperty('rawMask');
+      }
+    }
+  });
+
+  it('rejects success when a required iris is absent', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'success',
+      structures: { left_iris: iris },
+      limitations: [],
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining([
+        'success result requires structures.right_iris',
+      ]),
+    });
+  });
+
+  it('accepts an explicit partial result', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'partial',
+      structures: { left_iris: iris },
+      missing: ['right_iris'],
+      limitations: ['Right iris was not visible.'],
+    });
+
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects a partial result that marks a returned structure as missing', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'partial',
+      structures: { left_iris: iris },
+      missing: ['left_iris'],
+      limitations: ['Retake required.'],
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining([
+        'partial result cannot both include and miss structures.left_iris',
+      ]),
+    });
+  });
+
+  it('rejects zero-area and non-finite artifacts', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'partial',
+      structures: {
+        left_iris: {
+          confidence: Number.NaN,
+          normalizedArea: 0,
+          points: [],
+        },
+      },
+      missing: ['right_iris'],
+      limitations: ['Invalid segmentation.'],
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining([
+        'structures.left_iris.confidence must be finite and between 0 and 100',
+        'structures.left_iris.normalizedArea must be greater than 0 and at most 1',
+        'structures.left_iris.points must be a non-empty array when present',
+      ]),
+    });
+  });
+
+  it('rejects structures that carry confidence without geometry', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'success',
+      structures: {
+        left_iris: { confidence: 96 },
+        right_iris: { confidence: 95 },
+      },
+      limitations: [],
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining([
+        'structures.left_iris must include normalizedArea or points',
+        'structures.right_iris must include normalizedArea or points',
+      ]),
+    });
+  });
+
+  it('requires a non-sensitive correlation id', () => {
+    const metadataWithoutCorrelation = Object.fromEntries(
+      Object.entries(metadata).filter(([key]) => key !== 'correlationId'),
+    );
+    const result = validateEyeMapInferenceResult({
+      ...metadataWithoutCorrelation,
+      status: 'failure',
+      code: 'model_unavailable',
+      retryable: true,
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining(['correlationId is required']),
+    });
+  });
+
+  it('accepts an explicit failure without structures', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'failure',
+      code: 'missing_required_structure',
+      retryable: true,
+    });
+
+    expect(result.valid).toBe(true);
+  });
+
+  it('strips unknown fields from valid failure payloads', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'failure',
+      code: 'model_unavailable',
+      retryable: true,
+      debugTrace: 'internal-only',
+    });
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.value).not.toHaveProperty('debugTrace');
+    }
+  });
+
+  it('rejects failure payloads that smuggle valid-looking structures', () => {
+    const result = validateEyeMapInferenceResult({
+      ...metadata,
+      status: 'failure',
+      code: 'model_unavailable',
+      retryable: true,
+      structures: { left_iris: iris },
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining([
+        'failure result must not contain structures',
+      ]),
+    });
+  });
+});
