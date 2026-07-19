@@ -2,6 +2,24 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.2.0.0] - 2026-07-19
+
+### Added
+
+- Added browser-side guided camera capture to try-on with live MediaPipe
+  feedback for distance, head level, centering, and one-face framing.
+- Kept captured frames local and routed camera JPEGs through the same
+  auto-fit pipeline as uploaded photos, with RU/EN and mobile coverage.
+- Added focused regression coverage for camera cleanup, browser fallbacks,
+  focus restoration, duplicate capture prevention, and latest-photo wins.
+
+### Fixed
+
+- Prevented camera streams from remaining active after playback errors or
+  dialog closure.
+- Prevented stale face-analysis results from replacing a newer uploaded or
+  captured photo.
+
 ## [0.1.0.0] - 2026-07-19
 
 ### Added
