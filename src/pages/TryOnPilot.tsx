@@ -27,6 +27,7 @@ import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analytics
 import { submitVisitLead as submitVisitLeadToBackend } from '../services/leadService';
 import { toVisitLeadFrames } from '../services/selectionService';
 import type { ServiceCheckoutFrame } from '../types/backend';
+import { GuidedCameraCapture } from '../components/tryon/GuidedCameraCapture';
 
 interface TryOnPilotProps {
   onNavigate?: (page: string) => void;
@@ -398,6 +399,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
   const [faceFitMeasurement, setFaceFitMeasurement] = useState<FaceFitMeasurement>(FACE_FIT_IDLE);
   const [showLandmarks, setShowLandmarks] = useState(false);
   const [autoFitApplied, setAutoFitApplied] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [failedFrameImages, setFailedFrameImages] = useState<Set<string>>(new Set());
   const [fitScoreFrameId, setFitScoreFrameId] = useState('');
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -418,6 +420,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
   const [intentCount, setIntentCount] = useState(() => getStoredIntentEvents().length);
   const paymentDialogRef = useRef<HTMLDivElement>(null);
   const paymentTriggerRef = useRef<HTMLElement | null>(null);
+  const photoObjectUrlRef = useRef('');
 
   const activeFrame = frames.find((frame) => frame.id === activeFrameId) ?? frames[0];
   const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
@@ -429,6 +432,10 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
   useEffect(() => {
     localStorage.setItem(SELECTED_FRAMES_KEY, JSON.stringify(selectedFrameIds));
   }, [selectedFrameIds]);
+
+  useEffect(() => () => {
+    if (photoObjectUrlRef.current) URL.revokeObjectURL(photoObjectUrlRef.current);
+  }, []);
 
   useEffect(() => {
     if (!isPaymentDoorOpen) return undefined;
@@ -472,10 +479,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
     setFailedFrameImages((current) => new Set(current).add(frameId));
   };
 
-  const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processPhoto = async (file: File, source: 'upload' | 'camera') => {
     if (isLikelyUnsupportedPhoto(file)) {
       setPhotoUrl('');
       setFaceFitMeasurement(unsupportedPhotoMeasurement(file.name));
@@ -491,12 +495,14 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
       return;
     }
 
+    if (photoObjectUrlRef.current) URL.revokeObjectURL(photoObjectUrlRef.current);
+    photoObjectUrlRef.current = nextPhotoUrl;
     setPhotoUrl(nextPhotoUrl);
     setPhotoAspectRatio(imageSize.width / imageSize.height);
     setFaceFitMeasurement({ ...FACE_FIT_IDLE, status: 'loading' });
     setAutoFitApplied(false);
     setShowLandmarks(false);
-    trackEvent(AnalyticsEvent.PhotoUploaded, { source: 'tryon' });
+    trackEvent(AnalyticsEvent.PhotoUploaded, { source });
     analyzeFacePhoto(nextPhotoUrl).then((measurement) => {
       setFaceFitMeasurement(measurement);
       if (measurement.status === 'ready') {
@@ -508,6 +514,18 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
         });
       }
     });
+  };
+
+  const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processPhoto(file, 'upload');
+    event.target.value = '';
+  };
+
+  const handleCameraCapture = async (file: File) => {
+    setIsCameraOpen(false);
+    await processPhoto(file, 'camera');
   };
 
   const applyAutoFit = (measurement = faceFitMeasurement) => {
@@ -860,15 +878,24 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
           </section>
 
           <section className="rounded-[2.5rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-ink/10 md:p-7">
-            <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Примерка</p>
                 <h2 className="mt-2 break-words text-3xl font-black tracking-tight">{activeFrame ? frameLabel(activeFrame) : 'Выберите оправу'}</h2>
               </div>
-              <label className="inline-flex max-w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-vilu-ink px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-vilu-lime transition hover:bg-vilu-lime hover:text-vilu-ink">
-                <Upload size={16} /> Загрузить фото
-                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhoto} className="hidden" />
-              </label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="inline-flex max-w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-vilu-ink px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-vilu-lime transition hover:bg-vilu-lime hover:text-vilu-ink">
+                  <Upload size={16} /> {language === 'ru' ? 'Загрузить фото' : 'Upload photo'}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhoto} className="hidden" />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsCameraOpen(true)}
+                  className="inline-flex max-w-full items-center justify-center gap-2 rounded-full bg-vilu-lime px-5 py-4 text-center text-xs font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-lime"
+                >
+                  <Camera size={16} /> {language === 'ru' ? 'Сделать фото' : 'Take photo'}
+                </button>
+              </div>
             </div>
 
             <div className="mb-5 flex gap-3 rounded-3xl bg-vilu-lime/10 p-4 text-sm leading-6 text-vilu-ink ring-1 ring-vilu-lime/20">
@@ -1185,6 +1212,14 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
           </button>
         </aside>
       </div>
+
+      {isCameraOpen && (
+        <GuidedCameraCapture
+          language={language}
+          onCapture={handleCameraCapture}
+          onClose={() => setIsCameraOpen(false)}
+        />
+      )}
 
       <section id="nearby-optics" className="border-t border-vilu-paper/10 bg-vilu-ink px-4 py-12 text-vilu-paper sm:px-6">
         <div className="mx-auto max-w-7xl">

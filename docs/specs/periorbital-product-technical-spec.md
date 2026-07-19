@@ -22,6 +22,7 @@ behind a typed adapter after Sprint 0 passes.
 | Area | Current implementation | Decision |
 | --- | --- | --- |
 | Photo analysis | `src/lib/faceFitEngine.ts`, MediaPipe in the browser | Keep as precheck and fallback |
+| Guided capture | Browser camera with local MediaPipe distance and alignment guidance | Reuse as a future Eye Map quality gate; do not upload in Sprint 0 |
 | Try-on | `src/pages/TryOnPilot.tsx` | Do not rewrite |
 | Backend | Optional Supabase client and Edge Functions | Extend after Sprint 0; app remains autonomous |
 | Storage | No server-side face-photo storage | Preserve until purpose consent and deletion are implemented |
