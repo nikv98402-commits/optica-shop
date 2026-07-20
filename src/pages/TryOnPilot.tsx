@@ -877,6 +877,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
                 <button
                   key={goal}
                   type="button"
+                  aria-pressed={selectedGoal === goal}
                   onClick={() => setSelectedGoal(goal)}
                   className={`rounded-2xl px-5 py-4 text-left text-sm font-black transition ${
                     selectedGoal === goal
