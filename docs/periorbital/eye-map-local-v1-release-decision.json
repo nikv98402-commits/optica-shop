@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "decision": "NO_GO",
+  "decidedAt": "2026-07-20T14:45:00+03:00",
+  "adrPath": "docs/periorbital/eye-map-local-v1-release-adr.md",
+  "adrSha256": "1d69b278f5b5123490a18e9323498d56ddfbaffe18fd180ce985a5a801c61328",
+  "approvals": [
+    {
+      "role": "Product",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null
+    },
+    {
+      "role": "Engineering",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null
+    },
+    {
+      "role": "Privacy/Legal",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null
+    },
+    {
+      "role": "Medical Copy",
+      "status": "pending",
+      "reviewer": null,
+      "reviewedAt": null
+    }
+  ]
+}

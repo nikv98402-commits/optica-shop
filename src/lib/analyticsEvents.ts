@@ -66,6 +66,15 @@ export const AnalyticsEvent = {
   PaymentStatusCancelled: 'payment_status_cancelled',
   PaymentStatusFailed: 'payment_status_failed',
   PaymentTestStatusViewed: 'payment_test_status_viewed',
+  EyeMapOpened: 'eye_map_opened',
+  EyeMapCameraStarted: 'eye_map_camera_started',
+  EyeMapPhotoSelected: 'eye_map_photo_selected',
+  EyeMapAnalysisCompleted: 'eye_map_analysis_completed',
+  EyeMapAnalysisBlocked: 'eye_map_analysis_blocked',
+  EyeMapBaselineSaved: 'eye_map_baseline_saved',
+  EyeMapHistoryOpened: 'eye_map_history_opened',
+  EyeMapDemoBenchmarkViewed: 'eye_map_demo_benchmark_viewed',
+  EyeMapHistoryCleared: 'eye_map_history_cleared',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvent)[keyof typeof AnalyticsEvent];

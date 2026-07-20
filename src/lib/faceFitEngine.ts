@@ -1,4 +1,5 @@
 import { FaceLandmarker, FilesetResolver, type NormalizedLandmark } from '@mediapipe/tasks-vision';
+import { EYE_MAP_MODEL_MANIFEST } from './eyeMap/modelManifest';
 
 export type FaceFitEngineStatus = 'idle' | 'loading' | 'ready' | 'no_face' | 'multiple_faces' | 'unsupported_photo' | 'error';
 
@@ -19,7 +20,7 @@ export interface FaceFitMeasurement {
 
 const WASM_ASSET_PATH = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm';
 const FACE_LANDMARKER_MODEL =
-  'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task';
+  EYE_MAP_MODEL_MANIFEST.artifactUrl;
 
 let faceLandmarkerPromise: Promise<FaceLandmarker> | null = null;
 

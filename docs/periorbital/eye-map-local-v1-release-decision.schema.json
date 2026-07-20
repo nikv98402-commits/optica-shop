@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vilu.store/schemas/eye-map-local-v1-release-decision.schema.json",
+  "title": "Eye Map Local v1 release decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decision",
+    "decidedAt",
+    "adrPath",
+    "adrSha256",
+    "approvals"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "decision": { "enum": ["NO_GO", "GO_LOCAL_V1"] },
+    "decidedAt": { "type": "string", "format": "date-time" },
+    "adrPath": {
+      "const": "docs/periorbital/eye-map-local-v1-release-adr.md"
+    },
+    "adrSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "approvals": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "status", "reviewer", "reviewedAt"],
+        "properties": {
+          "role": {
+            "enum": [
+              "Product",
+              "Engineering",
+              "Privacy/Legal",
+              "Medical Copy"
+            ]
+          },
+          "status": { "enum": ["pending", "approve", "reject"] },
+          "reviewer": { "type": ["string", "null"] },
+          "reviewedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

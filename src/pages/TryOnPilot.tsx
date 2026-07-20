@@ -1232,6 +1232,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
       {isCameraOpen && (
         <GuidedCameraCapture
           language={language}
+          analyticsSource="tryon"
           onCapture={handleCameraCapture}
           onClose={() => setIsCameraOpen(false)}
         />

@@ -1,6 +1,6 @@
 import { Camera, CheckCircle2, RotateCcw, ShieldCheck, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { analyzeFacePhoto, type FaceFitMeasurement } from '../../lib/faceFitEngine';
+import type { FaceFitMeasurement } from '../../lib/faceFitEngine';
 import { AnalyticsEvent, trackEvent } from '../../lib/analyticsEvents';
 
 type Language = 'ru' | 'en';
@@ -9,6 +9,7 @@ type GuidanceTone = 'waiting' | 'adjust' | 'ready';
 
 interface GuidedCameraCaptureProps {
   language: Language;
+  analyticsSource: 'tryon' | 'eye_map';
   onCapture: (file: File) => void | Promise<void>;
   onClose: () => void;
 }
@@ -116,7 +117,12 @@ function canvasToBlob(canvas: HTMLCanvasElement, quality = 0.9) {
   return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
 }
 
-export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCameraCaptureProps) {
+export function GuidedCameraCapture({
+  language,
+  analyticsSource,
+  onCapture,
+  onClose,
+}: GuidedCameraCaptureProps) {
   const copy = COPY[language];
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -205,6 +211,7 @@ export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCame
         return;
       }
       const objectUrl = URL.createObjectURL(blob);
+      const { analyzeFacePhoto } = await import('../../lib/faceFitEngine');
       const nextMeasurement = await analyzeFacePhoto(objectUrl);
       URL.revokeObjectURL(objectUrl);
       if (!cancelled) setMeasurement(nextMeasurement);
@@ -239,7 +246,7 @@ export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCame
           await video.play();
         }
         setCameraState('live');
-        trackEvent(AnalyticsEvent.CameraOpened, { source: 'tryon' });
+        trackEvent(AnalyticsEvent.CameraOpened, { source: analyticsSource });
         timer = window.setInterval(analyzeFrame, 850);
         void analyzeFrame();
       } catch (error) {
@@ -256,7 +263,7 @@ export function GuidedCameraCapture({ language, onCapture, onClose }: GuidedCame
       if (timer) window.clearInterval(timer);
       stopStream();
     };
-  }, [retryKey]);
+  }, [analyticsSource, retryKey]);
 
   const capture = async () => {
     if (captureInFlightRef.current) return;
