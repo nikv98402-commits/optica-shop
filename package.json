@@ -12,6 +12,8 @@
     "test": "vitest run",
     "test:checkout": "node scripts/check-service-checkout.mjs",
     "test:eye-map-boundary": "node scripts/check-eye-map-boundary.mjs",
+    "test:eye-map:model-smoke": "node scripts/check-eye-map-model.mjs",
+    "test:eye-map": "vitest run src/lib/eyeMap/__tests__ src/content/__tests__/eyeMapCopy.test.ts src/pages/__tests__/EyeMap.test.tsx",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },

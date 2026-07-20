@@ -112,7 +112,7 @@ describe('guided camera lifecycle', () => {
   it('shows a fallback when the browser has no camera API', async () => {
     Reflect.deleteProperty(navigator, 'mediaDevices');
 
-    render(<GuidedCameraCapture language="en" onCapture={vi.fn()} onClose={vi.fn()} />);
+    render(<GuidedCameraCapture language="en" analyticsSource="tryon" onCapture={vi.fn()} onClose={vi.fn()} />);
 
     expect(await screen.findByText('This browser does not support camera access.')).toBeInTheDocument();
   });
@@ -124,7 +124,7 @@ describe('guided camera lifecycle', () => {
     }));
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(new DOMException('Playback failed', 'NotSupportedError'));
 
-    render(<GuidedCameraCapture language="en" onCapture={vi.fn()} onClose={vi.fn()} />);
+    render(<GuidedCameraCapture language="en" analyticsSource="tryon" onCapture={vi.fn()} onClose={vi.fn()} />);
 
     await waitFor(() => expect(stop).toHaveBeenCalledTimes(1));
     expect(screen.getByText('Could not start the camera. Close other apps using it and try again.')).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('guided camera lifecycle', () => {
     setMediaDevices(vi.fn().mockRejectedValue(new DOMException('Denied', 'NotAllowedError')));
     const onClose = vi.fn();
 
-    render(<GuidedCameraCapture language="ru" onCapture={vi.fn()} onClose={onClose} />);
+    render(<GuidedCameraCapture language="ru" analyticsSource="tryon" onCapture={vi.fn()} onClose={onClose} />);
 
     expect(screen.getByRole('button', { name: 'Закрыть камеру' })).toHaveFocus();
     await screen.findByText('Доступ к камере закрыт. Разрешите камеру в настройках браузера или загрузите готовое фото.');
@@ -150,7 +150,7 @@ describe('guided camera lifecycle', () => {
     trigger.focus();
     document.body.style.overflow = 'auto';
 
-    const view = render(<GuidedCameraCapture language="en" onCapture={vi.fn()} onClose={vi.fn()} />);
+    const view = render(<GuidedCameraCapture language="en" analyticsSource="tryon" onCapture={vi.fn()} onClose={vi.fn()} />);
     await screen.findByText('Camera access is blocked. Allow it in browser settings or upload an existing photo.');
 
     view.unmount();
@@ -167,11 +167,48 @@ describe('guided camera lifecycle', () => {
     }));
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
 
-    const view = render(<GuidedCameraCapture language="en" onCapture={vi.fn()} onClose={vi.fn()} />);
+    const view = render(<GuidedCameraCapture language="en" analyticsSource="tryon" onCapture={vi.fn()} onClose={vi.fn()} />);
     await screen.findByText('Place your face in the guide');
     view.unmount();
 
     expect(stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries frame analysis after an unexpected analysis failure', async () => {
+    const stop = vi.fn();
+    setMediaDevices(vi.fn().mockResolvedValue({
+      getTracks: () => [{ stop }],
+    }));
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
+    Object.defineProperties(HTMLVideoElement.prototype, {
+      readyState: { configurable: true, get: () => 4 },
+      videoWidth: { configurable: true, get: () => 640 },
+      videoHeight: { configurable: true, get: () => 480 },
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      translate: vi.fn(),
+      scale: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+      callback(new Blob(['photo'], { type: 'image/jpeg' }));
+    });
+    const revokeObjectURL = vi.fn();
+    Object.defineProperties(URL, {
+      createObjectURL: { configurable: true, value: vi.fn(() => 'blob:camera-frame') },
+      revokeObjectURL: { configurable: true, value: revokeObjectURL },
+    });
+    analyzeFacePhotoMock
+      .mockRejectedValueOnce(new Error('analysis failed'))
+      .mockResolvedValue(measurement());
+
+    render(<GuidedCameraCapture language="en" analyticsSource="tryon" onCapture={vi.fn()} onClose={vi.fn()} />);
+
+    await waitFor(() => expect(analyzeFacePhotoMock).toHaveBeenCalledTimes(2), {
+      timeout: 2500,
+    });
+    expect(revokeObjectURL).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText('Distance looks good')).toBeInTheDocument();
   });
 
   it('ignores a second capture while the first photo is still being processed', async () => {
@@ -203,7 +240,7 @@ describe('guided camera lifecycle', () => {
     const onCapture = vi.fn(() => new Promise<void>((resolve) => {
       finishCapture = resolve;
     }));
-    render(<GuidedCameraCapture language="ru" onCapture={onCapture} onClose={vi.fn()} />);
+    render(<GuidedCameraCapture language="ru" analyticsSource="tryon" onCapture={onCapture} onClose={vi.fn()} />);
 
     const captureButton = await screen.findByRole('button', { name: 'Сделать фото' });
     await waitFor(() => expect(captureButton).toBeEnabled());
