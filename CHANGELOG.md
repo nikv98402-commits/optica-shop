@@ -2,7 +2,7 @@
 
 All notable ViLu MVP changes should be documented here.
 
-## [0.2.0.0] - 2026-07-19
+## [0.2.0.0] - 2026-07-20
 
 ### Added
 
@@ -10,8 +10,18 @@ All notable ViLu MVP changes should be documented here.
   feedback for distance, head level, centering, and one-face framing.
 - Kept captured frames local and routed camera JPEGs through the same
   auto-fit pipeline as uploaded photos, with RU/EN and mobile coverage.
+- Added a guarded, local-only Eye Map experience with clear quality states,
+  cohort comparison language, local history, and privacy-safe analytics.
+- Added release gates and automated boundary checks that keep Eye Map hidden
+  until its product, evidence, and governance requirements are approved.
 - Added focused regression coverage for camera cleanup, browser fallbacks,
-  focus restoration, duplicate capture prevention, and latest-photo wins.
+  focus restoration, duplicate capture prevention, latest-photo wins, and
+  Eye Map storage and result handling.
+
+### Changed
+
+- Made the selected try-on scenario remain visibly and programmatically
+  selected while the customer continues through the fitting flow.
 
 ### Fixed
 
@@ -19,6 +29,8 @@ All notable ViLu MVP changes should be documented here.
   dialog closure.
 - Prevented stale face-analysis results from replacing a newer uploaded or
   captured photo.
+- Ensured temporary camera frames are always released and live analysis
+  automatically retries after an unexpected failure.
 
 ## [0.1.0.0] - 2026-07-19
 
