@@ -1,8 +1,8 @@
 # ViLu Eye Map: клиентская функция и когортные сравнения
 
-Статус: Engineering and design-reviewed execution spec for local v1  
-Версия: 1.3  
-Дата: 2026-07-20  
+Статус: Engineering and design-reviewed execution spec for local v1
+Версия: 1.3
+Дата: 2026-07-20
 Связанная техническая спека: `docs/specs/periorbital-product-technical-spec.md`
 
 ## 1. Решение

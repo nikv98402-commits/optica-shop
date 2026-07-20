@@ -1,6 +1,6 @@
 # Eye Map local v1: test plan
 
-Status: engineering and design-reviewed  
+Status: engineering and design-reviewed
 Feature flag: `VITE_FEATURE_EYE_MAP`
 
 ## Release gate
