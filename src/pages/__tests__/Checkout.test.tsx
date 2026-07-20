@@ -161,6 +161,8 @@ describe('Checkout', () => {
     );
 
     expect(screen.getByText('49-19-140 · For office · Face-fit 87/100')).toBeVisible();
+    expect(screen.getByPlaceholderText('+7 900 000-00-00 or @username')).toBeVisible();
     expect(screen.queryByText(/Для офиса/)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('+7 900 000-00-00 или @username')).not.toBeInTheDocument();
   });
 });

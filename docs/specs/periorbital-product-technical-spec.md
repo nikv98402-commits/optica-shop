@@ -3,6 +3,9 @@
 Status: Sprint 0 only
 Source: `docs/specs/source/ViLu_Periorbital_Product_Technical_Spec.docx`
 Adapted for repository: 2026-07-18
+Client feature execution spec: `docs/specs/eye-map-client-feature-v1.md`.
+It remains gated by this document: implementation may stay behind
+`VITE_FEATURE_EYE_MAP=false`, but user exposure requires a signed `Go`.
 
 ## Context
 
