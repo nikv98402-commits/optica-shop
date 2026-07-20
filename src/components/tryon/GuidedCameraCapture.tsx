@@ -192,30 +192,31 @@ export function GuidedCameraCapture({
       const video = videoRef.current;
       if (!video || video.readyState < 2 || analyzingRef.current || video.videoWidth === 0) return;
       analyzingRef.current = true;
-      const canvas = document.createElement('canvas');
-      const maxWidth = 480;
-      const scale = Math.min(1, maxWidth / video.videoWidth);
-      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-      const context = canvas.getContext('2d');
-      if (!context) {
+      let objectUrl: string | null = null;
+      try {
+        const canvas = document.createElement('canvas');
+        const maxWidth = 480;
+        const scale = Math.min(1, maxWidth / video.videoWidth);
+        canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+        canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob = await canvasToBlob(canvas, 0.72);
+        if (!blob || cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        const { analyzeFacePhoto } = await import('../../lib/faceFitEngine');
+        const nextMeasurement = await analyzeFacePhoto(objectUrl);
+        if (!cancelled) setMeasurement(nextMeasurement);
+      } catch {
+        // Keep the live preview responsive and retry analysis on the next frame.
+        if (!cancelled) setMeasurement(null);
+      } finally {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
         analyzingRef.current = false;
-        return;
       }
-      context.translate(canvas.width, 0);
-      context.scale(-1, 1);
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const blob = await canvasToBlob(canvas, 0.72);
-      if (!blob || cancelled) {
-        analyzingRef.current = false;
-        return;
-      }
-      const objectUrl = URL.createObjectURL(blob);
-      const { analyzeFacePhoto } = await import('../../lib/faceFitEngine');
-      const nextMeasurement = await analyzeFacePhoto(objectUrl);
-      URL.revokeObjectURL(objectUrl);
-      if (!cancelled) setMeasurement(nextMeasurement);
-      analyzingRef.current = false;
     };
 
     const start = async () => {

@@ -174,6 +174,43 @@ describe('guided camera lifecycle', () => {
     expect(stop).toHaveBeenCalledTimes(1);
   });
 
+  it('retries frame analysis after an unexpected analysis failure', async () => {
+    const stop = vi.fn();
+    setMediaDevices(vi.fn().mockResolvedValue({
+      getTracks: () => [{ stop }],
+    }));
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
+    Object.defineProperties(HTMLVideoElement.prototype, {
+      readyState: { configurable: true, get: () => 4 },
+      videoWidth: { configurable: true, get: () => 640 },
+      videoHeight: { configurable: true, get: () => 480 },
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      translate: vi.fn(),
+      scale: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+      callback(new Blob(['photo'], { type: 'image/jpeg' }));
+    });
+    const revokeObjectURL = vi.fn();
+    Object.defineProperties(URL, {
+      createObjectURL: { configurable: true, value: vi.fn(() => 'blob:camera-frame') },
+      revokeObjectURL: { configurable: true, value: revokeObjectURL },
+    });
+    analyzeFacePhotoMock
+      .mockRejectedValueOnce(new Error('analysis failed'))
+      .mockResolvedValue(measurement());
+
+    render(<GuidedCameraCapture language="en" analyticsSource="tryon" onCapture={vi.fn()} onClose={vi.fn()} />);
+
+    await waitFor(() => expect(analyzeFacePhotoMock).toHaveBeenCalledTimes(2), {
+      timeout: 2500,
+    });
+    expect(revokeObjectURL).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText('Distance looks good')).toBeInTheDocument();
+  });
+
   it('ignores a second capture while the first photo is still being processed', async () => {
     const stop = vi.fn();
     setMediaDevices(vi.fn().mockResolvedValue({
