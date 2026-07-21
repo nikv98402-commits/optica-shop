@@ -1,7 +1,8 @@
-import { Languages, LogOut, MapPin, Menu, ShoppingBag, User, X } from 'lucide-react';
+import { Languages, LogOut, MapPin, Menu, MessageCircleQuestion, ShoppingBag, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { publicFeatures } from '../config/features';
 
 interface NavigationProps {
   currentPage: string;
@@ -34,6 +35,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
     { id: 'visionaccess', route: 'vision-access', label: language === 'en' ? 'Mission' : 'Миссия' },
     { id: 'home', route: 'home', label: language === 'en' ? 'About' : 'О бренде' },
   ];
+  const assistantLabel = language === 'en' ? 'Ask ViLu' : 'Спросить ViLu';
 
   const labels = {
     stores: language === 'en' ? 'Stores' : 'Салоны',
@@ -53,6 +55,11 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
             <button key={item.id} onClick={() => go(item.route)} className={`text-sm font-bold uppercase tracking-[0.18em] transition ${currentPage === item.id ? 'text-vilu-lime' : 'text-vilu-paper/58 hover:text-vilu-paper'}`}>{item.label}</button>
           ))}
           <button onClick={openStores} className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-vilu-paper/58 transition hover:text-vilu-paper"><MapPin size={16} /> {labels.stores}</button>
+          {publicFeatures.knowledgeAssistant && (
+            <button onClick={() => go('assistant')} className={`flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] transition ${currentPage === 'assistant' ? 'text-vilu-lime' : 'text-vilu-paper/58 hover:text-vilu-paper'}`}>
+              <MessageCircleQuestion size={16} /> {assistantLabel}
+            </button>
+          )}
         </div>
 
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -82,6 +89,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
             <button onClick={openStores} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{language === 'en' ? 'Our stores' : 'Наши салоны'}</button>
             <button onClick={() => go('dashboard')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{labels.dashboard}</button>
             <button onClick={() => go('home')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[4].label}</button>
+            {publicFeatures.knowledgeAssistant && <button onClick={() => go('assistant')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{assistantLabel}</button>}
             <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold uppercase text-vilu-ink">{labels.language}: {targetLanguageLabel}</button>
             {user && <button onClick={() => signOut()} className="rounded-2xl bg-vilu-lime p-4 text-left font-bold text-vilu-ink">{labels.signOut}</button>}
           </div>

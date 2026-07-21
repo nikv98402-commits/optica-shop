@@ -2,6 +2,20 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.3.0.0] - 2026-07-21
+
+### Added
+
+- Added a feature-flagged RU/EN Knowledge Assistant with local-only history,
+  reviewed citations, safe abstention, urgent guidance, and privacy-filtered
+  analytics.
+- Added isolated pgvector retrieval storage, a server-only Edge Function,
+  separate chat and multilingual embedding provider adapters, and a
+  fail-closed reviewed source registry/indexer.
+- Added desktop/mobile tests, provider and citation contract coverage, secret
+  boundary scanning, and operational documentation for preview rollout and
+  rollback.
+
 ## [0.2.0.1] - 2026-07-20
 
 ### Changed

@@ -75,6 +75,13 @@ export const AnalyticsEvent = {
   EyeMapHistoryOpened: 'eye_map_history_opened',
   EyeMapDemoBenchmarkViewed: 'eye_map_demo_benchmark_viewed',
   EyeMapHistoryCleared: 'eye_map_history_cleared',
+  AssistantOpened: 'assistant_opened',
+  AssistantPromptSubmitted: 'assistant_prompt_submitted',
+  AssistantAnswerRendered: 'assistant_answer_rendered',
+  AssistantAbstained: 'assistant_abstained',
+  AssistantSourceOpened: 'assistant_source_opened',
+  AssistantFeedbackSubmitted: 'assistant_feedback_submitted',
+  AssistantHistoryCleared: 'assistant_history_cleared',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvent)[keyof typeof AnalyticsEvent];
@@ -97,6 +104,12 @@ const blockedParamPatterns = [
   /prescription/i,
   /photo/i,
   /answer/i,
+  /query/i,
+  /prompt/i,
+  /message/i,
+  /history/i,
+  /free.?text/i,
+  /^url$/i,
   /symptom/i,
   /child/i,
   /age/i,

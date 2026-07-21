@@ -11,14 +11,16 @@ import { TryOnPilot } from './pages/TryOnPilot';
 import { EyeCheck } from './pages/EyeCheck';
 import { VisionAccess } from './pages/VisionAccess';
 import { PaymentStatus } from './pages/PaymentStatus';
+import { KnowledgeAssistant } from './pages/KnowledgeAssistant';
 import { getKnowledgePage, KnowledgeBase } from './pages/KnowledgeBase';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { demoProducts } from './data/products';
 import { createServiceCheckoutDraft, readServiceCheckoutDraft, saveServiceCheckoutDraft } from './services/serviceCheckout';
 import type { ServiceCheckoutDraft, ServiceCheckoutFrame } from './types/backend';
+import { publicFeatures } from './config/features';
 
-type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess' | 'payment-return' | 'payment-success' | 'payment-failed';
+type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess' | 'payment-return' | 'payment-success' | 'payment-failed' | 'assistant';
 
 const pathPageMap: Record<string, Page> = {
   '': 'home',
@@ -39,6 +41,7 @@ const pathPageMap: Record<string, Page> = {
   'payment/return': 'payment-return',
   'payment/success': 'payment-success',
   'payment/failed': 'payment-failed',
+  ...(publicFeatures.knowledgeAssistant ? { assistant: 'assistant' as const } : {}),
 };
 
 function currentKnowledgeSlug() {
@@ -55,6 +58,9 @@ function currentAppPage(): Page {
 }
 
 function App() {
+  if (!publicFeatures.knowledgeAssistant && currentKnowledgeSlug() === 'assistant') {
+    window.history.replaceState({}, '', '/');
+  }
   const [currentPage, setCurrentPage] = useState<Page>(getKnowledgePage(currentKnowledgeSlug()) ? 'home' : currentAppPage());
   const [selectedProductId, setSelectedProductId] = useState<string>('aurora-crystal');
   const [isStoreLocatorOpen, setIsStoreLocatorOpen] = useState(false);
@@ -164,6 +170,9 @@ function App() {
             )}
             {currentPage === 'visionaccess' && (
               <VisionAccess onNavigate={handleNavigate} />
+            )}
+            {publicFeatures.knowledgeAssistant && currentPage === 'assistant' && (
+              <KnowledgeAssistant onNavigate={handleNavigate} />
             )}
             {currentPage === 'payment-return' && <PaymentStatus mode="return" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}
             {currentPage === 'payment-success' && <PaymentStatus mode="success" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}
