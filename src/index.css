@@ -243,3 +243,24 @@ h1, h2, h3, .font-black {
   transform: translateY(-8px);
   box-shadow: 0 20px 50px -15px rgb(0 0 0 / 0.12);
 }
+
+.assistant-page {
+  overflow-x: clip;
+}
+
+.assistant-hero {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(216, 239, 79, 0.12), transparent 30%),
+    #07110d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-page *,
+  .assistant-page *::before,
+  .assistant-page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
