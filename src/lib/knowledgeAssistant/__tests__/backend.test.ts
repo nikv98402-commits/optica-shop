@@ -28,9 +28,25 @@ describe('assistant request and safety boundary', () => {
     expect(validateAssistantRequest({ ...request, preferences: { ...request.preferences, experience: 'expert' } })).toBeNull();
   });
 
-  it.each(['внезапная потеря зрения', 'сильная боль в глазу', 'sudden vision loss', 'severe eye pain'])(
+  it.each([
+    'внезапная потеря зрения',
+    'внезапно пропало зрение',
+    'зрение внезапно исчезло',
+    'резко ухудшилось зрение',
+    'сильная боль в глазу',
+    'sudden vision loss',
+    'severe eye pain',
+  ])(
     'recognizes urgent RU/EN language: %s', (query) => expect(isUrgentQuery(query)).toBe(true),
   );
+
+  it.each([
+    'как постепенно улучшить зрительные привычки',
+    'почему зрение меняется с возрастом',
+    'что означает острота зрения',
+  ])('does not classify general education as urgent: %s', (query) => {
+    expect(isUrgentQuery(query)).toBe(false);
+  });
 
   it.each([
     'поставь диагноз по фото',
@@ -131,7 +147,7 @@ describe('citation and orchestration contract', () => {
 
   it('bypasses every provider for urgent prompts', async () => {
     const embed = vi.fn();
-    const result = await answerKnowledgeQuestion({ ...request, query: 'внезапная потеря зрения' }, {
+    const result = await answerKnowledgeQuestion({ ...request, query: 'внезапно пропало зрение' }, {
       embeddingProvider: { embed }, retriever: { retrieve: vi.fn() }, chatProvider: { complete: vi.fn() },
     });
     expect(result.safety).toBe('urgent');
