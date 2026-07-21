@@ -32,17 +32,30 @@ The indexer additionally needs `SUPABASE_URL` and
 
 ## Preview rollout
 
+Use a dedicated Supabase project and a dedicated Vercel Preview deployment.
+Never point preview service-role credentials at production. The full acceptance
+contract is in `docs/specs/knowledge-assistant-preview-rollout.md`.
+
 1. Apply `20260721100000_create_knowledge_assistant.sql`. Confirm the atomic
    rate-limit and source-replacement RPCs are executable only by `service_role`.
 2. Deploy the `knowledge-assistant` Edge Function with request-body logging
    disabled.
-3. Run `npm run knowledge:index:dry`; obtain editorial approval.
-4. Run `npm run knowledge:index` from a trusted environment. This writes
+3. Configure `KNOWLEDGE_PREVIEW_ORIGIN` in the trusted operator environment and
+   include the same origin in `KNOWLEDGE_ALLOWED_ORIGINS`.
+4. Run `npm run knowledge:preview:check` to reject mixed preview/production
+   configuration before making network calls.
+5. Run `npm run knowledge:index:dry`; obtain editorial approval.
+6. Run `npm run knowledge:index` from a trusted environment. This writes
    link-only metadata and replaces each indexed source transactionally.
-5. Build preview with the feature flag enabled.
-6. Complete RU/EN desktop and 320 px mobile acceptance, urgent guidance,
+7. Run `npm run knowledge:preview:check:live`. It requires exactly six approved
+   ViLu-owned indexed sources, 1024-dimensional embeddings, and at least one
+   citation in the smoke answer.
+8. Build Vercel Preview with `VITE_FEATURE_KNOWLEDGE_ASSISTANT=true`, the preview
+   Supabase URL, and its anon key. Production must remain `false`.
+9. Complete RU/EN desktop and 320 px mobile acceptance, urgent guidance,
    abstention, retry, citations, local clear, and secret scan.
-7. Enable production only after safety and editorial sign-off.
+10. Enable production only in a separate change after explicit safety,
+    editorial, and product sign-off.
 
 ## Rollback
 
