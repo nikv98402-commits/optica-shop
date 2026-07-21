@@ -16,6 +16,15 @@ All notable ViLu MVP changes should be documented here.
   boundary scanning, and operational documentation for preview rollout and
   rollback.
 
+## [0.2.0.1] - 2026-07-20
+
+### Changed
+
+- Added regression coverage that keeps checkout contact guidance fully
+  English after the customer switches languages.
+- Clarified that the Eye Map client experience remains hidden until the
+  periorbital product specification receives a signed `Go` decision.
+
 ## [0.2.0.0] - 2026-07-20
 
 ### Added
