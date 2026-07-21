@@ -19,7 +19,7 @@ export async function answerKnowledgeQuestion(
   } catch (error) {
     if (!(error instanceof CitationValidationError)) throw error;
     modelAnswer = await dependencies.chatProvider.complete(
-      `${prompt.system}\n${buildCitationCorrectionPrompt(chunks.map((chunk) => chunk.sourceId))}`,
+      `${prompt.system}\n${buildCitationCorrectionPrompt(chunks.map((chunk) => chunk.chunkId))}`,
       prompt.user,
     );
     try {

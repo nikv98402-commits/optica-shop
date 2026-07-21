@@ -8,10 +8,12 @@ export function buildGroundedPrompt(request: AssistantRequest, chunks: Retrieved
     'Do not claim certainty about health, fit, PD, or comfort. Encourage an in-person specialist check when appropriate.',
     `Answer in ${request.locale === 'ru' ? 'Russian' : 'English'}.`,
     `Answer length: ${request.preferences.answerLength}. Experience: ${request.preferences.experience}.`,
-    'Return strict JSON: {"claims":[{"text":"...","sourceIds":["uuid"]}]}.',
-    'Every substantive claim must contain at least one sourceIds value from the provided chunks.',
+    'Return strict JSON: {"claims":[{"text":"...","evidence":[{"chunkId":"uuid","quote":"exact source quote"}]}]}.',
+    'Every substantive claim must include at least one exact quote copied from a provided chunk.',
+    'The quote must support the claim. Never invent, translate, or paraphrase evidence quotes.',
   ].join('\n');
   const sourcePayload = chunks.map((chunk) => ({
+    chunkId: chunk.chunkId,
     sourceId: chunk.sourceId,
     heading: chunk.heading,
     content: chunk.content,
@@ -25,6 +27,6 @@ export function buildGroundedPrompt(request: AssistantRequest, chunks: Retrieved
   return { system, user };
 }
 
-export function buildCitationCorrectionPrompt(validSourceIds: string[]) {
-  return `Return corrected strict JSON only. Every claim must cite one or more of these sourceIds: ${validSourceIds.join(', ')}. Remove any unsupported claim.`;
+export function buildCitationCorrectionPrompt(validChunkIds: string[]) {
+  return `Return corrected strict JSON only. Every claim must include exact quoted evidence from one or more of these chunkIds: ${validChunkIds.join(', ')}. Remove any unsupported claim.`;
 }

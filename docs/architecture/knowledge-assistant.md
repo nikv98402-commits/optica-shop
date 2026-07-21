@@ -10,18 +10,22 @@ payments, store locator, canonical metadata, or existing knowledge slugs.
 
 1. The browser sends only the current query, `ru`/`en`, up to six bounded
    recent turns, and allowlisted preferences to `knowledge-assistant`.
-2. The Edge Function validates a 16 KB JSON request, applies a content-free
-   rate key, and runs deterministic urgent-language classification.
-3. Non-urgent queries are embedded with the configured multilingual
+2. The Edge Function validates a 16 KB JSON request and runs deterministic
+   urgent-language classification.
+3. Normal requests consume an atomic Supabase rate-limit bucket keyed by a
+   short salted hash; no raw IP address is stored.
+4. Non-urgent queries are embedded with the configured multilingual
    1024-dimensional provider.
-4. `match_knowledge_chunks` returns at most eight chunks whose sources remain
+5. `match_knowledge_chunks` returns at most eight chunks whose sources remain
    editorially approved and above the server-owned similarity threshold.
-5. Qwen receives only policy, preferences, recent context, and retrieved
+6. Qwen receives only policy, preferences, recent context, and retrieved
    chunks with opaque source ids.
-6. Model JSON is treated as untrusted. Every substantive claim must cite an id
-   in the retrieved set. One correction retry is allowed; otherwise the service
-   abstains.
-7. The browser renders numbered sources and stores history and preferences in
+7. Model JSON is treated as untrusted. Every claim must provide a retrieved
+   chunk id and an exact supporting quote. The server verifies the quote and
+   derives citations from the chunk. One correction retry is allowed.
+8. Approved link-only sources are returned as clearly separated external
+   reading and never enter model context.
+9. The browser renders numbered sources and stores history and preferences in
    versioned `localStorage` only.
 
 ## Trust boundaries
@@ -33,6 +37,8 @@ payments, store locator, canonical metadata, or existing knowledge slugs.
 - Browser roles have no policy or grants for `knowledge_sources` or
   `knowledge_chunks`; only `service_role` can execute the retrieval RPC.
 - Source text is indexable only after registry license and review gates pass.
+- The indexer creates all embeddings before a transactional RPC replaces live
+  chunks, so a provider failure cannot empty a published source.
 - Request/response bodies are never logged. Operational errors contain only a
   stable category.
 - Analytics accepts coarse enums and ids only. Raw query, answer, health text,

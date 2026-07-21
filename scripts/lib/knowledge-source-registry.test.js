@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { chunkMarkdown, licenseAllowsIndexedText, validateSourceMetadata } from './knowledge-source-registry.mjs';
+import {
+  chunkMarkdown,
+  licenseAllowsIndexedText,
+  normalizeKnowledgeContent,
+  validateSourceMetadata,
+} from './knowledge-source-registry.mjs';
 
 const base = {
   id: 'id', slug: 'source', title: 'Title', url: 'https://example.com', publisher: 'Publisher', language: 'en',
@@ -21,7 +26,18 @@ describe('knowledge source licensing', () => {
     expect(validateSourceMetadata({ ...base, license: 'link-only', adaptationAllowed: false, translatedFrom: 'en' }))
       .toContain('source: translation is an unapproved adaptation');
   });
+  it('allows only HTTPS source links rendered by the client', () => {
+    expect(validateSourceMetadata({ ...base, url: 'http://example.com' }))
+      .toContain('source: source URL must use HTTPS');
+    expect(validateSourceMetadata({ ...base, url: 'javascript:alert(1)' }))
+      .toContain('source: source URL must use HTTPS');
+    expect(validateSourceMetadata(base)).not.toContain('source: source URL must use HTTPS');
+  });
   it('chunks reviewed markdown deterministically', () => {
     expect(chunkMarkdown('# A\n\nFirst.\n\nSecond.', 12).map((chunk) => chunk.content)).toEqual(['# A\n\nFirst.', 'Second.']);
+  });
+  it('normalizes Windows line endings before hashing and chunking', () => {
+    expect(normalizeKnowledgeContent('# A\r\n\r\nFirst.\r\n')).toBe('# A\n\nFirst.\n');
+    expect(chunkMarkdown('# A\r\n\r\nFirst.')).toEqual(chunkMarkdown('# A\n\nFirst.'));
   });
 });

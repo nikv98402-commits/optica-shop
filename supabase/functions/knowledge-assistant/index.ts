@@ -20,8 +20,7 @@ import { validateAssistantRequest } from '../_shared/knowledge-assistant/validat
 
 const MAX_BODY_BYTES = 16 * 1024;
 const RATE_LIMIT = 20;
-const RATE_WINDOW_MS = 60_000;
-const rateWindows = new Map<string, { count: number; resetAt: number }>();
+const RATE_WINDOW_SECONDS = 60;
 
 function allowedOrigins() {
   return new Set((Deno.env.get('KNOWLEDGE_ALLOWED_ORIGINS') || 'https://vilu.store,http://localhost:5173,http://127.0.0.1:5173')
@@ -47,21 +46,19 @@ function json(request: Request, body: unknown, status = 200) {
 }
 
 async function privacyKey(request: Request) {
-  const raw = `${request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'}:${Deno.env.get('RATE_LIMIT_SALT') || 'local'}`;
+  const raw = `${request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'}:${Deno.env.get('RATE_LIMIT_SALT')}`;
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
   return Array.from(new Uint8Array(digest)).slice(0, 12).map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-async function isRateLimited(request: Request) {
-  const key = await privacyKey(request);
-  const now = Date.now();
-  const current = rateWindows.get(key);
-  if (!current || current.resetAt <= now) {
-    rateWindows.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return false;
-  }
-  current.count += 1;
-  return current.count > RATE_LIMIT;
+async function isRateLimited(client: ReturnType<typeof createClient>, request: Request) {
+  const { data, error } = await client.rpc('consume_knowledge_rate_limit', {
+    p_key_hash: await privacyKey(request),
+    p_window_seconds: RATE_WINDOW_SECONDS,
+    p_limit: RATE_LIMIT,
+  });
+  if (error || typeof data !== 'boolean') throw new RetrievalError('rate_limit_unavailable');
+  return data;
 }
 
 serve(async (request) => {
@@ -72,8 +69,6 @@ serve(async (request) => {
   }
   const declaredLength = Number(request.headers.get('content-length') || 0);
   if (declaredLength > MAX_BODY_BYTES) return json(request, { error: 'request_too_large' }, 413);
-  if (await isRateLimited(request)) return json(request, { error: 'rate_limited' }, 429);
-
   const rawBody = await request.text();
   if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
     return json(request, { error: 'request_too_large' }, 413);
@@ -95,13 +90,15 @@ serve(async (request) => {
   const embeddingBaseUrl = Deno.env.get('KNOWLEDGE_EMBEDDING_BASE_URL');
   const embeddingApiKey = Deno.env.get('KNOWLEDGE_EMBEDDING_API_KEY');
   const embeddingModel = Deno.env.get('KNOWLEDGE_EMBEDDING_MODEL');
+  const rateLimitSalt = Deno.env.get('RATE_LIMIT_SALT');
   if (!supabaseUrl || !serviceRoleKey || !chatBaseUrl || !chatApiKey || !chatModel
-    || !embeddingBaseUrl || !embeddingApiKey || !embeddingModel) {
+    || !embeddingBaseUrl || !embeddingApiKey || !embeddingModel || !rateLimitSalt) {
     return json(request, { error: 'provider_unavailable' }, 502);
   }
 
   try {
     const client = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    if (await isRateLimited(client, request)) return json(request, { error: 'rate_limited' }, 429);
     const response = await answerKnowledgeQuestion(input, {
       embeddingProvider: new OpenAICompatibleEmbeddingProvider({
         baseUrl: embeddingBaseUrl,
@@ -115,7 +112,23 @@ serve(async (request) => {
       }),
       retriever: new SupabaseKnowledgeRetriever(client),
     });
-    return json(request, response);
+    const { data: externalSourceRows, error: externalSourceError } = await client
+      .from('knowledge_sources')
+      .select('id,title,url,publisher')
+      .eq('review_status', 'approved')
+      .eq('indexable', false)
+      .order('title')
+      .limit(6);
+    if (externalSourceError) throw new RetrievalError('external_sources_unavailable');
+    return json(request, {
+      ...response,
+      externalSources: (externalSourceRows || []).map((source) => ({
+        id: source.id,
+        title: source.title,
+        url: source.url,
+        publisher: source.publisher,
+      })),
+    });
   } catch (error) {
     // Deliberately log only a content-free category; never log request or response bodies.
     if (error instanceof RetrievalError) {

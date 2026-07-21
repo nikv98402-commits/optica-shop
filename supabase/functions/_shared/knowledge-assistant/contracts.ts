@@ -32,7 +32,10 @@ export interface RetrievedChunk {
 
 export interface ModelClaim {
   text: string;
-  sourceIds: string[];
+  evidence: Array<{
+    chunkId: string;
+    quote: string;
+  }>;
 }
 
 export interface ModelAnswer {
@@ -53,6 +56,12 @@ export interface AssistantResponse {
   confidence: Confidence;
   safety: Safety;
   relatedPaths: string[];
+  externalSources?: Array<{
+    id: string;
+    title: string;
+    url: string;
+    publisher: string;
+  }>;
 }
 
 export interface EmbeddingProvider {

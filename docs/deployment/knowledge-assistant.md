@@ -32,11 +32,13 @@ The indexer additionally needs `SUPABASE_URL` and
 
 ## Preview rollout
 
-1. Apply `20260721100000_create_knowledge_assistant.sql`.
+1. Apply `20260721100000_create_knowledge_assistant.sql`. Confirm the atomic
+   rate-limit and source-replacement RPCs are executable only by `service_role`.
 2. Deploy the `knowledge-assistant` Edge Function with request-body logging
    disabled.
 3. Run `npm run knowledge:index:dry`; obtain editorial approval.
-4. Run `npm run knowledge:index` from a trusted environment.
+4. Run `npm run knowledge:index` from a trusted environment. This writes
+   link-only metadata and replaces each indexed source transactionally.
 5. Build preview with the feature flag enabled.
 6. Complete RU/EN desktop and 320 px mobile acceptance, urgent guidance,
    abstention, retry, citations, local clear, and secret scan.

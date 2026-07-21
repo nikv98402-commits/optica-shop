@@ -14,6 +14,7 @@ const supported = {
   answerId: 'answer-1', answer: '52 — ширина линзы. [1]', confidence: 'supported' as const,
   safety: 'informational' as const, relatedPaths: ['/kak-vybrat-razmer-opravy'],
   citations: [{ id: 'source-1', title: 'Размер оправы', url: 'https://vilu.store/kak-vybrat-razmer-opravy', publisher: 'ViLu', license: 'vilu-owned' }],
+  externalSources: [{ id: 'external-1', title: 'OcuLearning', url: 'https://www.oculearning.com/', publisher: 'OcuLearning' }],
 };
 
 describe('KnowledgeAssistant', () => {
@@ -27,6 +28,7 @@ describe('KnowledgeAssistant', () => {
     expect(await screen.findByText('52 — ширина линзы. [1]')).toBeVisible();
     await user.click(screen.getByRole('button', { name: /Источники/i }));
     expect(screen.getByRole('link', { name: /Размер оправы/i })).toHaveAttribute('href', 'https://vilu.store/kak-vybrat-razmer-opravy');
+    expect(screen.getByRole('link', { name: /OcuLearning/i })).toHaveAttribute('href', 'https://www.oculearning.com/');
   });
 
   it('loads English copy from the shared language preference', () => {

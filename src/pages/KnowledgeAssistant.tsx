@@ -54,6 +54,8 @@ const copy = {
     urgent: 'Лучше обратиться за очной помощью',
     sources: 'Источники',
     related: 'По теме',
+    external: 'Проверенные внешние ресурсы',
+    externalNote: 'Ссылки для самостоятельного чтения. Их материалы не цитируются и не переводятся ViLu.',
     settings: 'Настроить ответы',
     clear: 'Очистить историю и настройки',
     empty: 'Выберите подсказку или задайте свой вопрос.',
@@ -81,6 +83,8 @@ const copy = {
     urgent: 'Seek in-person care',
     sources: 'Sources',
     related: 'Related',
+    external: 'Reviewed external resources',
+    externalNote: 'Links for independent reading. ViLu does not quote or translate their content.',
     settings: 'Tune answers',
     clear: 'Clear history and settings',
     empty: 'Choose a suggestion or ask your own question.',
@@ -282,6 +286,20 @@ export function KnowledgeAssistant({ onNavigate }: KnowledgeAssistantProps) {
                         {path.replace(/^\//, '').replace(/-/g, ' ')} <ArrowRight size={15} />
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {(turn.response.externalSources?.length || 0) > 0 && (
+                  <div className="mt-6 rounded-2xl border border-vilu-line bg-vilu-paper p-4">
+                    <strong className="block">{t.external}</strong>
+                    <p className="mt-1 text-sm leading-6 text-vilu-muted">{t.externalNote}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {turn.response.externalSources?.map((source) => (
+                        <a key={source.id} href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-vilu-line bg-vilu-card px-4 py-2 text-sm font-bold transition hover:border-vilu-lime">
+                          {source.title} <ExternalLink size={15} />
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 )}
 

@@ -32,7 +32,9 @@ async function supabaseRequest(path, init = {}) {
     headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=representation', ...init.headers },
   });
   if (!response.ok) throw new Error(`Supabase request failed: ${response.status} ${await response.text()}`);
-  return response.status === 204 ? null : response.json();
+  if (response.status === 204) return null;
+  const responseBody = await response.text();
+  return responseBody ? JSON.parse(responseBody) : null;
 }
 
 const registry = await loadReviewedRegistry(registryPath);
@@ -40,29 +42,49 @@ const chunkCount = registry.indexed.reduce((total, source) => total + source.chu
 const licenseCounts = registry.allSources.reduce((counts, source) => ({ ...counts, [source.license]: (counts[source.license] || 0) + 1 }), {});
 console.log(JSON.stringify({ dryRun, registrySources: registry.allSources.length, indexedSources: registry.indexed.length, chunkCount, licenses: licenseCounts, hashes: registry.indexed.map(({ slug, contentSha256 }) => ({ slug, contentSha256 })) }, null, 2));
 
+function sourcePayload(source, indexable) {
+  return {
+    id: source.id,
+    slug: source.slug,
+    title: source.title,
+    url: source.url,
+    publisher: source.publisher,
+    author: source.author || null,
+    published_at: source.publishedAt || null,
+    language: source.language,
+    license_code: source.license,
+    adaptation_allowed: Boolean(source.adaptationAllowed),
+    commercial_use_allowed: Boolean(source.commercialUseAllowed),
+    review_status: source.reviewStatus,
+    indexable,
+    reviewed_at: source.reviewedAt,
+    reviewed_by_role: source.reviewedByRole,
+    content_sha256: indexable ? source.contentSha256 : null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
 if (!dryRun) {
-  for (const source of registry.indexed) {
-    const [saved] = await supabaseRequest('knowledge_sources?on_conflict=slug', {
+  for (const source of registry.allSources.filter((candidate) => candidate.index === false)) {
+    await supabaseRequest('knowledge_sources?on_conflict=slug', {
       method: 'POST',
-      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify({
-        id: source.id, slug: source.slug, title: source.title, url: source.url, publisher: source.publisher,
-        author: source.author || null, published_at: source.publishedAt || null, language: source.language,
-        license_code: source.license, adaptation_allowed: source.adaptationAllowed,
-        commercial_use_allowed: source.commercialUseAllowed, review_status: source.reviewStatus,
-        reviewed_at: source.reviewedAt, reviewed_by_role: source.reviewedByRole, content_sha256: source.contentSha256,
-        updated_at: new Date().toISOString(),
-      }),
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(sourcePayload(source, false)),
     });
-    await supabaseRequest(`knowledge_chunks?source_id=eq.${encodeURIComponent(saved.id)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  }
+
+  for (const source of registry.indexed) {
     const chunks = [];
     for (const [ordinal, chunk] of source.chunks.entries()) {
       chunks.push({
-        source_id: saved.id, locale: source.language, heading: chunk.heading || null, content: chunk.content,
+        locale: source.language, heading: chunk.heading || null, content: chunk.content,
         embedding: await embed(chunk.content), token_count: chunk.tokenCount, ordinal,
       });
     }
-    await supabaseRequest('knowledge_chunks', { method: 'POST', body: JSON.stringify(chunks) });
+    await supabaseRequest('rpc/replace_knowledge_source_chunks', {
+      method: 'POST',
+      body: JSON.stringify({ p_source: sourcePayload(source, true), p_chunks: chunks }),
+    });
   }
   console.log(`Indexed ${registry.indexed.length} sources and ${chunkCount} chunks.`);
 }

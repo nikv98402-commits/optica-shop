@@ -37,6 +37,12 @@ export interface AssistantResponse {
   confidence: 'supported' | 'insufficient_sources';
   safety: 'informational' | 'urgent';
   relatedPaths: string[];
+  externalSources?: Array<{
+    id: string;
+    title: string;
+    url: string;
+    publisher: string;
+  }>;
 }
 
 export interface AssistantStoredTurn {

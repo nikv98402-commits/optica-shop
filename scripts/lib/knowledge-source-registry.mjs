@@ -10,6 +10,10 @@ export function licenseAllowsIndexedText(source) {
     || (source.independentSummary === true && Boolean(source.document));
 }
 
+export function normalizeKnowledgeContent(content) {
+  return content.replace(/\r\n?/g, '\n');
+}
+
 export function validateSourceMetadata(source) {
   const errors = [];
   for (const key of ['id', 'slug', 'title', 'url', 'publisher', 'language', 'license', 'reviewStatus']) {
@@ -19,7 +23,12 @@ export function validateSourceMetadata(source) {
   if (source.reviewStatus !== 'approved') errors.push(`${source.slug}: source is not approved`);
   if (!source.reviewedAt || !source.reviewedByRole) errors.push(`${source.slug}: missing editorial review`);
   if (!['ru', 'en'].includes(source.language)) errors.push(`${source.slug}: invalid language`);
-  try { new URL(source.url); } catch { errors.push(`${source.slug}: invalid URL`); }
+  try {
+    const url = new URL(source.url);
+    if (url.protocol !== 'https:') errors.push(`${source.slug}: source URL must use HTTPS`);
+  } catch {
+    errors.push(`${source.slug}: invalid URL`);
+  }
   if (source.index !== false) {
     if (!source.document || !source.contentSha256) errors.push(`${source.slug}: indexed source needs document and hash`);
     if (!licenseAllowsIndexedText(source)) errors.push(`${source.slug}: license does not allow indexed text`);
@@ -29,7 +38,7 @@ export function validateSourceMetadata(source) {
 }
 
 export function chunkMarkdown(content, maxCharacters = 1200) {
-  const paragraphs = content.replace(/\r/g, '').split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
+  const paragraphs = normalizeKnowledgeContent(content).split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
   const chunks = [];
   let heading = '';
   let buffer = '';
@@ -54,7 +63,7 @@ export async function loadReviewedRegistry(registryPath) {
   for (const source of registry.sources) {
     if (source.index === false) continue;
     const documentPath = resolve(dirname(registryPath), source.document);
-    const content = await readFile(documentPath, 'utf8');
+    const content = normalizeKnowledgeContent(await readFile(documentPath, 'utf8'));
     const hash = createHash('sha256').update(content).digest('hex');
     if (hash !== source.contentSha256) errors.push(`${source.slug}: content hash differs; editorial re-review required`);
     indexed.push({ ...source, content, chunks: chunkMarkdown(content) });

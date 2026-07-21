@@ -15,6 +15,7 @@ const chunk: RetrievedChunk = {
   url: 'https://vilu.store/kak-vybrat-razmer-opravy', publisher: 'ViLu', licenseCode: 'vilu-owned',
   locale: 'ru', content: '52 is lens width.', similarity: 0.9,
 };
+const evidence = [{ chunkId: 'chunk-1', quote: '52 is lens width.' }];
 
 describe('assistant request and safety boundary', () => {
   it('trims valid requests and rejects unknown fields', () => {
@@ -54,27 +55,32 @@ describe('assistant request and safety boundary', () => {
 
 describe('citation and orchestration contract', () => {
   it('renders numbered citations from the retrieved set', () => {
-    const response = buildSupportedResponse({ claims: [{ text: '52 is lens width.', sourceIds: ['source-1'] }] }, [chunk], 'en');
+    const response = buildSupportedResponse({ claims: [{ text: '52 is lens width.', evidence }] }, [chunk], 'en');
     expect(response.answer).toContain('[1]');
     expect(response.citations[0].id).toBe('source-1');
   });
 
-  it('rejects unknown and missing citations', () => {
-    expect(() => buildSupportedResponse({ claims: [{ text: 'Claim', sourceIds: ['fake'] }] }, [chunk], 'en')).toThrow(CitationValidationError);
-    expect(() => buildSupportedResponse({ claims: [{ text: 'Claim', sourceIds: [] }] }, [chunk], 'en')).toThrow(CitationValidationError);
+  it('rejects unknown, missing, and unsupported evidence', () => {
+    expect(() => buildSupportedResponse({
+      claims: [{ text: 'Claim', evidence: [{ chunkId: 'fake', quote: '52 is lens width.' }] }],
+    }, [chunk], 'en')).toThrow(CitationValidationError);
+    expect(() => buildSupportedResponse({ claims: [{ text: 'Claim', evidence: [] }] }, [chunk], 'en')).toThrow(CitationValidationError);
+    expect(() => buildSupportedResponse({
+      claims: [{ text: 'Claim', evidence: [{ chunkId: 'chunk-1', quote: 'This quote was invented.' }] }],
+    }, [chunk], 'en')).toThrow(CitationValidationError);
   });
 
   it('rejects oversized or excessive model claims', () => {
     expect(() => buildSupportedResponse({
-      claims: [{ text: 'x'.repeat(1201), sourceIds: ['source-1'] }],
+      claims: [{ text: 'x'.repeat(1201), evidence }],
     }, [chunk], 'en')).toThrow(CitationValidationError);
     expect(() => buildSupportedResponse({
-      claims: Array.from({ length: 9 }, (_, index) => ({ text: `Claim ${index}`, sourceIds: ['source-1'] })),
+      claims: Array.from({ length: 9 }, (_, index) => ({ text: `Claim ${index}`, evidence })),
     }, [chunk], 'en')).toThrow(CitationValidationError);
   });
 
   it('returns a supported RU answer through mocked providers', async () => {
-    const complete = vi.fn().mockResolvedValue({ claims: [{ text: '52 — ширина линзы.', sourceIds: ['source-1'] }] });
+    const complete = vi.fn().mockResolvedValue({ claims: [{ text: '52 — ширина линзы.', evidence }] });
     const result = await answerKnowledgeQuestion(request, {
       embeddingProvider: { embed: vi.fn().mockResolvedValue(Array(1024).fill(0)) },
       retriever: { retrieve: vi.fn().mockResolvedValue([chunk]) }, chatProvider: { complete },
@@ -87,7 +93,7 @@ describe('citation and orchestration contract', () => {
     const result = await answerKnowledgeQuestion({ ...request, query: 'What does 52-18-140 mean?', locale: 'en' }, {
       embeddingProvider: { embed: vi.fn().mockResolvedValue(Array(1024).fill(0)) },
       retriever: { retrieve: vi.fn().mockResolvedValue([chunk]) },
-      chatProvider: { complete: vi.fn().mockResolvedValue({ claims: [{ text: '52 is lens width.', sourceIds: ['source-1'] }] }) },
+      chatProvider: { complete: vi.fn().mockResolvedValue({ claims: [{ text: '52 is lens width.', evidence }] }) },
     });
     expect(result.answer).toContain('52 is lens width.');
   });
@@ -104,8 +110,8 @@ describe('citation and orchestration contract', () => {
 
   it('retries citation correction once and accepts a corrected answer', async () => {
     const complete = vi.fn()
-      .mockResolvedValueOnce({ claims: [{ text: 'Unsupported', sourceIds: ['fake'] }] })
-      .mockResolvedValueOnce({ claims: [{ text: 'Supported', sourceIds: ['source-1'] }] });
+      .mockResolvedValueOnce({ claims: [{ text: 'Unsupported', evidence: [{ chunkId: 'fake', quote: '52 is lens width.' }] }] })
+      .mockResolvedValueOnce({ claims: [{ text: 'Supported', evidence }] });
     const result = await answerKnowledgeQuestion(request, {
       embeddingProvider: { embed: vi.fn().mockResolvedValue(Array(1024).fill(0)) },
       retriever: { retrieve: vi.fn().mockResolvedValue([chunk]) }, chatProvider: { complete },
@@ -118,7 +124,7 @@ describe('citation and orchestration contract', () => {
     const result = await answerKnowledgeQuestion(request, {
       embeddingProvider: { embed: vi.fn().mockResolvedValue(Array(1024).fill(0)) },
       retriever: { retrieve: vi.fn().mockResolvedValue([chunk]) },
-      chatProvider: { complete: vi.fn().mockResolvedValue({ claims: [{ text: 'No citation', sourceIds: [] }] }) },
+      chatProvider: { complete: vi.fn().mockResolvedValue({ claims: [{ text: 'No citation', evidence: [] }] }) },
     });
     expect(result.confidence).toBe('insufficient_sources');
   });
