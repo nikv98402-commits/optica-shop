@@ -2190,7 +2190,7 @@ h1, h2, h3, .font-black {
   margin-top: 1rem;
   font-size: clamp(3.25rem, 5.6vw, 5.75rem);
   line-height: 0.84;
-  letter-spacing: -0.068em;
+  letter-spacing: 0;
   color: var(--vilu-paper);
 }
 
@@ -2300,7 +2300,7 @@ h1, h2, h3, .font-black {
   font-size: clamp(1.8rem, 3.6vw, 3.2rem);
   font-weight: 900;
   line-height: 0.98;
-  letter-spacing: -0.05em;
+  letter-spacing: 0;
 }
 
 .dashboard-orbits-next p {
@@ -2531,7 +2531,7 @@ h1, h2, h3, .font-black {
   color: var(--vilu-paper);
   font-size: clamp(3.6rem, 7.2vw, 7rem);
   line-height: 0.84;
-  letter-spacing: -0.068em;
+  letter-spacing: 0;
 }
 
 .assistant-orbits-hero__copy {
@@ -2826,7 +2826,7 @@ h1, h2, h3, .font-black {
   margin-top: 0.8rem;
   font-size: clamp(3rem, 5.5vw, 5.6rem);
   line-height: 0.84;
-  letter-spacing: -0.065em;
+  letter-spacing: 0;
   color: var(--vilu-paper);
 }
 
@@ -3364,7 +3364,7 @@ h1, h2, h3, .font-black {
   margin-top: 1.5rem;
   font-size: clamp(4rem, 8vw, 7.6rem);
   line-height: 0.82;
-  letter-spacing: -0.07em;
+  letter-spacing: 0;
   color: var(--vilu-paper);
 }
 
@@ -3433,7 +3433,7 @@ h1, h2, h3, .font-black {
   border-bottom: 1px solid rgba(247, 243, 233, 0.14);
   font-size: clamp(1.2rem, 2vw, 1.7rem);
   font-weight: 900;
-  letter-spacing: -0.035em;
+  letter-spacing: 0;
 }
 
 .about-orbits-promise p:last-child {
@@ -3464,7 +3464,7 @@ h1, h2, h3, .font-black {
   margin-top: 0.8rem;
   font-size: clamp(3.2rem, 6.4vw, 6.3rem);
   line-height: 0.86;
-  letter-spacing: -0.067em;
+  letter-spacing: 0;
   color: var(--vilu-ink);
 }
 
@@ -3513,7 +3513,7 @@ h1, h2, h3, .font-black {
   font-size: clamp(1.55rem, 2.4vw, 2.2rem);
   font-weight: 900;
   line-height: 1;
-  letter-spacing: -0.045em;
+  letter-spacing: 0;
 }
 
 .about-orbits-system-card > p {
@@ -3609,7 +3609,7 @@ h1, h2, h3, .font-black {
   font-size: clamp(2.5rem, 5vw, 5rem);
   font-weight: 900;
   line-height: 0.95;
-  letter-spacing: -0.055em;
+  letter-spacing: 0;
 }
 
 .about-orbits-final p:not(.orbits-kicker) {
@@ -3730,7 +3730,7 @@ h1, h2, h3, .font-black {
   max-width: 800px;
   font-size: clamp(3.7rem, 7.2vw, 7rem);
   line-height: 0.84;
-  letter-spacing: -0.07em;
+  letter-spacing: 0;
   color: var(--vilu-paper);
 }
 
@@ -3770,7 +3770,7 @@ h1, h2, h3, .font-black {
   font-size: clamp(1.45rem, 2.4vw, 2rem);
   font-weight: 900;
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
 .mission-orbits-route__step p {
@@ -3820,7 +3820,7 @@ h1, h2, h3, .font-black {
   margin-top: 0.75rem;
   font-size: clamp(3rem, 6vw, 6rem);
   line-height: 0.88;
-  letter-spacing: -0.065em;
+  letter-spacing: 0;
   color: var(--vilu-ink);
 }
 
@@ -3917,7 +3917,7 @@ h1, h2, h3, .font-black {
   margin-top: 1rem;
   font-size: clamp(3.5rem, 7.5vw, 7rem);
   line-height: 0.84;
-  letter-spacing: -0.065em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--vilu-paper);
 }
@@ -4080,7 +4080,7 @@ h1, h2, h3, .font-black {
   margin-top: 1rem;
   font-size: clamp(3rem, 5.8vw, 6rem);
   line-height: 0.86;
-  letter-spacing: -0.06em;
+  letter-spacing: 0;
   color: var(--vilu-paper);
 }
 

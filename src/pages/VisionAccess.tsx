@@ -143,7 +143,7 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
                   {language === 'en' ? 'Safe MVP boundary' : 'Безопасная граница MVP'}
                 </p>
               </div>
-              <h2 className="mt-4 text-2xl font-black tracking-[-0.04em]">
+              <h2 className="mt-4 text-2xl font-black tracking-normal">
                 {language === 'en' ? 'No donations. No diagnosis. No fake impact.' : 'Без донатов. Без диагноза. Без фейкового impact.'}
               </h2>
               <p className="mt-4 text-base font-semibold leading-7 text-vilu-ink/70">
