@@ -500,8 +500,9 @@ h1, h2, h3, .font-black {
 
 .compact-assistant__suggestions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
-  overflow-x: auto;
+  overflow-x: visible;
   padding: 0 1.5rem 0.85rem;
   scrollbar-width: none;
 }
@@ -511,7 +512,8 @@ h1, h2, h3, .font-black {
 }
 
 .compact-assistant__suggestions button {
-  flex: none;
+  flex: 1 1 10rem;
+  min-width: 0;
   border: 1px solid var(--vilu-line);
   border-radius: 999px;
   padding: 0.5rem 0.7rem;
@@ -519,6 +521,7 @@ h1, h2, h3, .font-black {
   background: rgba(255, 255, 255, 0.7);
   font-size: 0.6rem;
   font-weight: 700;
+  white-space: normal;
   transition: transform 180ms ease, background 180ms ease;
 }
 
