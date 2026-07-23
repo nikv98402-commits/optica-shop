@@ -1,8 +1,10 @@
-import { CheckCircle2, Eye, MapPinned, Route, SlidersHorizontal, Sparkles, Truck } from 'lucide-react';
+import { CheckCircle2, Eye, MapPinned, Route, Search, SlidersHorizontal, Sparkles, Truck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { demoProducts, formatPrice } from '../data/products';
 import { Product } from '../types';
+import { AtomicHeading } from '../components/home/AtomicHeading';
+import { OpticalOrbits } from '../components/home/OpticalOrbits';
 
 interface ProductsProps {
   onNavigate: (page: string, productId?: string) => void;
@@ -105,15 +107,22 @@ export function Products({ onNavigate, fittingCart, onToggleFitting, onStartChec
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [onlyFitting, setOnlyFitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const filteredProducts = useMemo(() => {
     return demoProducts.filter((product) => {
       const categoryMatches = categoryFilter === 'all' || product.category === categoryFilter;
       const brandMatches = brandFilter === 'all' || product.brand_type === brandFilter;
       const fittingMatches = !onlyFitting || product.category !== 'contact_lenses';
-      return categoryMatches && brandMatches && fittingMatches;
+      const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+      const searchMatches =
+        !normalizedQuery ||
+        `${product.name} ${product.brand_name} ${product.description}`
+          .toLocaleLowerCase()
+          .includes(normalizedQuery);
+      return categoryMatches && brandMatches && fittingMatches && searchMatches;
     });
-  }, [brandFilter, categoryFilter, onlyFitting]);
+  }, [brandFilter, categoryFilter, onlyFitting, searchQuery]);
 
   const productLabel = (product: Product) => {
     if (product.category === 'contact_lenses') return copy.contactLenses;
@@ -128,16 +137,20 @@ export function Products({ onNavigate, fittingCart, onToggleFitting, onStartChec
   ];
 
   return (
-    <div className="min-h-screen bg-vilu-paper">
-      <section className="border-b border-vilu-paper/10 bg-vilu-ink px-4 py-12 text-vilu-paper sm:px-6 sm:py-14">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-end">
+    <div className="catalog-orbits-page">
+      <section className="catalog-orbits-hero">
+        <div className="catalog-orbits-hero__orbits"><OpticalOrbits /></div>
+        <div className="catalog-orbits-hero__grid">
           <div className="min-w-0">
             <p className="kinetic-label">{copy.heroLabel}</p>
-            <h1 className="kinetic-headline mt-4 max-w-4xl text-[clamp(3rem,14vw,5rem)] font-black leading-[0.9] text-vilu-paper lg:text-7xl">{copy.heroTitle}</h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-vilu-paper/84">{copy.heroText}</p>
+            <AtomicHeading
+              lines={language === 'ru' ? ['Сравнить', 'Выбрать', 'Примерить'] : ['Compare', 'Choose', 'Try on']}
+              className="catalog-orbits-heading"
+            />
+            <p className="catalog-orbits-hero__copy">{copy.heroText}</p>
           </div>
 
-          <div className="rounded-[2rem] bg-vilu-card p-5 text-vilu-ink shadow-xl shadow-vilu-ink/10 ring-1 ring-vilu-line">
+          <div className="catalog-orbits-selection">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-vilu-ink/58">{copy.inFitting}</p>
@@ -166,12 +179,23 @@ export function Products({ onNavigate, fittingCart, onToggleFitting, onStartChec
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-[280px_1fr]">
+      <div className="catalog-orbits-layout">
         <aside className="lg:sticky lg:top-28 lg:h-fit">
-          <div className="rounded-[2rem] bg-vilu-ink p-6 text-vilu-paper shadow-sm ring-1 ring-vilu-paper/10">
+          <div className="catalog-orbits-filters">
             <div className="mb-6 flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-vilu-paper/82"><SlidersHorizontal size={18} /> {copy.lab}</div>
 
             <div className="space-y-7">
+              <label className="catalog-orbits-search">
+                <span>{language === 'ru' ? 'Поиск' : 'Search'}</span>
+                <span className="catalog-orbits-search__control">
+                  <Search size={17} aria-hidden="true" />
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder={language === 'ru' ? 'Модель или бренд' : 'Model or brand'}
+                  />
+                </span>
+              </label>
               <div>
                 <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-vilu-paper/72">{copy.category}</p>
                 <div className="flex flex-wrap gap-2 lg:flex-col">
@@ -210,7 +234,7 @@ export function Products({ onNavigate, fittingCart, onToggleFitting, onStartChec
         <section>
           <div className="mb-8 flex items-center justify-between border-b border-vilu-line pb-4">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-vilu-ink/58">{copy.found}: {filteredProducts.length}</p>
-            <button onClick={() => { setCategoryFilter('all'); setBrandFilter('all'); setOnlyFitting(false); }} className="text-sm font-black uppercase tracking-[0.12em] text-vilu-ink focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/40">{copy.reset}</button>
+            <button onClick={() => { setCategoryFilter('all'); setBrandFilter('all'); setOnlyFitting(false); setSearchQuery(''); }} className="text-sm font-black uppercase tracking-[0.12em] text-vilu-ink focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/40">{copy.reset}</button>
           </div>
 
           <div className="grid gap-x-7 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
@@ -219,7 +243,7 @@ export function Products({ onNavigate, fittingCart, onToggleFitting, onStartChec
               const canFit = product.category !== 'contact_lenses';
 
               return (
-                <article key={product.id} className="group flex min-h-[520px] flex-col rounded-[2rem] bg-vilu-card p-4 shadow-sm ring-1 ring-vilu-line transition hover:-translate-y-1 hover:shadow-xl">
+                <article key={product.id} className="catalog-orbits-card group">
                   <button onClick={() => onNavigate('product', product.id)} className="block w-full flex-1 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/40">
                     <div className="relative overflow-hidden rounded-[1.45rem] bg-vilu-paper">
                       <img src={product.image_url} alt={product.name} className="h-72 w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />

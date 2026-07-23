@@ -43,7 +43,7 @@ export function VisionTrackerOnboarding({ onStart, onComplete, onSkip }: VisionT
   };
 
   return (
-    <section className="mt-8 overflow-hidden rounded-[2rem] bg-vilu-card shadow-sm ring-1 ring-vilu-line">
+    <section className="eye-orbits-onboarding mt-8 overflow-hidden rounded-[2rem] bg-vilu-card shadow-sm ring-1 ring-vilu-line">
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="p-5 md:p-8">
           <div className="flex flex-wrap items-center justify-between gap-4">

@@ -29,6 +29,8 @@ import { submitVisitLead as submitVisitLeadToBackend } from '../services/leadSer
 import { toVisitLeadFrames } from '../services/selectionService';
 import type { ServiceCheckoutFrame } from '../types/backend';
 import { GuidedCameraCapture } from '../components/tryon/GuidedCameraCapture';
+import { AtomicHeading } from '../components/home/AtomicHeading';
+import { OpticalOrbits } from '../components/home/OpticalOrbits';
 
 interface TryOnPilotProps {
   onNavigate?: (page: string) => void;
@@ -828,16 +830,13 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-vilu-paper">
-      <section className="w-full overflow-x-hidden border-b border-vilu-paper/10 bg-vilu-ink px-4 py-10 text-vilu-paper sm:px-6 sm:py-12">
-        <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center">
-          <div className="min-w-0 max-w-[calc(100vw-2rem)] sm:max-w-none">
-            <p className="kinetic-label sm:text-sm">Пилот примерки</p>
-            <h1 className="kinetic-headline mt-4 max-w-full break-words text-[clamp(2.25rem,10.5vw,5.2rem)] font-black leading-[0.9] text-vilu-paper md:text-7xl">
-              <span className="block">Примерь.</span>
-              <span className="block">Оцени.</span>
-              <span className="block">Салон.</span>
-            </h1>
+    <div className="tryon-orbits-page min-h-screen overflow-x-hidden bg-vilu-paper">
+      <section className="tryon-orbits-hero">
+        <div className="tryon-orbits-hero__orbits" aria-hidden="true"><OpticalOrbits /></div>
+        <div className="tryon-orbits-hero__grid mx-auto w-full max-w-7xl">
+          <div className="tryon-orbits-hero__copy">
+            <p className="tryon-orbits-kicker">Онлайн-примерка · локально</p>
+            <AtomicHeading as="h1" lines={['Примерить', 'Оценить', 'Выбрать']} className="tryon-orbits-title" />
             <p className="vilu-accent-copy-on-dark mt-6 max-w-[calc(100vw-2rem)] break-words text-base font-bold leading-7 sm:max-w-2xl sm:text-lg sm:leading-8">
               Загрузите фото, выберите 2-3 подходящих стиля и получите список ближайших оптик для финальной примерки.
             </p>
@@ -851,25 +850,29 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
             </div>
           </div>
 
-          <div className="min-w-0 rounded-[2rem] border border-vilu-lime/35 bg-vilu-mist p-5 text-vilu-paper shadow-2xl shadow-vilu-ink/30 sm:rounded-[2.5rem] sm:p-6">
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+          <div className="tryon-orbits-journey">
+            <div className="tryon-orbits-journey__head">
+              <span>Фото → Score → Салон</span>
+              <strong>4 шага</strong>
+            </div>
+            <div className="tryon-orbits-journey__grid">
               {['Примерил', 'Оценил посадку', 'Сохранил 2-3 оправы', 'Открыл маршрут или контакт'].map((label, index) => (
-                <div key={label} className="min-w-0 rounded-2xl bg-vilu-paper/8 p-5 ring-1 ring-vilu-lime/35">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-vilu-lime text-sm font-black text-vilu-ink">{index + 1}</span>
-                  <p className="mt-4 font-black text-vilu-paper">{label}</p>
+                <div key={label}>
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <p>{label}</p>
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-sm leading-6 text-vilu-paper/65">
+            <p className="tryon-orbits-journey__note">
               Список оптик появляется после персонального подбора, чтобы пользователь шел в салон уже с коротким чеклистом.
             </p>
           </div>
         </div>
       </section>
 
-      <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-8 px-4 py-10 sm:px-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+      <div className="tryon-orbits-workbench mx-auto grid w-full max-w-7xl min-w-0 gap-8 px-4 py-10 sm:px-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <main className="min-w-0 space-y-8">
-          <section id="fit-goal" className="rounded-[2.5rem] bg-vilu-ink p-6 text-vilu-paper shadow-sm ring-1 ring-vilu-paper/10 md:p-8">
+          <section id="fit-goal" className="tryon-orbits-goals rounded-[2.5rem] bg-vilu-ink p-6 text-vilu-paper shadow-sm ring-1 ring-vilu-paper/10 md:p-8">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-paper/65">Сценарий подбора</p>
             <h2 className="mt-2 break-words text-3xl font-black tracking-tight">Выберите сценарий</h2>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -894,7 +897,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-ink/10 md:p-7">
+          <section className="tryon-orbits-canvas rounded-[2.5rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-ink/10 md:p-7">
             <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Примерка</p>
@@ -1115,7 +1118,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10 md:p-8">
+          <section className="tryon-orbits-catalog rounded-[2.5rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-ink/10 md:p-8">
             <div className="mb-6 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Каталог пилота</p>
@@ -1151,8 +1154,8 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
           </section>
         </main>
 
-        <aside className="min-w-0 space-y-8 xl:sticky xl:top-28 xl:h-fit">
-          <section className="rounded-[2.5rem] bg-vilu-card p-7 shadow-sm ring-1 ring-vilu-ink/10">
+        <aside className="tryon-orbits-sidebar min-w-0 space-y-8 xl:sticky xl:top-28 xl:h-fit">
+          <section className="tryon-orbits-selection rounded-[2.5rem] bg-vilu-card p-7 shadow-sm ring-1 ring-vilu-ink/10">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-ink/55">Мой подбор</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight">Чеклист для визита</h2>
             <p className="mt-3 text-sm leading-6 text-vilu-ink/55">Сохраните 2-3 варианта, а затем выберите ближайшую оптику для финальной примерки.</p>
@@ -1218,7 +1221,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
             )}
           </section>
 
-          <section className="rounded-[2.5rem] bg-vilu-ink p-7 text-vilu-paper shadow-2xl shadow-vilu-ink/20">
+          <section className="tryon-orbits-readiness rounded-[2.5rem] bg-vilu-ink p-7 text-vilu-paper shadow-2xl shadow-vilu-ink/20">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-paper/65">Готовность к визиту</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight">{intentCount}</h2>
             <p className="mt-3 text-sm leading-6 text-vilu-paper/65">Сохраняем только локальные действия: маршрут, звонок, мессенджер или копирование подбора. Фото, рецепт и точное местоположение не сохраняются.</p>
@@ -1239,7 +1242,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
         />
       )}
 
-      <section id="nearby-optics" className="border-t border-vilu-paper/10 bg-vilu-ink px-4 py-12 text-vilu-paper sm:px-6">
+      <section id="nearby-optics" className="tryon-orbits-optics border-t border-vilu-paper/10 bg-vilu-ink px-4 py-12 text-vilu-paper sm:px-6">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
             <div>

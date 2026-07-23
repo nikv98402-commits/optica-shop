@@ -10,6 +10,8 @@ import {
 } from '../data/visionAccessContent';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
+import { AtomicHeading } from '../components/home/AtomicHeading';
+import { OpticalOrbits } from '../components/home/OpticalOrbits';
 
 interface VisionAccessProps {
   onNavigate: (page: string) => void;
@@ -73,18 +75,33 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
     window.open(whoSourceUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const missionPath = language === 'en'
+    ? [
+        { number: '01', title: 'Understand', body: 'Notice a signal and make the state of vision easier to understand.' },
+        { number: '02', title: 'Choose', body: 'See the next appropriate step: self-check, fitting, or an in-person visit.' },
+        { number: '03', title: 'Care', body: 'Act for yourself, a child, or someone close without fear or confusion.' },
+      ]
+    : [
+        { number: '01', title: 'Понять', body: 'Заметить сигнал и понятным языком разобраться в состоянии зрения.' },
+        { number: '02', title: 'Выбрать', body: 'Увидеть следующий шаг: self-check, примерка или очная проверка.' },
+        { number: '03', title: 'Позаботиться', body: 'Действовать для себя, ребёнка или близкого без страха и путаницы.' },
+      ];
+
   return (
-    <div className="overflow-hidden bg-vilu-paper text-vilu-ink">
-      <section className="relative px-4 py-14 text-vilu-paper sm:px-6 md:py-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_14%,rgba(216,239,79,0.18),transparent_31%),linear-gradient(180deg,#07110d_0%,#0b1511_100%)]" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_0.86fr] lg:items-center">
+    <div className="mission-orbits-page">
+      <section className="mission-orbits-hero">
+        <div className="mission-orbits-hero__orbits"><OpticalOrbits /></div>
+        <div className="mission-orbits-hero__grid">
           <div>
             <div className="kinetic-label mb-6 border-vilu-lime/40 bg-vilu-lime/10 text-vilu-lime">
               <Sparkles size={14} /> {visionAccessHero.eyebrow[locale]}
             </div>
-            <h1 className="max-w-4xl text-[3rem] font-black leading-[0.9] tracking-[-0.08em] text-vilu-paper sm:text-6xl lg:text-8xl">
-              {visionAccessHero.title[locale]}
-            </h1>
+            <AtomicHeading
+              lines={language === 'en'
+                ? ['Vision', 'starts with', 'a clear route']
+                : ['Зрение', 'начинается', 'с понятного', 'маршрута']}
+              className="mission-orbits-heading"
+            />
             <p className="mt-6 max-w-2xl text-2xl font-black leading-tight text-vilu-lime md:text-3xl">
               {visionAccessHero.subtitle[locale]}
             </p>
@@ -107,15 +124,26 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-vilu-paper/16 bg-vilu-paper/8 p-5 shadow-2xl shadow-vilu-ink/30 backdrop-blur">
-            <div className="rounded-[1.5rem] bg-vilu-paper p-5 text-vilu-ink">
+          <div className="mission-orbits-route">
+            <div className="mission-orbits-route__steps">
+              {missionPath.map((step) => (
+                <article key={step.number} className="mission-orbits-route__step">
+                  <span>{step.number}</span>
+                  <div>
+                    <h2>{step.title}</h2>
+                    <p>{step.body}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="mission-orbits-boundary">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="text-vilu-green" />
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">
                   {language === 'en' ? 'Safe MVP boundary' : 'Безопасная граница MVP'}
                 </p>
               </div>
-              <h2 className="mt-4 text-3xl font-black tracking-[-0.04em]">
+              <h2 className="mt-4 text-2xl font-black tracking-[-0.04em]">
                 {language === 'en' ? 'No donations. No diagnosis. No fake impact.' : 'Без донатов. Без диагноза. Без фейкового impact.'}
               </h2>
               <p className="mt-4 text-base font-semibold leading-7 text-vilu-ink/70">
@@ -123,9 +151,9 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
                   ? 'This page explains the partnership model before any fundraising, payment, or medical data flow exists.'
                   : 'Эта страница объясняет партнерскую модель до появления сборов, платежей или обработки медицинских данных.'}
               </p>
-              <div className="mt-6 grid gap-3">
+              <div className="mt-5 flex flex-wrap gap-2">
                 {visionAccessTrust.notDoItems[locale].slice(0, 3).map((item) => (
-                  <div key={item} className="flex items-center gap-3 rounded-2xl bg-vilu-cream p-4 text-sm font-black">
+                  <div key={item} className="flex items-center gap-2 rounded-full bg-vilu-cream px-3 py-2 text-xs font-black">
                     <CheckCircle2 className="text-vilu-lime" size={18} />
                     {item}
                   </div>
@@ -136,14 +164,18 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
         </div>
       </section>
 
-      <section className="bg-vilu-paper px-4 py-16 sm:px-6">
+      <section className="mission-orbits-section mission-orbits-section--facts">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <p className="vilu-eyebrow">{language === 'en' ? 'Global context' : 'Глобальный контекст'}</p>
-              <h2 className="mt-3 max-w-3xl text-4xl font-black tracking-[-0.05em] text-vilu-ink md:text-6xl">
-                {language === 'en' ? 'Vision access is still a basic global gap' : 'Доступ к зрению все еще базовый глобальный разрыв'}
-              </h2>
+              <AtomicHeading
+                as="h2"
+                lines={language === 'en'
+                  ? ['Vision access', 'is still a', 'global gap']
+                  : ['Доступ', 'к зрению', 'всё ещё', 'глобальный', 'разрыв']}
+                className="mission-orbits-section-heading"
+              />
             </div>
             <button
               onClick={openWhoSource}
@@ -168,7 +200,7 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
         </div>
       </section>
 
-      <section className="bg-vilu-ink px-4 py-16 text-vilu-paper sm:px-6">
+      <section className="mission-orbits-section mission-orbits-section--dark">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-vilu-lime">
@@ -196,7 +228,7 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
         </div>
       </section>
 
-      <section className="bg-vilu-cream px-4 py-16 sm:px-6">
+      <section className="mission-orbits-section mission-orbits-section--partners">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
             <p className="vilu-eyebrow">{language === 'en' ? 'Partner model' : 'Партнерская модель'}</p>
@@ -216,7 +248,7 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
         </div>
       </section>
 
-      <section className="bg-vilu-paper px-4 py-16 sm:px-6">
+      <section className="mission-orbits-section mission-orbits-section--reporting">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-stretch">
           <div className="rounded-[2rem] bg-vilu-ink p-6 text-vilu-paper md:p-8">
             <div className="flex items-center gap-3">
@@ -255,7 +287,7 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
         </div>
       </section>
 
-      <section className="bg-vilu-ink px-4 py-16 text-vilu-paper sm:px-6">
+      <section className="mission-orbits-section mission-orbits-section--cta">
         <div className="mx-auto flex max-w-5xl flex-col items-start gap-6 rounded-[2rem] border border-vilu-paper/12 bg-vilu-paper/8 p-6 md:p-10">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-vilu-lime">Partnership</p>
           <h2 className="max-w-3xl text-4xl font-black tracking-[-0.05em] text-vilu-paper md:text-6xl">

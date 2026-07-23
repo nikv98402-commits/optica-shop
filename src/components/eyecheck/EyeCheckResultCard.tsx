@@ -55,7 +55,7 @@ export function EyeCheckResultCard({
   const dark = result.riskLevel === 'do-not-delay' || result.riskLevel === 'urgent';
 
   return (
-    <section className={`rounded-[2rem] p-5 shadow-xl ring-1 md:p-8 ${style.panel}`}>
+    <section className={`eye-orbits-result rounded-[2rem] p-5 shadow-xl ring-1 md:p-8 ${style.panel}`}>
       <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
         <div>
           <p className={`inline-flex rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ${style.badge}`}>

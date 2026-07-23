@@ -10,6 +10,7 @@ import { Dashboard } from './pages/Dashboard';
 import { TryOnPilot } from './pages/TryOnPilot';
 import { EyeCheck } from './pages/EyeCheck';
 import { VisionAccess } from './pages/VisionAccess';
+import { AboutBrand } from './pages/AboutBrand';
 import { PaymentStatus } from './pages/PaymentStatus';
 import { KnowledgeAssistant } from './pages/KnowledgeAssistant';
 import { getKnowledgePage, KnowledgeBase } from './pages/KnowledgeBase';
@@ -20,7 +21,7 @@ import { createServiceCheckoutDraft, readServiceCheckoutDraft, saveServiceChecko
 import type { ServiceCheckoutDraft, ServiceCheckoutFrame } from './types/backend';
 import { publicFeatures } from './config/features';
 
-type Page = 'home' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess' | 'payment-return' | 'payment-success' | 'payment-failed' | 'assistant';
+type Page = 'home' | 'about' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess' | 'payment-return' | 'payment-success' | 'payment-failed' | 'assistant';
 
 const pathPageMap: Record<string, Page> = {
   '': 'home',
@@ -36,6 +37,8 @@ const pathPageMap: Record<string, Page> = {
   'vision-tracker': 'eyecheck',
   visiontracker: 'eyecheck',
   'vision-access': 'visionaccess',
+  about: 'about',
+  brand: 'about',
   impact: 'visionaccess',
   access: 'visionaccess',
   'payment/return': 'payment-return',
@@ -134,6 +137,7 @@ function App() {
           <main className="pt-20">
             {knowledgePage && <KnowledgeBase page={knowledgePage} onNavigate={handleNavigate} />}
             {!knowledgePage && currentPage === 'home' && <Home onNavigate={handleNavigate} />}
+            {!knowledgePage && currentPage === 'about' && <AboutBrand onNavigate={handleNavigate} />}
             {currentPage === 'products' && (
               <Products
                 onNavigate={handleNavigate}
@@ -157,7 +161,7 @@ function App() {
               />
             )}
             {(currentPage === 'dashboard' || currentPage === 'admin') && (
-              <Dashboard onNavigate={handleNavigate} />
+              <Dashboard onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />
             )}
             {currentPage === 'tryon' && (
               <TryOnPilot
@@ -172,7 +176,7 @@ function App() {
               <VisionAccess onNavigate={handleNavigate} />
             )}
             {publicFeatures.knowledgeAssistant && currentPage === 'assistant' && (
-              <KnowledgeAssistant onNavigate={handleNavigate} />
+              <KnowledgeAssistant onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />
             )}
             {currentPage === 'payment-return' && <PaymentStatus mode="return" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}
             {currentPage === 'payment-success' && <PaymentStatus mode="success" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}

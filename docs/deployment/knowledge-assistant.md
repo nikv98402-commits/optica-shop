@@ -30,6 +30,29 @@ RATE_LIMIT_SALT
 The indexer additionally needs `SUPABASE_URL` and
 `SUPABASE_SERVICE_ROLE_KEY` in its controlled server environment.
 
+## Free Cloudflare Workers AI configuration
+
+Cloudflare Workers AI exposes OpenAI-compatible chat and embedding endpoints,
+so the existing provider adapters do not require a code fork. On the Workers
+Free plan, configure the Supabase secrets as follows, replacing
+`<CLOUDFLARE_ACCOUNT_ID>` and `<CLOUDFLARE_API_TOKEN>` with values from
+Cloudflare Workers AI -> Use REST API:
+
+```text
+KNOWLEDGE_CHAT_BASE_URL=https://api.cloudflare.com/client/v4/accounts/<CLOUDFLARE_ACCOUNT_ID>/ai/v1
+KNOWLEDGE_CHAT_API_KEY=<CLOUDFLARE_API_TOKEN>
+KNOWLEDGE_CHAT_MODEL=@cf/meta/llama-3.1-8b-instruct-fast
+KNOWLEDGE_EMBEDDING_BASE_URL=https://api.cloudflare.com/client/v4/accounts/<CLOUDFLARE_ACCOUNT_ID>/ai/v1
+KNOWLEDGE_EMBEDDING_API_KEY=<CLOUDFLARE_API_TOKEN>
+KNOWLEDGE_EMBEDDING_MODEL=@cf/qwen/qwen3-embedding-0.6b
+```
+
+The chat model is selected because it supports JSON mode. The multilingual
+embedding model returns the 1024 dimensions required by the database schema.
+Use the same embedding model for live queries and indexing. If the existing
+index was produced by a different embedding model, run
+`npm run knowledge:index` before enabling the assistant.
+
 ## Preview rollout
 
 Use a dedicated Supabase project and a dedicated Vercel Preview deployment.

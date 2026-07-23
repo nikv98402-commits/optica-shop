@@ -1,9 +1,11 @@
-import { ArrowLeft, Check, ShieldCheck, Truck } from 'lucide-react';
+import { ArrowLeft, Check, ShieldCheck, Sparkles, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { VirtualTryOn } from '../components/VirtualTryOn';
 import { formatPrice, getProductById } from '../data/products';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { ServiceCheckoutFrame } from '../types/backend';
+import { AtomicHeading } from '../components/home/AtomicHeading';
+import { OpticalOrbits } from '../components/home/OpticalOrbits';
 
 interface ProductDetailProps {
   productId: string;
@@ -29,23 +31,27 @@ export function ProductDetail({ productId, onNavigate, onStartCheckout }: Produc
 
   const canSubscribe = product.category === 'contact_lenses' && Boolean(product.subscription_price);
   const activePrice = canSubscribe && purchaseType === 'subscription' ? product.subscription_price ?? product.price : product.price;
+  const titleWords = product.name.trim().split(/\s+/);
+  const titleLines = titleWords.length > 1
+    ? [titleWords.slice(0, -1).join(' '), titleWords[titleWords.length - 1]]
+    : [product.name];
 
   return (
-    <div className="kinetic-surface min-h-screen px-6 py-12">
-      <div className="mx-auto max-w-7xl">
-        <button onClick={() => onNavigate('products')} className="mb-10 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-vilu-ink/55 transition hover:text-vilu-ink">
+    <div className="product-orbits-page">
+      <div className="product-orbits-page__orbits"><OpticalOrbits /></div>
+      <div className="product-orbits-shell">
+        <button onClick={() => onNavigate('products')} className="product-orbits-back">
           <ArrowLeft size={18} /> Назад в каталог
         </button>
 
-        <div className="grid gap-12 lg:grid-cols-[1fr_0.9fr] lg:items-start">
-          <div className="rounded-[2rem] bg-vilu-card p-4 shadow-sm ring-1 ring-vilu-ink/10">
-            <img src={product.image_url} alt={product.name} className="h-[560px] w-full rounded-[2rem] object-cover" />
-            <VirtualTryOn product={product} />
+        <div className="product-orbits-layout">
+          <div className="product-orbits-gallery">
+            <img src={product.image_url} alt={product.name} className="product-orbits-gallery__image" />
           </div>
 
-          <div className="rounded-[2rem] bg-vilu-ink p-7 text-vilu-paper shadow-2xl shadow-vilu-ink/20 ring-1 ring-vilu-lime/20 md:p-10">
+          <div className="product-orbits-info">
             <p className="kinetic-label text-vilu-lime">{product.brand_name}</p>
-            <h1 className="mt-4 text-5xl font-black tracking-tight md:text-6xl">{product.name}</h1>
+            <AtomicHeading lines={titleLines} className="product-orbits-heading" />
             <p className="mt-6 text-lg font-semibold leading-8 text-vilu-paper/70">{product.description}</p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -68,14 +74,23 @@ export function ProductDetail({ productId, onNavigate, onStartCheckout }: Produc
             )}
 
             <div className="mt-10 rounded-[2rem] bg-vilu-card p-6 text-vilu-ink">
-              <div className="flex items-end justify-between gap-4">
+              <div className="product-orbits-purchase">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.22em] text-vilu-green">Итого</p>
                   <p className="mt-1 text-4xl font-black">{formatPrice(activePrice)}</p>
                 </div>
                 {product.category !== 'contact_lenses' ? (
-                  <button
-                    onClick={() => onStartCheckout({
+                  <div className="product-orbits-actions">
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('tryon')}
+                      className="product-orbits-action product-orbits-action--secondary"
+                    >
+                      {language === 'ru' ? 'Онлайн-примерка' : 'Online try-on'}
+                      <Sparkles size={16} />
+                    </button>
+                    <button
+                      onClick={() => onStartCheckout({
                       frameId: product.id,
                       frameName: product.name,
                       frameBrand: product.brand_name,
@@ -83,10 +98,11 @@ export function ProductDetail({ productId, onNavigate, onStartCheckout }: Produc
                       framePriceRub: product.price,
                       imageUrl: product.image_url,
                     })}
-                    className="rounded-full bg-vilu-lime px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper"
-                  >
-                    {language === 'ru' ? 'Подготовить визит' : 'Prepare a visit'}
-                  </button>
+                      className="product-orbits-action product-orbits-action--primary"
+                    >
+                      {language === 'ru' ? 'Подготовить визит' : 'Prepare a visit'}
+                    </button>
+                  </div>
                 ) : (
                   <button onClick={() => onNavigate('products')} className="rounded-full bg-vilu-paper px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-vilu-ink">
                     {language === 'ru' ? 'Вернуться в каталог' : 'Back to catalog'}
@@ -101,6 +117,10 @@ export function ProductDetail({ productId, onNavigate, onStartCheckout }: Produc
               <div className="flex gap-3"><Check className="mt-1 text-vilu-lime" size={20} /> Можно отложить модель и примерить в салоне.</div>
               <div className="flex gap-3"><Check className="mt-1 text-vilu-lime" size={20} /> Возврат оправы в течение 14 дней.</div>
             </div>
+          </div>
+
+          <div className="product-orbits-tryon">
+            <VirtualTryOn product={product} />
           </div>
         </div>
       </div>

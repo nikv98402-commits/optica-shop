@@ -33,7 +33,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
     { id: 'eyecheck', route: 'eyecheck', label: language === 'en' ? 'Vision Tracker' : 'Трекер зрения' },
     { id: 'products', route: 'products', label: language === 'en' ? 'Catalog' : 'Каталог' },
     { id: 'visionaccess', route: 'vision-access', label: language === 'en' ? 'Mission' : 'Миссия' },
-    { id: 'home', route: 'home', label: language === 'en' ? 'About' : 'О бренде' },
+    { id: 'about', route: 'about', label: language === 'en' ? 'About' : 'О бренде' },
   ];
   const assistantLabel = language === 'en' ? 'Ask ViLu' : 'Спросить ViLu';
 
@@ -88,7 +88,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
             <button onClick={() => go('vision-access')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[3].label}</button>
             <button onClick={openStores} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{language === 'en' ? 'Our stores' : 'Наши салоны'}</button>
             <button onClick={() => go('dashboard')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{labels.dashboard}</button>
-            <button onClick={() => go('home')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[4].label}</button>
+            <button onClick={() => go('about')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[4].label}</button>
             {publicFeatures.knowledgeAssistant && <button onClick={() => go('assistant')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{assistantLabel}</button>}
             <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold uppercase text-vilu-ink">{labels.language}: {targetLanguageLabel}</button>
             {user && <button onClick={() => signOut()} className="rounded-2xl bg-vilu-lime p-4 text-left font-bold text-vilu-ink">{labels.signOut}</button>}
