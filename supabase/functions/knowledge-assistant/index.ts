@@ -5,6 +5,7 @@ import {
   OpenAICompatibleChatProvider,
   OpenAICompatibleEmbeddingProvider,
   ProviderError,
+  providerErrorDiagnostic,
 } from '../_shared/knowledge-assistant/providers.ts';
 import {
   RetrievalError,
@@ -139,15 +140,9 @@ serve(async (request) => {
       return json(request, { error: 'retrieval_unavailable' }, 503);
     }
     if (error instanceof ProviderError) {
-      const diagnostic = {
-        stage: error.stage,
-        reason: error.code,
-        status: error.status,
-        providerCode: error.providerCode,
-        providerMessage: error.providerMessage,
-      };
+      const diagnostic = providerErrorDiagnostic(error);
       console.error('knowledge_assistant_error', { code: 'provider_unavailable', ...diagnostic });
-      return json(request, { error: 'provider_unavailable', diagnostic }, 502);
+      return json(request, { error: 'provider_unavailable' }, 502);
     }
     console.error('knowledge_assistant_error', { code: 'provider_unavailable' });
     return json(request, { error: 'provider_unavailable' }, 502);

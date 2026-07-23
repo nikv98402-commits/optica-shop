@@ -72,6 +72,12 @@ function App() {
   const knowledgePage = getKnowledgePage(currentKnowledgeSlug());
 
   const handleNavigate = (page: string, productId?: string) => {
+    if (page === 'assistant' && !publicFeatures.knowledgeAssistant) {
+      window.history.pushState({}, '', '/');
+      setCurrentPage('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (productId) {
       setSelectedProductId(productId);
     }

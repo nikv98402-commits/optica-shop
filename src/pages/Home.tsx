@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarDays, CheckCircle2, Handshake, MapPin } from 'lucide-react';
 import { AtomicHeading } from '../components/home/AtomicHeading';
 import { CompactKnowledgeAssistant } from '../components/home/CompactKnowledgeAssistant';
+import { publicFeatures } from '../config/features';
 import { useLanguage } from '../contexts/LanguageContext';
 import { demoProducts, formatPrice } from '../data/products';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
@@ -93,7 +94,9 @@ export function Home({ onNavigate }: HomeProps) {
               </button>
             </div>
           </div>
-          <CompactKnowledgeAssistant language={language} onNavigate={onNavigate} />
+          {publicFeatures.knowledgeAssistant && (
+            <CompactKnowledgeAssistant language={language} onNavigate={onNavigate} />
+          )}
         </div>
       </section>
 

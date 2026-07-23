@@ -12,6 +12,15 @@ export class ProviderError extends Error {
   }
 }
 
+export function providerErrorDiagnostic(error: ProviderError) {
+  return {
+    stage: error.stage,
+    reason: error.code,
+    status: error.status,
+    providerCode: error.providerCode,
+  };
+}
+
 const MAX_CHAT_RESPONSE_CHARACTERS = 32_000;
 
 interface ProviderConfig {
