@@ -5,6 +5,7 @@ import {
   OpenAICompatibleChatProvider,
   OpenAICompatibleEmbeddingProvider,
   ProviderError,
+  providerErrorDiagnostic,
 } from '../_shared/knowledge-assistant/providers.ts';
 import {
   RetrievalError,
@@ -110,7 +111,10 @@ serve(async (request) => {
         apiKey: chatApiKey,
         model: chatModel,
       }),
-      retriever: new SupabaseKnowledgeRetriever(client),
+      // Qwen's multilingual embedding scores for short Russian questions are
+      // lower than the previous provider's scores. The corpus is curated and
+      // citation validation still prevents unsupported answers.
+      retriever: new SupabaseKnowledgeRetriever(client, 8, 0.35),
     });
     const { data: externalSourceRows, error: externalSourceError } = await client
       .from('knowledge_sources')
@@ -136,7 +140,8 @@ serve(async (request) => {
       return json(request, { error: 'retrieval_unavailable' }, 503);
     }
     if (error instanceof ProviderError) {
-      console.error('knowledge_assistant_error', { code: 'provider_unavailable' });
+      const diagnostic = providerErrorDiagnostic(error);
+      console.error('knowledge_assistant_error', { code: 'provider_unavailable', ...diagnostic });
       return json(request, { error: 'provider_unavailable' }, 502);
     }
     console.error('knowledge_assistant_error', { code: 'provider_unavailable' });

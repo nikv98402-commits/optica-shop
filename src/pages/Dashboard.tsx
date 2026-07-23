@@ -1,4 +1,5 @@
 import {
+  ArrowRight,
   Calendar,
   CheckCircle2,
   Clock3,
@@ -23,9 +24,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { demoProducts, formatPrice } from '../data/products';
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
+import { AtomicHeading } from '../components/home/AtomicHeading';
+import { OpticalOrbits } from '../components/home/OpticalOrbits';
 
 interface DashboardProps {
   onNavigate?: (page: string, productId?: string) => void;
+  onOpenStores?: () => void;
 }
 
 interface PurchaseHistoryItem {
@@ -142,7 +146,7 @@ function calculateStrainScore(profile: ClientProfile, sessions: TrainingSession[
   return Math.max(18, Math.min(92, 64 + complaintLoad - trainingBonus - examBonus));
 }
 
-export function Dashboard({ onNavigate }: DashboardProps) {
+export function Dashboard({ onNavigate, onOpenStores }: DashboardProps) {
   const { user, signIn, signUp, signOut } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [authOpen, setAuthOpen] = useState(false);
@@ -153,6 +157,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const [activeExerciseId, setActiveExerciseId] = useState(exercises[0].id);
   const [isTraining, setIsTraining] = useState(false);
   const [timer, setTimer] = useState(exercises[0].duration);
+  const [careSubject, setCareSubject] = useState<'self' | 'child' | 'close'>('self');
 
   const activeExercise = exercises.find((item) => item.id === activeExerciseId) ?? exercises[0];
 
@@ -251,13 +256,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
   if (!user) {
     return (
-      <div className="kinetic-surface min-h-screen px-6 py-16">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.95fr_1.05fr]">
-          <section className="text-vilu-paper">
+      <div className="dashboard-orbits-page dashboard-orbits-page--guest">
+        <div className="dashboard-orbits-guest__orbits"><OpticalOrbits /></div>
+        <div className="dashboard-orbits-guest">
+          <section className="dashboard-orbits-guest__copy">
             <p className="kinetic-label">Личный кабинет</p>
-            <h1 className="kinetic-headline mt-4 text-4xl text-vilu-paper sm:text-5xl md:text-6xl">Ваш центр управления зрением.</h1>
+            <AtomicHeading lines={['Забота', 'продолжается']} className="dashboard-orbits-heading" />
             <p className="mt-7 max-w-2xl text-lg font-semibold leading-8 text-vilu-paper/80">
-              Создайте demo-аккаунт, сохраните рецепт, контактные данные, график осмотров и проверьте тренажеры для глаз. Все данные сохраняются локально в браузере.
+              Сохраните следующий шаг, напоминания и выбранные оправы для себя или близкого. Все данные остаются локально в браузере.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <button onClick={openDemoProfile} className="rounded-full bg-vilu-lime px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-card">Открыть demo-кабинет</button>
@@ -269,8 +275,8 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             </p>
           </section>
 
-          <section className="rounded-[2rem] bg-vilu-ink p-5 text-vilu-paper shadow-2xl shadow-vilu-ink/25 ring-1 ring-vilu-lime/20">
-            <div className="rounded-[1.6rem] bg-[radial-gradient(circle_at_top_right,rgba(233,255,70,0.18),transparent_35%),linear-gradient(135deg,#122019,#07120b)] p-7 md:p-10">
+          <section className="dashboard-orbits-guest__preview">
+            <div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {[
                   ['Рецепт', 'SPH / CYL / AXIS'],
@@ -295,13 +301,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   }
 
   return (
-    <div className="kinetic-surface min-h-screen px-6 py-12">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-10 flex flex-col justify-between gap-5 text-vilu-paper md:flex-row md:items-end">
+    <div className="dashboard-orbits-page">
+      <div className="dashboard-orbits-page__orbits"><OpticalOrbits /></div>
+      <div className="dashboard-orbits-shell">
+        <header className="dashboard-orbits-header">
           <div>
             <p className="kinetic-label">Vision profile</p>
-            <h1 className="kinetic-headline mt-3 text-4xl text-vilu-paper sm:text-5xl md:text-6xl">Кабинет зрения</h1>
-            <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-vilu-paper/80">Здравствуйте, {profile.fullName || user.name}. Здесь собраны данные клиента, рецепт, тренировки, инфографика и персональные предложения.</p>
+            <AtomicHeading lines={['Ваш следующий', 'шаг к заботе']} className="dashboard-orbits-heading" />
+            <p className="dashboard-orbits-header__copy">Здравствуйте, {profile.fullName || user.name}. Здесь собраны напоминания, выбор оправ и действия, которые можно продолжить без лишней тревоги.</p>
             <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-vilu-lime">
               Demo/local mode: данные кабинета сохраняются только в вашем браузере и не отправляются на сервер.
             </p>
@@ -312,16 +319,68 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </header>
 
-        <section className="mb-8 grid gap-4 md:grid-cols-4">
+        <section className="dashboard-orbits-overview">
+          <div className="dashboard-orbits-care">
+            <p className="dashboard-orbits-label">О ком заботимся</p>
+            <div className="dashboard-orbits-care__tabs">
+              {[
+                ['self', 'О себе'],
+                ['child', 'О ребёнке'],
+                ['close', 'О близком'],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setCareSubject(id as typeof careSubject)}
+                  className={careSubject === id ? 'is-active' : ''}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="dashboard-orbits-next">
+              <span>Следующий шаг</span>
+              <h2>
+                {careSubject === 'self' && 'Подготовиться к следующей проверке зрения'}
+                {careSubject === 'child' && 'Понять, когда ребёнку нужна очная проверка'}
+                {careSubject === 'close' && 'Помочь близкому начать с понятного вопроса'}
+              </h2>
+              <p>
+                {careSubject === 'self'
+                  ? `До запланированного осмотра: ${stats.nextExamDays} дн. Проверьте вопросы и сохранённые оправы.`
+                  : 'ViLu не ставит диагноз: помощник объяснит признаки и подскажет безопасный следующий шаг.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => onNavigate?.(careSubject === 'self' ? 'eyecheck' : 'assistant')}
+              >
+                Продолжить <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="dashboard-orbits-reminders">
+            <p className="dashboard-orbits-label">На ближайшее время</p>
+            <article><Calendar size={19} /><div><strong>Очная проверка</strong><span>{profile.nextExamDate || 'Дата не выбрана'}</span></div></article>
+            <article><Glasses size={19} /><div><strong>Оправы к примерке</strong><span>{tryOnRecommendations.length} {tryOnRecommendations.length === 1 ? 'рекомендация' : tryOnRecommendations.length < 5 ? 'рекомендации' : 'рекомендаций'}</span></div></article>
+            <article><Clock3 size={19} /><div><strong>История заказов</strong><span>{purchaseHistory.length > 0 ? `${purchaseHistory.length} записей` : 'Пока пусто'}</span></div></article>
+            <article><MapPin size={19} /><div><strong>Ближайший салон</strong><span>Проверка посадки и рецепта</span></div></article>
+            <div className="dashboard-orbits-reminders__actions">
+              <button type="button" onClick={() => onNavigate?.('products')}>Выбрать оправу <ArrowRight size={15} /></button>
+              <button type="button" onClick={onOpenStores}>Найти салон <MapPin size={15} /></button>
+            </div>
+          </div>
+        </section>
+
+        <section className="dashboard-orbits-metrics">
           <MetricCard icon={<HeartPulse />} label="Нагрузка" value={`${stats.strainScore}%`} tone="bg-vilu-lime text-vilu-ink" bar={stats.strainScore} />
           <MetricCard icon={<Target />} label="Тренировки" value={`${stats.trainingProgress}%`} tone="bg-vilu-ink text-vilu-lime" bar={stats.trainingProgress} />
           <MetricCard icon={<Calendar />} label="До осмотра" value={`${stats.nextExamDays} дн.`} tone="bg-vilu-paper text-vilu-green" bar={Math.max(8, 100 - Math.min(100, stats.nextExamDays))} />
           <MetricCard icon={<Glasses />} label="Рецепт" value={`${stats.prescriptionReady}%`} tone="bg-vilu-lime text-vilu-ink" bar={stats.prescriptionReady} />
         </section>
 
-        <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+        <div className="dashboard-orbits-content">
           <div className="space-y-8">
-            <form onSubmit={saveProfile} className="rounded-[2rem] bg-vilu-card p-7 shadow-sm ring-1 ring-vilu-ink/10 md:p-9">
+            <form onSubmit={saveProfile} className="dashboard-orbits-panel dashboard-orbits-profile">
               <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                   <p className="kinetic-label text-vilu-green">Данные клиента</p>
@@ -356,7 +415,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               </label>
             </form>
 
-            <section className="rounded-[2rem] bg-vilu-card p-7 shadow-sm ring-1 ring-vilu-ink/10 md:p-9">
+            <section className="dashboard-orbits-panel dashboard-orbits-training">
               <div className="mb-7 flex items-center justify-between gap-4">
                 <div>
                   <p className="kinetic-label text-vilu-green">Тренажеры</p>
@@ -401,8 +460,8 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             </section>
           </div>
 
-          <aside className="space-y-8">
-            <section className="rounded-[2rem] bg-vilu-ink p-7 text-vilu-paper shadow-2xl shadow-vilu-ink/20 ring-1 ring-vilu-lime/20">
+          <aside className="dashboard-orbits-aside">
+            <section className="dashboard-orbits-insights">
               <LineChart className="mb-6 text-vilu-lime" size={36} />
               <h2 className="text-3xl font-black tracking-tight">Инфографика зрения</h2>
               <p className="mt-3 text-sm leading-6 text-vilu-paper/60">Сводка строится из рецепта, даты осмотра и регулярности упражнений.</p>
@@ -413,7 +472,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               </div>
             </section>
 
-            <section className="rounded-[2rem] bg-vilu-card p-7 shadow-sm ring-1 ring-vilu-ink/10">
+            <section className="dashboard-orbits-panel">
               <Mail className="mb-5 text-vilu-green" />
               <h3 className="text-2xl font-black tracking-tight">Контакт для уведомлений</h3>
               <p className="mt-2 text-sm text-vilu-ink/55">{user.email}</p>
@@ -421,7 +480,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             </section>
 
             {tryOnRecommendations.length > 0 && (
-              <section className="rounded-[2rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-ink/10">
+              <section className="dashboard-orbits-panel">
                 <VirtualTryOn product={tryOnRecommendations[0]} compact />
                 <div className="mt-5 px-2">
                   <p className="kinetic-label text-vilu-green">По вашим покупкам</p>
@@ -454,7 +513,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             )}
 
             {ads.map((ad, index) => (
-              <section key={ad.title} className={`${index === 0 ? 'bg-vilu-lime text-vilu-ink' : 'bg-vilu-ink text-vilu-paper'} rounded-[2rem] p-7 shadow-sm`}>
+              <section key={ad.title} className={`dashboard-orbits-offer ${index === 0 ? 'is-lime' : 'is-dark'}`}>
                 <Sparkles className="mb-5" />
                 <p className="text-xs font-black uppercase tracking-[0.2em] opacity-70">Персональное предложение</p>
                 <h3 className="mt-2 text-2xl font-black tracking-tight">{ad.title}</h3>
@@ -486,7 +545,7 @@ interface MetricCardProps {
 
 function MetricCard({ icon, label, value, tone, bar }: MetricCardProps) {
   return (
-    <article className="rounded-[2rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-ink/10">
+    <article className="dashboard-orbits-metric">
       <div className={`mb-4 inline-flex rounded-2xl p-3 ${tone}`}>{icon}</div>
       <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-ink/40">{label}</p>
       <p className="mt-2 text-3xl font-black tracking-tight">{value}</p>

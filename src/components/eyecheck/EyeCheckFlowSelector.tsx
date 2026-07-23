@@ -21,7 +21,7 @@ export function EyeCheckFlowSelector({ flows, selectedId, onSelect }: EyeCheckFl
   const copy = eyeCheckUiCopy[language];
 
   return (
-    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section className="eye-orbits-flow-grid grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {flows.map((flow) => {
         const Icon = icons[flow.id];
         const active = flow.id === selectedId;

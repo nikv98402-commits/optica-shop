@@ -144,19 +144,19 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
   };
 
   return (
-    <div className="min-h-screen bg-vilu-paper px-4 py-10 sm:px-6">
-      <div className="mx-auto max-w-6xl">
+    <div className="eye-orbits-page min-h-screen bg-vilu-paper px-4 py-10 sm:px-6">
+      <div className="eye-orbits-shell mx-auto max-w-6xl">
         <button
           type="button"
           onClick={() => onNavigate('home')}
-          className="mb-6 inline-flex items-center gap-2 rounded-full bg-vilu-card px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink ring-1 ring-vilu-line transition hover:bg-vilu-lime"
+          className="eye-orbits-back mb-6 inline-flex items-center gap-2 rounded-full bg-vilu-card px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink ring-1 ring-vilu-line transition hover:bg-vilu-lime"
         >
           <ArrowLeft size={16} /> {copy.backHome}
         </button>
 
         <EyeCheckIntro />
 
-        <div className="mt-6 rounded-[1.5rem] bg-vilu-lime/18 p-4 text-sm font-semibold leading-6 text-vilu-ink/72 ring-1 ring-vilu-lime/25">
+        <div className="eye-orbits-privacy mt-6 rounded-[1.5rem] bg-vilu-lime/18 p-4 text-sm font-semibold leading-6 text-vilu-ink/72 ring-1 ring-vilu-lime/25">
           <ShieldCheck className="mb-2 text-vilu-green" size={18} />
           {copy.privacyNotice}
         </div>
@@ -170,7 +170,7 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
         )}
 
         {onboardingComplete && !started && !result && (
-          <div className="mt-8 rounded-[1.5rem] bg-vilu-card p-5 text-vilu-ink shadow-sm ring-1 ring-vilu-line">
+          <div className="eye-orbits-recommendation mt-8 rounded-[1.5rem] bg-vilu-card p-5 text-vilu-ink shadow-sm ring-1 ring-vilu-line">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">{copy.recommendationReady}</p>
             <p className="mt-2 text-sm font-semibold leading-6 text-vilu-ink/68">
               {copy.recommendationText} {onboardingAnswers ? copy.chooseAnotherScenario : ''}
@@ -185,7 +185,7 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
         )}
 
         {onboardingComplete && !started && !result && (
-          <section className="mt-8 rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-line md:p-8">
+          <section className="eye-orbits-start mt-8 rounded-[2rem] bg-vilu-card p-6 shadow-sm ring-1 ring-vilu-line md:p-8">
             <div className="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-vilu-green">{copy.selectedScenario}</p>

@@ -16,6 +16,8 @@
     "test:eye-map": "vitest run src/lib/eyeMap/__tests__ src/content/__tests__/eyeMapCopy.test.ts src/pages/__tests__/EyeMap.test.tsx",
     "knowledge:index:dry": "node scripts/index-knowledge-assistant.mjs --dry-run",
     "knowledge:index": "node scripts/index-knowledge-assistant.mjs",
+    "knowledge:preview:check": "node scripts/check-knowledge-assistant-preview.mjs",
+    "knowledge:preview:check:live": "node scripts/check-knowledge-assistant-preview.mjs --live",
     "test:knowledge-boundary": "node scripts/check-knowledge-assistant-boundary.mjs",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"

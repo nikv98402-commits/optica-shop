@@ -35,7 +35,7 @@ export function EyeCheckQuestionCard({
   const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100);
 
   return (
-    <section className="overflow-hidden rounded-[2rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-line md:p-8">
+    <section className="eye-orbits-question overflow-hidden rounded-[2rem] bg-vilu-card p-5 shadow-sm ring-1 ring-vilu-line md:p-8">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-vilu-green">{flowText.title}</p>

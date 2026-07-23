@@ -2,7 +2,7 @@
 
 All notable ViLu MVP changes should be documented here.
 
-## [0.3.0.0] - 2026-07-21
+## [0.3.0.0] - 2026-07-23
 
 ### Added
 
@@ -15,6 +15,33 @@ All notable ViLu MVP changes should be documented here.
 - Added desktop/mobile tests, provider and citation contract coverage, secret
   boundary scanning, and operational documentation for preview rollout and
   rollback.
+- Added the Optical Orbits v5 design system across the home page, try-on,
+  vision tracker, catalog, product detail, mission, brand, store locator,
+  dashboard, and Knowledge Assistant experiences.
+- Added reusable atomic headings, optical orbit motion, responsive layouts,
+  structured assistant answers, and consistent next-step navigation.
+
+### Changed
+
+- Migrated shared typography, color, spacing, focus, motion, and mobile
+  behavior to the Optical Orbits v5 product rules.
+- Switched Knowledge Assistant generation and embeddings to the free
+  Cloudflare Workers AI configuration while preserving the Supabase retrieval
+  and safety boundaries.
+
+### Fixed
+
+- Kept the assistant route and home widget unavailable when the feature flag is
+  disabled.
+- Prevented provider diagnostics from crossing the public Edge Function error
+  boundary.
+- Corrected assistant suggestion overflow, readable body-copy sizing,
+  accessibility motion behavior, and Cyrillic heading tracking.
+
+### Tests
+
+- Expanded route, provider, assistant, Store Locator, AtomicHeading, feature
+  flag, responsive, and error-state regression coverage.
 
 ## [0.2.0.1] - 2026-07-20
 

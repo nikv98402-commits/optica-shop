@@ -1,5 +1,18 @@
 # Design System - ViLu
 
+## Optical Orbits v5 — Active Direction
+
+Approved on 2026-07-23. This section supersedes older rules below where they conflict.
+
+- **Core idea:** ViLu turns uncertainty into a clear next step. The visual language combines calm optical fields, precise grids, restrained lime/mint signals, and conversational guidance.
+- **Primary type:** Manrope for product UI and large Cyrillic headings. Unbounded remains a legacy brand accent only and should not be introduced into new large content surfaces.
+- **Signature motion:** `AtomicHeading` softly disassembles and reassembles major narrative headings while they are visible. `OpticalOrbits` expresses guidance and focus around high-value interactive surfaces.
+- **Motion density:** expressive in the home hero, functional in try-on, restrained in catalog and knowledge content. Never place more than two continuously moving focal objects in one viewport.
+- **AI surface:** one dominant composer, compact suggestions, visible loading/retrieval state, concise answer, citations beside the answer, and a direct path to the full assistant.
+- **Surface palette:** deep optical ink `#07110d`, warm paper `#f8f3e8`, soft optical foam `#eef5e7`, signal lime `#d8ef4f`, trust green `#2f6658`, and supporting mint `#a9d8c5`.
+- **Accessibility:** all continuous motion must stop with `prefers-reduced-motion`; animated headings keep screen-reader text; orbit layers never accept pointer events.
+- **Rollout:** the home page establishes the system. Catalog, product, try-on, salon, dashboard, knowledge pages, and `/assistant` should migrate incrementally using shared tokens rather than page-specific reinterpretations.
+
 ## Product Context
 
 - **What this is:** ViLu is a consumer eyewear try-on and knowledge product. It helps a user upload a photo, evaluate frame fit, save 2-3 frame options, and move to a nearby optical salon with a clear visit checklist.
@@ -23,13 +36,13 @@ Reference landscape:
 ## Aesthetic Direction
 
 - **Direction:** Methodical premium utility.
-- **Decoration level:** Intentional, low decoration. Use product state, selection steps, checklists, and frame imagery instead of abstract ornaments.
+- **Decoration level:** Intentional optical motion. Use product state, selection steps, checklists, frame imagery, and the shared Optical Orbits language; avoid unrelated ornament.
 - **Mood:** Calm, expert, helpful, slightly premium. The user should feel that ViLu is guiding a practical choice, not pushing a medical claim or a fashion mood board.
-- **Avoid:** Poster-like oversized type, decorative circles, purple gradients, generic stock-photo heroes, internal analytics language, and UI that asks for contact before value is clear.
+- **Avoid:** Poster-like oversized type without interaction, arbitrary circles, purple gradients, generic stock-photo heroes, internal analytics language, and UI that asks for contact before value is clear.
 
 ## Typography
 
-- **Display/Hero:** Unbounded - keep for brand character and strong Cyrillic presence, but use it sparingly.
+- **Display/Hero:** Manrope for new Optical Orbits headings and animated Cyrillic. Unbounded is retained only for legacy accents during migration.
 - **Body:** Manrope - clean, readable, familiar enough for forms and explanations.
 - **UI/Labels:** Manrope for most labels; Unbounded only for short brand/section accents.
 - **Data/Tables:** IBM Plex Mono or JetBrains Mono where tabular alignment matters. Use `font-variant-numeric: tabular-nums`.
@@ -249,10 +262,11 @@ Use neutral surfaces. Do not use red, error icons, or alarming copy for missing 
 
 ## Motion
 
-- **Approach:** Minimal functional motion.
-- **Easing:** `cubic-bezier(0.4, 0, 0.2, 1)` for common UI transitions.
+- **Approach:** Purposeful optical motion with strict density control.
+- **Easing:** `cubic-bezier(0.2, 0.8, 0.2, 1)` for narrative assembly; `cubic-bezier(0.4, 0, 0.2, 1)` for controls.
 - **Duration:** 120-200ms for hover/focus; 200-300ms for modal entry.
-- **Avoid:** Large parallax, decorative animated blobs, and motion that competes with try-on controls.
+- **Signature:** visible-section `AtomicHeading` cycles around every 5.9 seconds; orbit durations vary from 13 to 23 seconds.
+- **Avoid:** Large parallax, unrelated animated blobs, simultaneous motion in many sections, and motion that competes with try-on controls.
 
 ## Imagery
 

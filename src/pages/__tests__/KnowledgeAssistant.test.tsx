@@ -26,6 +26,8 @@ describe('KnowledgeAssistant', () => {
     await user.type(screen.getByRole('textbox'), 'Что значит 52-18-140?');
     await user.click(screen.getByRole('button', { name: 'Спросить' }));
     expect(await screen.findByText('52 — ширина линзы. [1]')).toBeVisible();
+    expect(screen.getByRole('button', { name: /Как выбрать размер оправы/i })).toBeVisible();
+    expect(screen.queryByText('kak vybrat razmer opravy')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Источники/i }));
     expect(screen.getByRole('link', { name: /Размер оправы/i })).toHaveAttribute('href', 'https://vilu.store/kak-vybrat-razmer-opravy');
     expect(screen.getByRole('link', { name: /OcuLearning/i })).toHaveAttribute('href', 'https://www.oculearning.com/');
