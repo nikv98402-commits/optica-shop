@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VITE_TALLY_FORM_URL: ${{ vars.VITE_TALLY_FORM_URL }}
+      VITE_FEATURE_KNOWLEDGE_ASSISTANT: "true"
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,6 +55,7 @@ jobs:
             visiontracker
             products
             product
+            assistant
             dashboard
             checkout
             payment/return
