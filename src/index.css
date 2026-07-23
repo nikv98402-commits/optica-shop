@@ -1218,7 +1218,7 @@ h1, h2, h3, .font-black {
 .orbits-lens-card > div:last-child { padding: 1.25rem; }
 .orbits-lens-card small { color: var(--vilu-green); font-size: 0.58rem; font-weight: 800; text-transform: uppercase; }
 .orbits-lens-card h3 { margin-top: 0.4rem; font-family: 'Manrope', system-ui, sans-serif; font-size: 1.45rem; }
-.orbits-lens-card p { margin-top: 0.6rem; color: var(--vilu-muted-text); font-size: 0.72rem; line-height: 1.55; }
+.orbits-lens-card p { margin-top: 0.6rem; color: var(--vilu-muted-text); font-size: 1rem; line-height: 1.55; }
 .orbits-lens-card footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.2rem; border-top: 1px solid var(--vilu-line); padding-top: 1rem; }
 .orbits-lens-card footer button { display: inline-flex; align-items: center; gap: 0.45rem; border-radius: 999px; padding: 0.7rem 0.9rem; color: var(--vilu-paper); background: var(--vilu-ink); font-size: 0.65rem; font-weight: 800; }
 
@@ -1431,9 +1431,9 @@ h1, h2, h3, .font-black {
 }
 
 .vilu-accent-copy-on-dark {
-  color: #d8ef4f !important;
-  -webkit-text-fill-color: #d8ef4f !important;
-  opacity: 1 !important;
+  color: #d8ef4f;
+  -webkit-text-fill-color: #d8ef4f;
+  opacity: 1;
 }
 
 .vilu-copy-on-light {
@@ -1620,8 +1620,8 @@ h1, h2, h3, .font-black {
 .tryon-orbits-catalog,
 .tryon-orbits-selection,
 .tryon-orbits-readiness {
-  border-radius: 1.5rem !important;
-  box-shadow: none !important;
+  border-radius: 1.5rem;
+  box-shadow: none;
 }
 
 .tryon-orbits-goals {
@@ -1630,8 +1630,8 @@ h1, h2, h3, .font-black {
   background:
     linear-gradient(rgba(248, 243, 232, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(248, 243, 232, 0.045) 1px, transparent 1px),
-    var(--vilu-ink) !important;
-  background-size: 32px 32px !important;
+    var(--vilu-ink);
+  background-size: 32px 32px;
 }
 
 .tryon-orbits-goals::after {
@@ -1648,30 +1648,30 @@ h1, h2, h3, .font-black {
 
 .tryon-orbits-canvas {
   border: 1px solid rgba(47, 102, 88, 0.22);
-  background: rgba(255, 252, 246, 0.94) !important;
+  background: rgba(255, 252, 246, 0.94);
 }
 
 .tryon-orbits-canvas > div:nth-of-type(3) {
-  border-radius: 1.25rem !important;
+  border-radius: 1.25rem;
 }
 
 .tryon-orbits-catalog {
   border-top: 1px solid rgba(47, 102, 88, 0.24);
-  background: transparent !important;
+  background: transparent;
 }
 
 .tryon-orbits-catalog article {
-  border-radius: 1.1rem !important;
+  border-radius: 1.1rem;
   box-shadow: none;
 }
 
 .tryon-orbits-sidebar {
-  top: 7rem !important;
+  top: 7rem;
 }
 
 .tryon-orbits-selection {
   border: 1px solid rgba(47, 102, 88, 0.2);
-  background: rgba(238, 245, 231, 0.96) !important;
+  background: rgba(238, 245, 231, 0.96);
 }
 
 .tryon-orbits-readiness {
@@ -1694,11 +1694,11 @@ h1, h2, h3, .font-black {
 .tryon-orbits-optics {
   position: relative;
   overflow: hidden;
-  padding-top: 6rem !important;
-  padding-bottom: 6rem !important;
+  padding-top: 6rem;
+  padding-bottom: 6rem;
   background:
     radial-gradient(circle at 12% 24%, rgba(169, 216, 197, 0.11), transparent 28%),
-    var(--vilu-ink) !important;
+    var(--vilu-ink);
 }
 
 .tryon-orbits-optics::before {
@@ -1713,7 +1713,7 @@ h1, h2, h3, .font-black {
 }
 
 .tryon-orbits-optics > div { position: relative; }
-.tryon-orbits-optics article { border-radius: 1.25rem !important; box-shadow: none !important; }
+.tryon-orbits-optics article { border-radius: 1.25rem; box-shadow: none; }
 
 @media (max-width: 1024px) {
   .tryon-orbits-hero { min-height: auto; padding-block: 4.5rem; }
@@ -1729,19 +1729,19 @@ h1, h2, h3, .font-black {
   .tryon-orbits-hero__grid { gap: 2.5rem; }
   .tryon-orbits-title { font-size: clamp(2.65rem, 13.2vw, 3.45rem); line-height: 0.94; }
   .tryon-orbits-title .atomic-heading__line { white-space: nowrap; }
-  .tryon-orbits-hero__copy > p:nth-of-type(2) { font-size: 0.92rem !important; line-height: 1.65 !important; }
+  .tryon-orbits-hero__copy > p:nth-of-type(2) { font-size: 0.92rem; line-height: 1.65; }
   .tryon-orbits-hero__orbits { top: 22rem; right: -17rem; width: 34rem; height: 34rem; }
   .tryon-orbits-journey { border-radius: 1.25rem; }
   .tryon-orbits-journey__grid > div { min-height: 7.4rem; padding: 1rem; }
   .tryon-orbits-journey__grid p { margin-top: 1.2rem; font-size: 0.85rem; }
-  .tryon-orbits-workbench { gap: 1.25rem; padding: 2.5rem 0.75rem 4rem !important; }
+  .tryon-orbits-workbench { gap: 1.25rem; padding: 2.5rem 0.75rem 4rem; }
   .tryon-orbits-workbench main,
   .tryon-orbits-sidebar { gap: 1.25rem; }
   .tryon-orbits-goals,
   .tryon-orbits-canvas,
   .tryon-orbits-catalog,
   .tryon-orbits-selection,
-  .tryon-orbits-readiness { border-radius: 1.1rem !important; padding: 1rem !important; }
+  .tryon-orbits-readiness { border-radius: 1.1rem; padding: 1rem; }
   .tryon-orbits-goals,
   .tryon-orbits-selection,
   .tryon-orbits-readiness { overflow: hidden; }
@@ -1751,24 +1751,24 @@ h1, h2, h3, .font-black {
   .tryon-orbits-selection .items-start.justify-between > .shrink-0 {
     align-self: flex-start;
   }
-  .tryon-orbits-canvas .aspect-\[4\/3\] { min-height: 17rem !important; border-radius: 1rem !important; }
-  .tryon-orbits-catalog article { padding: 0.75rem !important; }
+  .tryon-orbits-canvas .aspect-\[4\/3\] { min-height: 17rem; border-radius: 1rem; }
+  .tryon-orbits-catalog article { padding: 0.75rem; }
   .tryon-orbits-selection { order: -1; }
-  .tryon-orbits-optics { padding: 4rem 0.75rem !important; }
-  .tryon-orbits-optics article { padding: 1rem !important; }
+  .tryon-orbits-optics { padding: 4rem 0.75rem; }
+  .tryon-orbits-optics article { padding: 1rem; }
 }
 
 /* Optical Orbits v5 — vision tracker */
 .eye-orbits-page {
   position: relative;
   overflow-x: hidden;
-  padding-top: 3rem !important;
-  padding-bottom: 6rem !important;
+  padding-top: 3rem;
+  padding-bottom: 6rem;
   background:
     linear-gradient(rgba(47, 102, 88, 0.055) 1px, transparent 1px),
     linear-gradient(90deg, rgba(47, 102, 88, 0.055) 1px, transparent 1px),
-    var(--vilu-paper) !important;
-  background-size: 48px 48px !important;
+    var(--vilu-paper);
+  background-size: 48px 48px;
 }
 
 .eye-orbits-shell {
@@ -1776,10 +1776,10 @@ h1, h2, h3, .font-black {
 }
 
 .eye-orbits-back {
-  border-color: rgba(47, 102, 88, 0.18) !important;
-  border-radius: 999px !important;
-  box-shadow: none !important;
-  background: rgba(248, 243, 232, 0.88) !important;
+  border-color: rgba(47, 102, 88, 0.18);
+  border-radius: 999px;
+  box-shadow: none;
+  background: rgba(248, 243, 232, 0.88);
   backdrop-filter: blur(12px);
 }
 
@@ -1837,9 +1837,9 @@ h1, h2, h3, .font-black {
 }
 
 .eye-orbits-hero__content > div:last-child > p:last-child {
-  border: 1px solid rgba(216, 239, 79, 0.22) !important;
-  border-radius: 1rem !important;
-  background: rgba(248, 243, 232, 0.055) !important;
+  border: 1px solid rgba(216, 239, 79, 0.22);
+  border-radius: 1rem;
+  background: rgba(248, 243, 232, 0.055);
 }
 
 .eye-orbits-privacy {
@@ -1847,22 +1847,22 @@ h1, h2, h3, .font-black {
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 0.9rem;
-  border-color: rgba(47, 102, 88, 0.18) !important;
-  border-radius: 1rem !important;
-  background: rgba(238, 245, 231, 0.9) !important;
+  border-color: rgba(47, 102, 88, 0.18);
+  border-radius: 1rem;
+  background: rgba(238, 245, 231, 0.9);
 }
 
-.eye-orbits-privacy svg { margin: 0 !important; }
+.eye-orbits-privacy svg { margin: 0; }
 
 .eye-orbits-onboarding,
 .eye-orbits-start,
 .eye-orbits-question,
 .eye-orbits-result,
 .eye-orbits-recommendation {
-  border-color: rgba(47, 102, 88, 0.2) !important;
-  border-radius: 1.5rem !important;
-  box-shadow: none !important;
-  background: rgba(255, 252, 246, 0.95) !important;
+  border-color: rgba(47, 102, 88, 0.2);
+  border-radius: 1.5rem;
+  box-shadow: none;
+  background: rgba(255, 252, 246, 0.95);
 }
 
 .eye-orbits-onboarding {
@@ -1887,8 +1887,8 @@ h1, h2, h3, .font-black {
   background:
     linear-gradient(rgba(248, 243, 232, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(248, 243, 232, 0.045) 1px, transparent 1px),
-    var(--vilu-ink) !important;
-  background-size: 32px 32px !important;
+    var(--vilu-ink);
+  background-size: 32px 32px;
 }
 
 .eye-orbits-onboarding button,
@@ -1906,8 +1906,8 @@ h1, h2, h3, .font-black {
   counter-increment: eye-flow;
   overflow: hidden;
   border: 1px solid rgba(47, 102, 88, 0.18);
-  border-radius: 1.2rem !important;
-  box-shadow: none !important;
+  border-radius: 1.2rem;
+  box-shadow: none;
 }
 
 .eye-orbits-flow-grid > button::after {
@@ -1922,16 +1922,16 @@ h1, h2, h3, .font-black {
 }
 
 .eye-orbits-start {
-  background: rgba(238, 245, 231, 0.96) !important;
+  background: rgba(238, 245, 231, 0.96);
 }
 
 .eye-orbits-start > div > div:last-child {
-  border-radius: 1.15rem !important;
+  border-radius: 1.15rem;
   background:
     linear-gradient(rgba(248, 243, 232, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(248, 243, 232, 0.05) 1px, transparent 1px),
-    var(--vilu-ink) !important;
-  background-size: 24px 24px !important;
+    var(--vilu-ink);
+  background-size: 24px 24px;
 }
 
 .eye-orbits-question {
@@ -1962,30 +1962,30 @@ h1, h2, h3, .font-black {
 }
 
 @media (max-width: 768px) {
-  .eye-orbits-page { padding: 1.5rem 0.75rem 4rem !important; background-size: 32px 32px !important; }
-  .eye-orbits-back { margin-bottom: 1rem !important; }
+  .eye-orbits-page { padding: 1.5rem 0.75rem 4rem; background-size: 32px 32px; }
+  .eye-orbits-back { margin-bottom: 1rem; }
   .eye-orbits-hero { min-height: auto; border-radius: 1.2rem; padding: 1.5rem 1rem 2rem; }
   .eye-orbits-hero__content { grid-template-columns: 1fr; gap: 1rem; }
   .eye-orbits-hero__title { font-size: clamp(2.65rem, 13vw, 3.7rem); line-height: 0.94; }
   .eye-orbits-hero__title .atomic-heading__line { white-space: nowrap; }
   .eye-orbits-hero__motion { top: 20rem; right: -16rem; width: 31rem; height: 31rem; opacity: 0.32; }
-  .eye-orbits-hero__content > div:last-child > p { font-size: 0.9rem !important; line-height: 1.65 !important; }
-  .eye-orbits-privacy { grid-template-columns: 1fr; padding: 1rem !important; }
+  .eye-orbits-hero__content > div:last-child > p { font-size: 0.9rem; line-height: 1.65; }
+  .eye-orbits-privacy { grid-template-columns: 1fr; padding: 1rem; }
   .eye-orbits-onboarding,
   .eye-orbits-start,
   .eye-orbits-question,
   .eye-orbits-result,
-  .eye-orbits-recommendation { border-radius: 1rem !important; }
+  .eye-orbits-recommendation { border-radius: 1rem; }
   .eye-orbits-onboarding > div > div,
   .eye-orbits-onboarding > div > aside,
   .eye-orbits-start,
   .eye-orbits-question,
-  .eye-orbits-result { padding: 1rem !important; }
-  .eye-orbits-flow-grid { gap: 0.75rem !important; }
-  .eye-orbits-flow-grid > button { padding: 1rem !important; }
+  .eye-orbits-result { padding: 1rem; }
+  .eye-orbits-flow-grid { gap: 0.75rem; }
+  .eye-orbits-flow-grid > button { padding: 1rem; }
   .eye-orbits-onboarding button,
   .eye-orbits-question button,
-  .eye-orbits-result button { min-height: 3.25rem; padding: 0.8rem 1rem !important; font-size: 0.72rem !important; letter-spacing: 0.06em !important; }
+  .eye-orbits-result button { min-height: 3.25rem; padding: 0.8rem 1rem; font-size: 0.72rem; letter-spacing: 0.06em; }
 }
 
 .vilu-primary-button,
@@ -2895,6 +2895,12 @@ h1, h2, h3, .font-black {
   background: transparent;
   color: var(--vilu-ink);
   font-weight: 700;
+}
+
+.store-orbits-search:focus-within,
+.store-orbits-city select:focus-visible {
+  outline: 3px solid rgba(216, 239, 79, 0.7);
+  outline-offset: 3px;
 }
 
 .store-orbits-city {
@@ -3978,6 +3984,11 @@ h1, h2, h3, .font-black {
   font-size: 0.9rem;
   letter-spacing: normal;
   text-transform: none;
+}
+
+.catalog-orbits-search__control:focus-within {
+  outline: 3px solid rgba(216, 239, 79, 0.7);
+  outline-offset: 3px;
 }
 
 .catalog-orbits-search input::placeholder {
