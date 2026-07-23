@@ -53,11 +53,15 @@ jobs:
             vision-check
             vision-tracker
             visiontracker
+            catalog
             products
             product
             assistant
             dashboard
+            cabinet
             checkout
+            about
+            brand
             payment/return
             payment/success
             payment/failed
