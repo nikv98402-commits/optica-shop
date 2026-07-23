@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { OpenAICompatibleEmbeddingProvider, ProviderError, providerErrorDiagnostic } from './providers.ts';
+import {
+  OpenAICompatibleChatProvider,
+  OpenAICompatibleEmbeddingProvider,
+  ProviderError,
+  providerErrorDiagnostic,
+} from './providers.ts';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -39,5 +44,93 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
       'https://api.cloudflare.com/client/v4/accounts/account-id/ai/run/@cf/qwen/qwen3-embedding-0.6b',
       expect.objectContaining({ method: 'POST' }),
     );
+  });
+
+  it('returns a valid compatible embedding without attempting fallback', async () => {
+    const embedding = Array.from({ length: 1024 }, (_, index) => index / 1024);
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ data: [{ embedding }] }));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleEmbeddingProvider({
+      baseUrl: 'https://provider.example/v1/',
+      apiKey: 'test-token',
+      model: 'embedding-model',
+    });
+
+    await expect(provider.embed('test')).resolves.toEqual(embedding);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('rejects malformed compatible and Cloudflare embeddings', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ data: [{ embedding: [1, 2] }] })));
+    const compatible = new OpenAICompatibleEmbeddingProvider({
+      baseUrl: 'https://provider.example/v1',
+      apiKey: 'test-token',
+      model: 'embedding-model',
+    });
+    await expect(compatible.embed('test')).rejects.toMatchObject({ code: 'invalid_response', stage: 'embeddings' });
+
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('not found', { status: 404 }))
+      .mockResolvedValueOnce(Response.json({ result: { data: [[Number.NaN]] } }));
+    vi.stubGlobal('fetch', fetchMock);
+    const cloudflare = new OpenAICompatibleEmbeddingProvider({
+      baseUrl: 'https://api.cloudflare.com/client/v4/accounts/account-id/ai/v1',
+      apiKey: 'test-token',
+      model: '@cf/qwen/qwen3-embedding-0.6b',
+    });
+    await expect(cloudflare.embed('test')).rejects.toMatchObject({ code: 'invalid_response', stage: 'embeddings' });
+  });
+
+  it('does not fall back for a non-Cloudflare provider or a non-404 error', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('unavailable', { status: 503 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleEmbeddingProvider({
+      baseUrl: 'https://provider.example/v1',
+      apiKey: 'test-token',
+      model: 'embedding-model',
+    });
+
+    await expect(provider.embed('test')).rejects.toMatchObject({ code: 'unavailable', status: 503 });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('classifies aborted requests as timeouts', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new DOMException('aborted', 'AbortError')));
+    const provider = new OpenAICompatibleEmbeddingProvider({
+      baseUrl: 'https://provider.example/v1',
+      apiKey: 'test-token',
+      model: 'embedding-model',
+    });
+    await expect(provider.embed('test')).rejects.toMatchObject({ code: 'timeout', stage: 'embeddings' });
+  });
+
+  it('validates chat success, malformed JSON, and oversized content', async () => {
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1',
+      apiKey: 'test-token',
+      model: 'chat-model',
+    });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: '{"claims":[]}' } }] }))
+      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: 'not-json' } }] }))
+      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: 'x'.repeat(32_001) } }] }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(provider.complete('system', 'user')).resolves.toEqual({ claims: [] });
+    await expect(provider.complete('system', 'user')).rejects.toMatchObject({ code: 'invalid_response', stage: 'chat' });
+    await expect(provider.complete('system', 'user')).rejects.toMatchObject({ code: 'invalid_response', stage: 'chat' });
+  });
+
+  it('rejects incomplete provider configuration', () => {
+    expect(() => new OpenAICompatibleEmbeddingProvider({
+      baseUrl: '',
+      apiKey: 'token',
+      model: 'model',
+    })).toThrowError(expect.objectContaining({ code: 'not_configured', stage: 'configuration' }));
+    expect(() => new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1',
+      apiKey: '',
+      model: 'model',
+    })).toThrowError(expect.objectContaining({ code: 'not_configured', stage: 'configuration' }));
   });
 });
