@@ -18,8 +18,8 @@ payments, store locator, canonical metadata, or existing knowledge slugs.
    1024-dimensional provider.
 5. `match_knowledge_chunks` returns at most eight chunks whose sources remain
    editorially approved and above the server-owned similarity threshold.
-6. Qwen receives only policy, preferences, recent context, and retrieved
-   chunks with opaque source ids.
+6. The configured Cloudflare Workers AI chat model receives only policy,
+   preferences, recent context, and retrieved chunks with opaque source ids.
 7. Model JSON is treated as untrusted. Every claim must provide a retrieved
    chunk id and an exact supporting quote. The server verifies the quote and
    derives citations from the chunk. One correction retry is allowed.

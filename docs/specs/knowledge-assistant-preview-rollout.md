@@ -14,7 +14,8 @@ data, or enable the assistant on `vilu.store`.
 
 ## Locked decisions
 
-- Use a managed OpenAI-compatible Qwen chat provider for preview.
+- Use the OpenAI-compatible Cloudflare Workers AI chat provider documented in
+  `docs/deployment/knowledge-assistant.md` for preview.
 - Keep provider URLs, keys, and model names in Supabase Secrets.
 - Require a multilingual OpenAI-compatible embedding model that returns exactly
   1024 dimensions.
@@ -33,7 +34,7 @@ flowchart LR
   V --> F["Supabase preview Edge Function"]
   F --> E["Managed embedding API"]
   F --> D["Supabase preview pgvector"]
-  F --> Q["Managed Qwen chat API"]
+  F --> Q["Cloudflare Workers AI chat API"]
   I["Trusted indexer"] --> E
   I --> D
   P["vilu.store"] -. "feature flag remains false" .-> X["No assistant route"]
@@ -58,8 +59,9 @@ flowchart LR
    each source transactionally in the preview database.
 3. The browser sends a bounded query and preferences to the preview Edge
    Function. The browser never receives provider or service-role credentials.
-4. The function embeds the query, retrieves reviewed chunks, asks Qwen for a
-   grounded answer, and returns citations plus link-only external resources.
+4. The function embeds the query, retrieves reviewed chunks, asks the
+   configured Cloudflare Workers AI chat model for a grounded answer, and
+   returns citations plus link-only external resources.
 5. Urgent and disallowed questions use deterministic responses even when the
    provider or database is unavailable.
 
@@ -125,4 +127,3 @@ Production activation is a separate change. It requires explicit approval after
 preview QA, editorial review, secret scan, and product sign-off. The activation
 change must configure production Supabase independently and set the production
 feature flag only after all checks pass.
-
