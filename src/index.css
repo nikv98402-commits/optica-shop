@@ -772,7 +772,7 @@ h1, h2, h3, .font-black {
 .optical-journey__score p {
   margin-top: 0.65rem;
   color: var(--vilu-muted-text);
-  font-size: 0.72rem;
+  font-size: 1rem;
   line-height: 1.55;
 }
 
@@ -1153,7 +1153,7 @@ h1, h2, h3, .font-black {
   min-height: 3rem;
   margin-top: 0.65rem;
   color: var(--vilu-muted-text);
-  font-size: 0.72rem;
+  font-size: 1rem;
   line-height: 1.5;
 }
 
@@ -1729,11 +1729,11 @@ h1, h2, h3, .font-black {
   .tryon-orbits-hero__grid { gap: 2.5rem; }
   .tryon-orbits-title { font-size: clamp(2.65rem, 13.2vw, 3.45rem); line-height: 0.94; }
   .tryon-orbits-title .atomic-heading__line { white-space: nowrap; }
-  .tryon-orbits-hero__copy > p:nth-of-type(2) { font-size: 0.92rem; line-height: 1.65; }
+  .tryon-orbits-hero__copy > p:nth-of-type(2) { font-size: 1rem; line-height: 1.65; }
   .tryon-orbits-hero__orbits { top: 22rem; right: -17rem; width: 34rem; height: 34rem; }
   .tryon-orbits-journey { border-radius: 1.25rem; }
   .tryon-orbits-journey__grid > div { min-height: 7.4rem; padding: 1rem; }
-  .tryon-orbits-journey__grid p { margin-top: 1.2rem; font-size: 0.85rem; }
+  .tryon-orbits-journey__grid p { margin-top: 1.2rem; font-size: 1rem; }
   .tryon-orbits-workbench { gap: 1.25rem; padding: 2.5rem 0.75rem 4rem; }
   .tryon-orbits-workbench main,
   .tryon-orbits-sidebar { gap: 1.25rem; }
@@ -1969,7 +1969,7 @@ h1, h2, h3, .font-black {
   .eye-orbits-hero__title { font-size: clamp(2.65rem, 13vw, 3.7rem); line-height: 0.94; }
   .eye-orbits-hero__title .atomic-heading__line { white-space: nowrap; }
   .eye-orbits-hero__motion { top: 20rem; right: -16rem; width: 31rem; height: 31rem; opacity: 0.32; }
-  .eye-orbits-hero__content > div:last-child > p { font-size: 0.9rem; line-height: 1.65; }
+  .eye-orbits-hero__content > div:last-child > p { font-size: 1rem; line-height: 1.65; }
   .eye-orbits-privacy { grid-template-columns: 1fr; padding: 1rem; }
   .eye-orbits-onboarding,
   .eye-orbits-start,
@@ -2307,7 +2307,7 @@ h1, h2, h3, .font-black {
   max-width: 680px;
   margin-top: 0.8rem;
   color: rgba(7, 17, 13, 0.66);
-  font-size: 0.88rem;
+  font-size: 1rem;
   line-height: 1.55;
 }
 
@@ -3165,7 +3165,7 @@ h1, h2, h3, .font-black {
 .store-orbits-map__selection p {
   margin-top: 0.35rem;
   color: rgba(7, 17, 13, 0.58);
-  font-size: 0.78rem;
+  font-size: 1rem;
 }
 
 .store-orbits-map__selection a {
@@ -3519,7 +3519,7 @@ h1, h2, h3, .font-black {
 .about-orbits-system-card > p {
   margin-top: 1rem;
   color: rgba(7, 17, 13, 0.62);
-  font-size: 0.92rem;
+  font-size: 1rem;
   line-height: 1.6;
 }
 
@@ -3589,7 +3589,7 @@ h1, h2, h3, .font-black {
 .about-orbits-principles__list p {
   margin-top: 0.5rem;
   color: rgba(247, 243, 233, 0.64);
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1.55;
 }
 
@@ -3777,7 +3777,7 @@ h1, h2, h3, .font-black {
   max-width: 440px;
   margin-top: 0.55rem;
   color: rgba(247, 243, 233, 0.66);
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1.55;
 }
 
