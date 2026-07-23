@@ -3,15 +3,25 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CompactKnowledgeAssistant } from '../CompactKnowledgeAssistant';
 
-const askKnowledgeAssistant = vi.fn();
-
-vi.mock('../../../config/features', () => ({
+const mocks = vi.hoisted(() => ({
+  askKnowledgeAssistant: vi.fn(),
   publicFeatures: { knowledgeAssistant: true },
+  AssistantServiceError: class AssistantServiceError extends Error {
+    constructor(public readonly code: string) {
+      super(code);
+    }
+  },
 }));
 
-vi.mock('../../../services/knowledgeAssistant', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../../../services/knowledgeAssistant')>();
-  return { ...original, askKnowledgeAssistant: (...args: unknown[]) => askKnowledgeAssistant(...args) };
+vi.mock('../../../config/features', () => ({
+  publicFeatures: mocks.publicFeatures,
+}));
+
+vi.mock('../../../services/knowledgeAssistant', () => {
+  return {
+    AssistantServiceError: mocks.AssistantServiceError,
+    askKnowledgeAssistant: (...args: unknown[]) => mocks.askKnowledgeAssistant(...args),
+  };
 });
 
 const response = {
@@ -28,7 +38,10 @@ const response = {
 };
 
 describe('CompactKnowledgeAssistant', () => {
-  beforeEach(() => askKnowledgeAssistant.mockReset());
+  beforeEach(() => {
+    mocks.askKnowledgeAssistant.mockReset();
+    mocks.publicFeatures.knowledgeAssistant = true;
+  });
 
   it('keeps empty input disabled and selects a suggested question', async () => {
     const user = userEvent.setup();
@@ -45,7 +58,7 @@ describe('CompactKnowledgeAssistant', () => {
 
   it('blocks duplicate submissions while loading and renders only two citations', async () => {
     let resolveRequest!: (value: typeof response) => void;
-    askKnowledgeAssistant.mockReturnValue(new Promise((resolve) => {
+    mocks.askKnowledgeAssistant.mockReturnValue(new Promise((resolve) => {
       resolveRequest = resolve;
     }));
     const user = userEvent.setup();
@@ -55,7 +68,7 @@ describe('CompactKnowledgeAssistant', () => {
     await user.click(submit);
     expect(submit).toBeDisabled();
     expect(screen.getByText(/Находим релевантный фрагмент/)).toBeVisible();
-    expect(askKnowledgeAssistant).toHaveBeenCalledOnce();
+    expect(mocks.askKnowledgeAssistant).toHaveBeenCalledOnce();
 
     resolveRequest(response);
     expect(await screen.findByText(response.answer)).toBeVisible();
@@ -72,5 +85,37 @@ describe('CompactKnowledgeAssistant', () => {
 
     await user.click(screen.getByRole('button', { name: /Open full assistant/ }));
     expect(onNavigate).toHaveBeenCalledWith('assistant');
+  });
+
+  it('renders a recoverable message for service errors', async () => {
+    mocks.askKnowledgeAssistant.mockRejectedValueOnce(
+      new mocks.AssistantServiceError('provider_unavailable'),
+    );
+    const user = userEvent.setup();
+    render(<CompactKnowledgeAssistant language="ru" onNavigate={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Спросить ViLu' }));
+    expect(await screen.findByText(/Не удалось получить ответ/)).toBeVisible();
+  });
+
+  it('does not mislabel unexpected errors as recoverable service failures', async () => {
+    mocks.askKnowledgeAssistant.mockRejectedValueOnce(new Error('unexpected'));
+    const user = userEvent.setup();
+    render(<CompactKnowledgeAssistant language="ru" onNavigate={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Спросить ViLu' }));
+    await screen.findByRole('button', { name: 'Спросить ViLu' });
+    expect(screen.queryByText(/Не удалось получить ответ/)).not.toBeInTheDocument();
+  });
+
+  it('navigates instead of calling the service when the feature is disabled', async () => {
+    mocks.publicFeatures.knowledgeAssistant = false;
+    const onNavigate = vi.fn();
+    const user = userEvent.setup();
+    render(<CompactKnowledgeAssistant language="ru" onNavigate={onNavigate} />);
+
+    await user.click(screen.getByRole('button', { name: 'Спросить ViLu' }));
+    expect(onNavigate).toHaveBeenCalledWith('assistant');
+    expect(mocks.askKnowledgeAssistant).not.toHaveBeenCalled();
   });
 });

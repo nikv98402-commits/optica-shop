@@ -7,6 +7,7 @@ import {
 } from './providers.ts';
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -132,5 +133,76 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
       apiKey: '',
       model: 'model',
     })).toThrowError(expect.objectContaining({ code: 'not_configured', stage: 'configuration' }));
+  });
+
+  it('preserves status but ignores malformed non-JSON provider error bodies', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response('<html>unavailable</html>', { status: 502 }),
+    ));
+    const provider = new OpenAICompatibleEmbeddingProvider({
+      baseUrl: 'https://provider.example/v1',
+      apiKey: 'test-token',
+      model: 'embedding-model',
+    });
+
+    await expect(provider.embed('test')).rejects.toMatchObject({
+      code: 'unavailable',
+      stage: 'embeddings',
+      status: 502,
+      providerCode: undefined,
+      providerMessage: undefined,
+    });
+  });
+
+  it('reports an HTTP failure from the Cloudflare fallback endpoint', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('not found', { status: 404 }))
+      .mockResolvedValueOnce(new Response('upstream down', { status: 503 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleEmbeddingProvider({
+      baseUrl: 'https://api.cloudflare.com/client/v4/accounts/account-id/ai/v1',
+      apiKey: 'test-token',
+      model: '@cf/qwen/qwen3-embedding-0.6b',
+    });
+
+    await expect(provider.embed('test')).rejects.toMatchObject({
+      code: 'unavailable',
+      stage: 'embeddings',
+      status: 503,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects an empty chat response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      Response.json({ choices: [{ message: { content: '' } }] }),
+    ));
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1',
+      apiKey: 'test-token',
+      model: 'chat-model',
+    });
+    await expect(provider.complete('system', 'user')).rejects.toMatchObject({
+      code: 'invalid_response',
+      stage: 'chat',
+    });
+  });
+
+  it('aborts and classifies a slow chat request as a timeout', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => new Promise((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    })));
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1',
+      apiKey: 'test-token',
+      model: 'chat-model',
+      timeoutMs: 25,
+    });
+
+    const completion = provider.complete('system', 'user');
+    const rejection = expect(completion).rejects.toMatchObject({ code: 'timeout', stage: 'chat' });
+    await vi.advanceTimersByTimeAsync(25);
+    await rejection;
   });
 });

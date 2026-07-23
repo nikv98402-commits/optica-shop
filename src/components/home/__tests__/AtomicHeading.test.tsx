@@ -36,7 +36,11 @@ describe('AtomicHeading', () => {
     act(() => vi.advanceTimersByTime(120));
     expect(heading).toHaveClass('is-assembled');
 
-    act(() => vi.advanceTimersByTime(5780));
+    act(() => callback([{ isIntersecting: false } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(heading).toHaveClass('is-assembled');
+
+    act(() => callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    act(() => vi.advanceTimersByTime(5900));
     expect(heading).not.toHaveClass('is-assembled');
     act(() => vi.advanceTimersByTime(1350));
     expect(heading).toHaveClass('is-assembled');
