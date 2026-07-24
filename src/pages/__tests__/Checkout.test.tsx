@@ -76,6 +76,17 @@ describe('Checkout', () => {
     expect(createPaymentIntent).not.toHaveBeenCalled();
   });
 
+  it('shows the payment action inside the final contact step', () => {
+    renderCheckout();
+
+    const contactStep = screen.getByTestId('checkout-contact-step');
+    const primaryCta = screen.getByTestId('checkout-primary-cta');
+
+    expect(contactStep).toContainElement(primaryCta);
+    expect(primaryCta).toBeVisible();
+    expect(primaryCta).toHaveTextContent(/перейти к тестовой оплате 429 ₽/i);
+  });
+
   it('retries payment with the same lead and idempotency key without creating another lead', async () => {
     submitVisitLead.mockResolvedValue({
       ok: true,
