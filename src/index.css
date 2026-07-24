@@ -5421,7 +5421,7 @@ body,
 .bg-vilu-foam,
 .bg-vilu-card,
 :is(
-  .orbits-section,
+  .orbits-section:not(.orbits-section--dark):not(.orbits-section--knowledge):not(.orbits-section--dashboard),
   .orbits-method,
   .orbits-knowledge,
   .orbits-showcase,
@@ -5432,6 +5432,36 @@ body,
   .assistant-orbits-section
 ) {
   background-color: var(--orbits-paper) !important;
+  background-image:
+    linear-gradient(rgba(3, 17, 12, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(3, 17, 12, 0.045) 1px, transparent 1px) !important;
+  background-size: 48px 48px !important;
+}
+
+:is(
+  .orbits-section--dark,
+  .orbits-section--knowledge,
+  .orbits-section--dashboard,
+  .mission-orbits-section--dark,
+  .about-orbits-principles
+) {
+  color: var(--orbits-paper) !important;
+  background-color: var(--orbits-black) !important;
+  background-image:
+    radial-gradient(circle at 78% 42%, rgba(216, 239, 79, 0.1), transparent 27%),
+    linear-gradient(rgba(248, 243, 232, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248, 243, 232, 0.055) 1px, transparent 1px) !important;
+  background-size: auto, 48px 48px, 48px 48px !important;
+}
+
+.orbits-section--knowledge :is(.orbits-heading, .orbits-library a),
+.orbits-section--dashboard :is(.orbits-heading, .orbits-dashboard-tools strong) {
+  color: var(--orbits-paper) !important;
+}
+
+.orbits-section--knowledge :is(.orbits-description, .orbits-library a span),
+.orbits-section--dashboard :is(.orbits-description, .orbits-dashboard-tools small) {
+  color: rgba(248, 243, 232, 0.72) !important;
 }
 
 :is(
@@ -5555,4 +5585,56 @@ body,
     width: 100% !important;
     min-width: 0 !important;
   }
+}
+
+/* Must stay last: deterministic dark/light cadence for the home page. */
+html body #root .kinetic-surface > :is(.orbits-section--care, .orbits-section--mission, .orbits-section--showcase) {
+  color: var(--orbits-paper) !important;
+  background-color: var(--orbits-black) !important;
+  background-image:
+    radial-gradient(circle at 78% 42%, rgba(216, 239, 79, 0.1), transparent 27%),
+    linear-gradient(rgba(248, 243, 232, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248, 243, 232, 0.055) 1px, transparent 1px) !important;
+  background-size: auto, 48px 48px, 48px 48px !important;
+}
+
+html body #root .kinetic-surface > :is(.orbits-section--dark, .orbits-section--knowledge, .orbits-section--dashboard) {
+  color: var(--orbits-black) !important;
+  background-color: var(--orbits-paper) !important;
+  background-image:
+    linear-gradient(rgba(3, 17, 12, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(3, 17, 12, 0.045) 1px, transparent 1px) !important;
+  background-size: 48px 48px !important;
+}
+
+.kinetic-surface > :is(.orbits-section--care, .orbits-section--mission, .orbits-section--showcase)
+  :is(.orbits-heading, .orbits-principles strong) {
+  color: var(--orbits-paper) !important;
+}
+
+.kinetic-surface > :is(.orbits-section--care, .orbits-section--mission, .orbits-section--showcase)
+  :is(.orbits-description, .orbits-copy-panel > p) {
+  color: rgba(248, 243, 232, 0.72) !important;
+}
+
+.kinetic-surface > .orbits-section--care .orbits-copy-panel,
+.kinetic-surface > .orbits-section--mission .orbits-principles,
+.kinetic-surface > .orbits-section--mission .orbits-principles > div {
+  border-color: rgba(248, 243, 232, 0.2) !important;
+}
+
+.kinetic-surface > .orbits-section--knowledge :is(.orbits-heading, .orbits-library a),
+.kinetic-surface > .orbits-section--dashboard :is(.orbits-heading, .orbits-dashboard-tools strong) {
+  color: var(--orbits-black) !important;
+}
+
+.kinetic-surface > .orbits-section--knowledge :is(.orbits-description, .orbits-library a span),
+.kinetic-surface > .orbits-section--dashboard :is(.orbits-description, .orbits-dashboard-tools small) {
+  color: var(--vilu-muted-text) !important;
+}
+
+.kinetic-surface > .orbits-section--dashboard .orbits-dashboard-tools > div {
+  border-color: var(--vilu-line) !important;
+  color: var(--orbits-black) !important;
+  background: rgba(255, 253, 248, 0.72) !important;
 }
