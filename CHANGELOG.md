@@ -2,6 +2,22 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.3.0.3] - 2026-07-24
+
+### Added
+
+- Added the normalized Supabase foundation for Offer Finder markets, sources,
+  stores, products, observations, prices, freshness, and ingestion runs.
+- Added RLS policies, indexes, immutable raw observations, protected SQL search
+  functions, shared TypeScript contracts, and SQL integration coverage.
+- Added operational documentation for the Offer Finder data boundary,
+  retention, security model, testing, and rollback.
+
+### Tests
+
+- Rechecked TypeScript, lint, unit tests, production build, contract tests, and
+  the Offer Finder SQL security invariants.
+
 ## [0.3.0.2] - 2026-07-24
 
 ### Changed
@@ -134,8 +150,6 @@ All notable ViLu MVP changes should be documented here.
 - Added the periorbital architecture, private ML repository boundary, golden-set
   governance, artifact manifest, benchmark templates, review rubric, and source
   technical specification required for an auditable research spike.
-- Added a production-boundary check that keeps Eye Map disabled, unrouted, and
-  free of server-side ML dependencies until the release gates are approved.
 
 ### Changed
 
@@ -206,10 +220,9 @@ All notable ViLu MVP changes should be documented here.
 
 - ViLu Knowledge Base pages for Face-fit score, frame size, PD, high prescriptions, online try-on limits, face shape, and AI source references.
 - `robots.txt`, `sitemap.xml`, and `llms.txt`.
-- GitHub Pages custom-domain setup for `vilu.store`.
+- GitHub Pages custom-domain setup for `vilu.store/`.
 - Yandex Metrica integration with safe analytics-event filtering.
 
 ### Changed
 
 - Deployment base moved to root domain paths for `https://vilu.store/`.
-
