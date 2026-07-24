@@ -169,9 +169,14 @@ export function Products({ onNavigate, fittingCart, onToggleFitting, onStartChec
             <p className="mt-4 text-xs font-bold uppercase tracking-[0.14em] text-vilu-ink/55">{copy.selectionLimit}</p>
             <button
               type="button"
-              onClick={onStartCheckout}
-              disabled={fittingCart.length === 0}
-              className="mt-4 w-full rounded-full bg-vilu-lime px-5 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper disabled:cursor-not-allowed disabled:bg-vilu-paper disabled:text-vilu-ink/45"
+              onClick={() => {
+                if (fittingCart.length === 0) {
+                  onNavigate('visit-preparation');
+                  return;
+                }
+                onStartCheckout();
+              }}
+              className="mt-4 w-full rounded-full bg-vilu-lime px-5 py-4 text-xs font-black uppercase tracking-[0.14em] text-vilu-ink transition hover:bg-vilu-ink hover:text-vilu-paper"
             >
               {copy.prepareVisit}
             </button>

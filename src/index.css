@@ -5,15 +5,15 @@
 :root {
   --vilu-ink: #07110d;
   --vilu-paper: #f8f3e8;
-  --vilu-cream: #fbf7ee;
+  --vilu-cream: #f8f3e8;
   --vilu-mist: #14231d;
   --vilu-green: #2f6658;
   --vilu-lime: #d8ef4f;
   --vilu-clay: #6d5d36;
   --vilu-line: rgba(7, 17, 13, 0.14);
   --vilu-night: #07110d;
-  --vilu-foam: #eef5e7;
-  --vilu-card: #fffdf7;
+  --vilu-foam: #f8f3e8;
+  --vilu-card: #f8f3e8;
   --vilu-subtle: rgba(7, 17, 13, 0.06);
   --vilu-muted-text: rgba(7, 17, 13, 0.62);
   --background: var(--vilu-paper);
@@ -98,6 +98,1032 @@ h1, h2, h3, .font-black {
   background: var(--vilu-lime);
   color: var(--vilu-ink);
   box-shadow: 0 16px 34px rgba(216, 239, 79, 0.2);
+}
+
+/* Optical Orbits v5.1 — cross-product consistency layer
+   Two surfaces only: optical ink and warm paper. Lime remains an action signal. */
+:root {
+  --vilu-surface-dark: #07110d;
+  --vilu-surface-light: #f8f3e8;
+  --vilu-card-border: rgba(7, 17, 13, 0.18);
+  --vilu-card-border-dark: rgba(248, 243, 232, 0.22);
+  --vilu-card-radius: 1.5rem;
+}
+
+.bg-vilu-cream,
+.bg-vilu-foam,
+.bg-vilu-card {
+  background-color: var(--vilu-surface-light) !important;
+}
+
+:is(
+  .tryon-orbits-page,
+  .eye-orbits-page,
+  .catalog-orbits-page,
+  .product-orbits-page,
+  .mission-orbits-page,
+  .about-orbits-page,
+  .dashboard-orbits-page,
+  .assistant-orbits-page
+) {
+  background-color: var(--vilu-surface-light);
+}
+
+:is(
+  .tryon-orbits-hero,
+  .eye-orbits-hero,
+  .catalog-orbits-hero,
+  .mission-orbits-hero,
+  .about-orbits-hero,
+  .assistant-orbits-hero
+) {
+  min-height: clamp(38rem, calc(100svh - 5rem), 54rem);
+  display: grid;
+  align-items: center;
+  border: 0;
+  border-radius: 0;
+  background-color: var(--vilu-surface-dark);
+}
+
+.eye-orbits-page {
+  padding-top: 0;
+}
+
+.eye-orbits-shell {
+  max-width: none !important;
+}
+
+.eye-orbits-back {
+  position: absolute;
+  z-index: 8;
+  top: 1.5rem;
+  left: max(1rem, calc((100vw - 1440px) / 2));
+  color: var(--vilu-paper);
+  background: rgba(248, 243, 232, 0.08);
+}
+
+.eye-orbits-hero {
+  width: 100%;
+  padding-inline: max(1rem, calc((100vw - 1440px) / 2));
+}
+
+.eye-orbits-hero__content {
+  width: min(100%, 1440px);
+  margin-inline: auto;
+}
+
+/* One border and typography contract for every functional surface. */
+:is(
+  .kinetic-card,
+  .dashboard-orbits-panel,
+  .dashboard-orbits-care,
+  .dashboard-orbits-reminders,
+  .dashboard-orbits-metrics > *,
+  .catalog-orbits-selection,
+  .catalog-orbits-card,
+  .catalog-orbits-filters,
+  .product-orbits-gallery,
+  .product-orbits-info,
+  .tryon-orbits-goals,
+  .tryon-orbits-canvas,
+  .tryon-orbits-selection,
+  .tryon-orbits-readiness,
+  .eye-orbits-onboarding,
+  .eye-orbits-start,
+  .eye-orbits-question,
+  .eye-orbits-result,
+  .eye-orbits-recommendation,
+  .mission-orbits-route__steps,
+  .mission-orbits-boundary,
+  .about-orbits-promise,
+  .about-orbits-system-card,
+  .about-orbits-principles__list,
+  .assistant-orbits-empty,
+  .assistant-orbits-answer,
+  .assistant-orbits-settings,
+  .assistant-orbits-loading,
+  .assistant-orbits-error,
+  .compact-assistant,
+  .store-orbits-card,
+  .store-orbits-map
+) {
+  border: 1px solid var(--vilu-card-border);
+  border-radius: var(--vilu-card-radius);
+  box-shadow: none;
+}
+
+:is(
+  .catalog-orbits-filters,
+  .product-orbits-info,
+  .tryon-orbits-goals,
+  .tryon-orbits-readiness,
+  .mission-orbits-route__steps,
+  .assistant-orbits-next-steps
+) {
+  border-color: var(--vilu-card-border-dark);
+}
+
+:is(
+  .dashboard-orbits-page,
+  .tryon-orbits-page,
+  .eye-orbits-page,
+  .catalog-orbits-page,
+  .product-orbits-page,
+  .mission-orbits-page,
+  .about-orbits-page,
+  .assistant-orbits-page,
+  .store-orbits-modal
+) :is(p, li, input, textarea, select, button) {
+  font-family: 'Manrope', sans-serif;
+}
+
+:is(
+  .dashboard-orbits-panel,
+  .catalog-orbits-card,
+  .tryon-orbits-canvas,
+  .tryon-orbits-selection,
+  .eye-orbits-onboarding,
+  .eye-orbits-start,
+  .eye-orbits-question,
+  .eye-orbits-result,
+  .assistant-orbits-answer,
+  .store-orbits-card
+) :is(p, li) {
+  font-size: max(1rem, 16px);
+  line-height: 1.6;
+}
+
+/* Exercise modes have genuinely different visual instructions. */
+.dashboard-training-stage {
+  position: relative;
+  display: flex;
+  min-height: 20rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--vilu-card-border);
+  border-radius: var(--vilu-card-radius);
+  padding: 2rem;
+  background: var(--vilu-surface-light);
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+.dashboard-training-stage.is-running {
+  border-color: rgba(7, 17, 13, 0.34);
+}
+
+.dashboard-training-stage.is-palming.is-running {
+  color: var(--vilu-paper);
+  background: var(--vilu-surface-dark);
+}
+
+.dashboard-training-stage__focus-dot {
+  position: absolute;
+  width: 2.25rem;
+  height: 2.25rem;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--vilu-lime);
+  box-shadow: 0 0 0 12px rgba(216, 239, 79, 0.1);
+  transition: left 420ms linear, top 420ms linear;
+}
+
+.dashboard-training-stage__distance {
+  position: absolute;
+  inset: 2rem;
+  overflow: hidden;
+  border: 1px solid var(--vilu-card-border);
+  border-radius: 1.25rem;
+  background: var(--vilu-paper);
+}
+
+.dashboard-training-stage__window {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 49.7%, rgba(7, 17, 13, 0.12) 50%, transparent 50.3%),
+    linear-gradient(transparent 49.7%, rgba(7, 17, 13, 0.12) 50%, transparent 50.3%);
+}
+
+.dashboard-training-stage__horizon {
+  position: absolute;
+  right: -8%;
+  bottom: -42%;
+  left: -8%;
+  height: 70%;
+  border: 1px solid rgba(47, 102, 88, 0.24);
+  border-radius: 50% 50% 0 0;
+  background: var(--vilu-ink);
+}
+
+.dashboard-training-stage__far-point {
+  position: absolute;
+  top: 31%;
+  left: 68%;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--vilu-lime);
+  animation: dashboard-far-focus 2.8s ease-in-out infinite;
+}
+
+.dashboard-training-stage__breath {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.dashboard-training-stage__breath span {
+  position: absolute;
+  width: 9rem;
+  height: 9rem;
+  border: 1px solid rgba(216, 239, 79, 0.42);
+  border-radius: 50%;
+  animation: dashboard-breathe 5s ease-in-out infinite;
+}
+
+.dashboard-training-stage__breath span:nth-child(2) {
+  animation-delay: -2.5s;
+}
+
+.dashboard-training-stage__breath strong {
+  color: var(--vilu-lime);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.dashboard-training-stage__guide {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  background: color-mix(in srgb, var(--vilu-paper) 90%, transparent);
+  color: var(--vilu-ink);
+}
+
+.is-palming .dashboard-training-stage__guide {
+  border-color: rgba(248, 243, 232, 0.22);
+  background: rgba(7, 17, 13, 0.82);
+  color: var(--vilu-paper);
+}
+
+.dashboard-training-stage__guide p {
+  font-size: 0.9rem;
+}
+
+.dashboard-training-stage__guide button {
+  min-height: 40px;
+  border-radius: 999px;
+  padding-inline: 1rem;
+  background: var(--vilu-lime);
+  color: var(--vilu-ink);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+@keyframes dashboard-far-focus {
+  50% { transform: scale(1.45); box-shadow: 0 0 0 16px rgba(216, 239, 79, 0.12); }
+}
+
+@keyframes dashboard-breathe {
+  0%, 100% { opacity: 0.25; transform: scale(0.72); }
+  50% { opacity: 0.85; transform: scale(1.45); }
+}
+
+/* LLM composer: unmistakable conversation surface, still ViLu. */
+.assistant-orbits-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 20rem);
+}
+
+.assistant-orbits-dialog {
+  min-height: 38rem;
+}
+
+.assistant-orbits-composer {
+  border-top: 0;
+  background: linear-gradient(180deg, transparent, var(--vilu-paper) 30%);
+}
+
+.assistant-orbits-composer__shell {
+  overflow: hidden;
+  border: 1px solid rgba(7, 17, 13, 0.26);
+  border-radius: 1.5rem;
+  background: var(--vilu-paper);
+  box-shadow: 0 18px 55px rgba(7, 17, 13, 0.14);
+}
+
+.assistant-orbits-composer__label {
+  display: grid;
+  grid-template-columns: 1.8rem auto 1fr;
+  align-items: center;
+  gap: 0.65rem;
+  border-bottom: 1px solid var(--vilu-card-border);
+  padding: 0.75rem 1rem;
+}
+
+.assistant-orbits-composer__label small {
+  justify-self: end;
+  color: var(--vilu-green);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.assistant-orbits-composer__row {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+  padding: 0.45rem;
+}
+
+.assistant-orbits-composer__hint {
+  padding: 0 1rem 0.75rem;
+  color: rgba(7, 17, 13, 0.52);
+  font-size: 0.72rem;
+}
+
+.compact-assistant {
+  border-color: rgba(248, 243, 232, 0.28);
+}
+
+.compact-assistant__composer {
+  min-height: 4.25rem;
+  border: 1px solid rgba(7, 17, 13, 0.28);
+  box-shadow: 0 10px 34px rgba(7, 17, 13, 0.1);
+}
+
+/* Locator sits below the product navigation and reads as a geographic schematic. */
+.store-orbits-overlay {
+  align-items: flex-start;
+  padding: 5.75rem 1rem 1rem;
+}
+
+.store-orbits-modal {
+  max-height: calc(100svh - 6.75rem);
+}
+
+.store-orbits-map__canvas {
+  background:
+    linear-gradient(rgba(7, 17, 13, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(7, 17, 13, 0.055) 1px, transparent 1px),
+    repeating-radial-gradient(circle at 60% 48%, transparent 0 42px, rgba(47, 102, 88, 0.16) 43px 44px),
+    var(--vilu-paper);
+  background-size: 36px 36px, 36px 36px, auto, auto;
+}
+
+.store-orbits-map__legend {
+  position: absolute;
+  top: 3.1rem;
+  left: 1rem;
+  z-index: 2;
+  display: flex;
+  gap: 0.8rem;
+  border: 1px solid var(--vilu-card-border);
+  border-radius: 999px;
+  padding: 0.45rem 0.65rem;
+  background: var(--vilu-paper);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.store-orbits-map__legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.store-orbits-map__legend i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--vilu-green);
+}
+
+.store-orbits-map__legend i.is-selected {
+  background: var(--vilu-lime);
+  box-shadow: 0 0 0 3px var(--vilu-ink);
+}
+
+.store-orbits-map__direction {
+  position: absolute;
+  z-index: 1;
+  color: rgba(7, 17, 13, 0.42);
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.store-orbits-map__direction.is-north {
+  top: 1.1rem;
+  right: 1rem;
+}
+
+.store-orbits-map__direction.is-center {
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Honest placeholder for the future visit-preparation flow. */
+.coming-soon-page {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-height: calc(100svh - 5rem);
+  place-items: center;
+  overflow: hidden;
+  padding: 3rem 1rem;
+  background: var(--vilu-ink);
+  color: var(--vilu-paper);
+}
+
+.coming-soon-page__orbits {
+  position: absolute;
+  z-index: -1;
+  right: -8rem;
+  width: min(65vw, 52rem);
+  opacity: 0.55;
+}
+
+.coming-soon-page__content {
+  width: min(100%, 52rem);
+}
+
+.coming-soon-page h1 {
+  max-width: 12ch;
+  margin-top: 1.25rem;
+  font-family: 'Manrope', sans-serif;
+  font-size: clamp(3rem, 7vw, 6rem);
+  font-weight: 720;
+  line-height: 0.96;
+}
+
+.coming-soon-page__content > p:not(.kinetic-label) {
+  max-width: 42rem;
+  margin-top: 1.5rem;
+  color: rgba(248, 243, 232, 0.72);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.coming-soon-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.coming-soon-page__actions button {
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid var(--vilu-card-border-dark);
+  border-radius: 999px;
+  padding: 0 1.25rem;
+  font-weight: 850;
+}
+
+.coming-soon-page__actions button:first-child {
+  border-color: transparent;
+  background: var(--vilu-lime);
+  color: var(--vilu-ink);
+}
+
+.coming-soon-page__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 2.5rem;
+  border-top: 1px solid var(--vilu-card-border-dark);
+  padding-top: 1rem;
+  color: rgba(248, 243, 232, 0.68);
+}
+
+@media (max-width: 900px) {
+  :is(
+    .tryon-orbits-hero,
+    .eye-orbits-hero,
+    .catalog-orbits-hero,
+    .mission-orbits-hero,
+    .about-orbits-hero,
+    .assistant-orbits-hero
+  ) {
+    min-height: auto;
+  }
+
+  .store-orbits-overlay {
+    padding: 5rem 0 0;
+  }
+
+  .store-orbits-modal {
+    height: calc(100svh - 5rem);
+    max-height: calc(100svh - 5rem);
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-training-stage {
+    min-height: 23rem;
+    padding: 1rem;
+  }
+
+  .dashboard-training-stage__distance {
+    inset: 1rem;
+    bottom: 8rem;
+  }
+
+  .dashboard-training-stage__guide {
+    grid-template-columns: 1fr auto;
+  }
+
+  .dashboard-training-stage__guide p {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .assistant-orbits-composer__label {
+    grid-template-columns: 1.8rem 1fr;
+  }
+
+  .assistant-orbits-composer__label small {
+    display: none;
+  }
+
+  .assistant-orbits-composer__hint {
+    display: none;
+  }
+
+  .store-orbits-map__legend {
+    max-width: calc(100% - 2rem);
+    flex-wrap: wrap;
+  }
+
+  .coming-soon-page__actions {
+    display: grid;
+  }
+
+  .coming-soon-page__actions button {
+    justify-content: center;
+  }
+}
+
+/* Optical Orbits v5.1 — final cascade contract.
+   Keep this block last: page-level legacy rules must not override the shared system. */
+:root {
+  --orbits-black: #03110c;
+  --orbits-paper: #f8f3e8;
+  --orbits-lime: #d7f53d;
+  --orbits-line-dark: rgba(248, 243, 232, 0.22);
+  --orbits-line-light: rgba(3, 17, 12, 0.18);
+  --orbits-card-radius: 1.75rem;
+}
+
+body,
+#root,
+.bg-vilu-cream,
+.bg-vilu-foam,
+.bg-vilu-card {
+  background-color: var(--orbits-paper) !important;
+}
+
+body {
+  min-width: 0;
+}
+
+:is(
+  .optical-hero,
+  .tryon-orbits-hero,
+  .eye-orbits-hero,
+  .catalog-orbits-hero,
+  .product-orbits-hero,
+  .mission-orbits-hero,
+  .about-orbits-hero,
+  .dashboard-orbits-hero,
+  .assistant-orbits-hero
+) {
+  box-sizing: border-box;
+  min-height: clamp(660px, calc(100svh - 74px), 900px) !important;
+  background-color: var(--orbits-black) !important;
+  display: flex;
+  align-items: center;
+}
+
+.eye-orbits-hero {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+.mission-orbits-hero {
+  padding-block: clamp(3rem, 6vh, 5rem) !important;
+}
+
+:is(
+  .orbits-section,
+  .orbits-method,
+  .orbits-knowledge,
+  .orbits-showcase,
+  .orbits-care,
+  .mission-orbits-section,
+  .about-orbits-section,
+  .dashboard-orbits-section,
+  .assistant-orbits-section
+) {
+  background-color: var(--orbits-paper) !important;
+}
+
+:is(
+  .compact-assistant,
+  .tryon-orbits-journey,
+  .tryon-orbits-panel,
+  .eye-orbits-panel,
+  .catalog-orbits-lab,
+  .catalog-orbits-selection,
+  .catalog-orbits-card,
+  .product-orbits-panel,
+  .mission-orbits-card,
+  .about-orbits-card,
+  .dashboard-orbits-card,
+  .assistant-orbits-card,
+  .assistant-orbits-composer__shell,
+  .store-orbits-searchbar,
+  .store-orbits-list,
+  .store-orbits-map,
+  .coming-soon__status
+) {
+  box-sizing: border-box;
+  border: 1px solid var(--orbits-line-light) !important;
+  border-radius: var(--orbits-card-radius) !important;
+  box-shadow: none !important;
+}
+
+:is(
+  .tryon-orbits-panel,
+  .eye-orbits-panel,
+  .dashboard-training-stage,
+  .dashboard-orbits-card
+).is-dark,
+.dashboard-training-stage {
+  border-color: var(--orbits-line-dark) !important;
+}
+
+.dashboard-training-stage {
+  position: relative;
+  min-height: 20rem;
+  overflow: hidden;
+}
+
+.dashboard-training-stage__focus-dot,
+.dashboard-training-stage__far-point,
+.dashboard-training-stage__breath-core {
+  background: var(--orbits-lime);
+}
+
+.dashboard-training-stage__distance,
+.dashboard-training-stage__breath,
+.dashboard-training-stage__guide {
+  position: absolute;
+  inset: 0;
+}
+
+.dashboard-training-stage__distance,
+.dashboard-training-stage__breath {
+  display: grid;
+  place-items: center;
+}
+
+.dashboard-training-stage__window {
+  width: min(72%, 28rem);
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--orbits-line-dark);
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(215, 245, 61, 0.08), transparent 58%),
+    var(--orbits-black);
+  overflow: hidden;
+}
+
+.dashboard-training-stage__horizon {
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  top: 52%;
+  height: 1px;
+  background: var(--orbits-line-dark);
+}
+
+.dashboard-training-stage__far-point {
+  position: absolute;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 0.65rem rgba(215, 245, 61, 0.11);
+}
+
+.dashboard-training-stage__breath-ring {
+  position: absolute;
+  width: 10rem;
+  height: 10rem;
+  border: 1px solid rgba(215, 245, 61, 0.44);
+  border-radius: 50%;
+  animation: orbits-breathe 5s ease-in-out infinite;
+}
+
+.dashboard-training-stage__breath-ring:nth-child(2) {
+  animation-delay: -1.65s;
+}
+
+.dashboard-training-stage__breath-ring:nth-child(3) {
+  animation-delay: -3.3s;
+}
+
+.dashboard-training-stage__breath-core {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+}
+
+.dashboard-training-stage__breath-copy {
+  margin-top: 13rem;
+  color: var(--orbits-paper);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.dashboard-training-stage__guide {
+  z-index: 3;
+  inset: auto 1rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--orbits-line-dark);
+  border-radius: 1.25rem;
+  background: rgba(3, 17, 12, 0.86);
+  color: var(--orbits-paper);
+  backdrop-filter: blur(16px);
+}
+
+.dashboard-training-stage__guide strong,
+.dashboard-training-stage__guide span {
+  display: block;
+}
+
+.dashboard-training-stage__guide span {
+  margin-top: 0.2rem;
+  color: rgba(248, 243, 232, 0.7);
+  font-size: 0.86rem;
+}
+
+.dashboard-training-stage__guide button {
+  margin-left: auto;
+  border: 1px solid var(--orbits-line-dark);
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  color: inherit;
+}
+
+.store-orbits-overlay {
+  padding: calc(var(--site-nav-height, 74px) + 1rem) 1rem 1rem !important;
+}
+
+.store-orbits-map {
+  position: relative;
+  background-color: var(--orbits-paper) !important;
+  background-image:
+    linear-gradient(rgba(3, 17, 12, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(3, 17, 12, 0.06) 1px, transparent 1px),
+    radial-gradient(circle at center, transparent 0 26%, rgba(3, 17, 12, 0.07) 26.2% 26.5%, transparent 26.7%) !important;
+  background-size: 3rem 3rem, 3rem 3rem, 100% 100% !important;
+}
+
+.store-orbits-map::after {
+  content: '';
+  position: absolute;
+  inset: 12% 8%;
+  border: 1px dashed rgba(3, 17, 12, 0.2);
+  border-radius: 47% 53% 44% 56%;
+  pointer-events: none;
+}
+
+.store-orbits-map__legend,
+.store-orbits-map__direction {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--orbits-line-light);
+  border-radius: 999px;
+  background: rgba(248, 243, 232, 0.88);
+  backdrop-filter: blur(12px);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.store-orbits-map__legend {
+  right: 1rem;
+  top: 1rem;
+}
+
+.store-orbits-map__direction.is-north {
+  left: 1rem;
+  bottom: 1rem;
+}
+
+.store-orbits-map__direction.is-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.assistant-orbits-composer__shell {
+  background: var(--orbits-paper);
+  padding: 0.7rem;
+}
+
+.assistant-orbits-composer__identity,
+.assistant-orbits-composer__row {
+  display: flex;
+  align-items: center;
+}
+
+.assistant-orbits-composer__identity {
+  gap: 0.7rem;
+  padding: 0.25rem 0.35rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.assistant-orbits-composer__identity-mark {
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  color: var(--orbits-black);
+  background: var(--orbits-lime);
+}
+
+.assistant-orbits-composer__trust {
+  margin-left: auto;
+  color: rgba(3, 17, 12, 0.55);
+}
+
+.assistant-orbits-composer__row {
+  min-height: 4rem;
+  border: 1px solid var(--orbits-line-light);
+  border-radius: 1.25rem;
+  background: #fffdf8;
+}
+
+.assistant-orbits-composer__row textarea {
+  min-height: 4rem;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.assistant-orbits-composer__hint {
+  display: block;
+  padding: 0.55rem 0.4rem 0.1rem;
+  color: rgba(3, 17, 12, 0.5);
+  font-size: 0.7rem;
+}
+
+.compact-assistant__composer {
+  border: 1px solid var(--orbits-line-light) !important;
+  border-radius: 1.25rem !important;
+  background: #fffdf8 !important;
+  box-shadow: 0 0.6rem 1.8rem rgba(3, 17, 12, 0.08) !important;
+}
+
+.coming-soon {
+  min-height: calc(100svh - var(--site-nav-height, 74px));
+  padding: clamp(2rem, 6vw, 6rem);
+  color: var(--orbits-paper);
+  background:
+    radial-gradient(circle at 78% 38%, rgba(215, 245, 61, 0.12), transparent 28rem),
+    var(--orbits-black);
+}
+
+.coming-soon__inner {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.coming-soon__copy {
+  max-width: 44rem;
+}
+
+.coming-soon__copy h1 {
+  margin: 1.5rem 0;
+  font-size: clamp(3.2rem, 8vw, 7rem);
+  line-height: 0.94;
+}
+
+.coming-soon__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.coming-soon__actions button {
+  border: 1px solid var(--orbits-line-dark);
+  border-radius: 999px;
+  padding: 0.9rem 1.25rem;
+  color: var(--orbits-paper);
+}
+
+.coming-soon__actions button:first-child {
+  border-color: var(--orbits-lime);
+  color: var(--orbits-black);
+  background: var(--orbits-lime);
+}
+
+.coming-soon__status {
+  margin-top: clamp(4rem, 12vw, 10rem);
+  padding: 1rem 1.25rem;
+  color: rgba(248, 243, 232, 0.72);
+  border-color: var(--orbits-line-dark) !important;
+}
+
+@keyframes orbits-breathe {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(0.72);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+}
+
+@media (max-width: 639px) {
+  :is(
+    .optical-hero,
+    .tryon-orbits-hero,
+    .eye-orbits-hero,
+    .catalog-orbits-hero,
+    .product-orbits-hero,
+    .mission-orbits-hero,
+    .about-orbits-hero,
+    .dashboard-orbits-hero,
+    .assistant-orbits-hero
+  ) {
+    min-height: clamp(620px, calc(100svh - 64px), 780px) !important;
+  }
+
+  .store-orbits-overlay {
+    padding: calc(var(--site-nav-height, 64px) + 0.5rem) 0.5rem 0.5rem !important;
+  }
+
+  .assistant-orbits-composer__trust {
+    display: none;
+  }
+
+  .dashboard-training-stage__guide {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-training-stage__guide button {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-training-stage__breath-ring {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-training-stage__far-point,
+  .dashboard-training-stage__breath span {
+    animation: none;
+  }
 }
 
 .optical-hero {
@@ -4385,5 +5411,148 @@ h1, h2, h3, .font-black {
     .store-orbits-modal
   ) :is(input, textarea, select) {
     font-size: 1rem;
+  }
+}
+
+/* Must remain the final declaration block. */
+body,
+#root,
+.bg-vilu-cream,
+.bg-vilu-foam,
+.bg-vilu-card,
+:is(
+  .orbits-section,
+  .orbits-method,
+  .orbits-knowledge,
+  .orbits-showcase,
+  .orbits-care,
+  .mission-orbits-section,
+  .about-orbits-section,
+  .dashboard-orbits-section,
+  .assistant-orbits-section
+) {
+  background-color: var(--orbits-paper) !important;
+}
+
+:is(
+  .optical-hero,
+  .tryon-orbits-hero,
+  .eye-orbits-hero,
+  .catalog-orbits-hero,
+  .product-orbits-hero,
+  .mission-orbits-hero,
+  .about-orbits-hero,
+  .dashboard-orbits-hero,
+  .assistant-orbits-hero
+) {
+  box-sizing: border-box;
+  min-height: clamp(660px, calc(100svh - 74px), 900px) !important;
+  background-color: var(--orbits-black) !important;
+  display: flex;
+  align-items: center;
+}
+
+.eye-orbits-hero {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+:is(
+  .compact-assistant,
+  .tryon-orbits-journey,
+  .tryon-orbits-panel,
+  .eye-orbits-panel,
+  .catalog-orbits-lab,
+  .catalog-orbits-selection,
+  .catalog-orbits-card,
+  .product-orbits-panel,
+  .mission-orbits-card,
+  .about-orbits-card,
+  .dashboard-orbits-card,
+  .assistant-orbits-card,
+  .assistant-orbits-composer__shell,
+  .store-orbits-searchbar,
+  .store-orbits-list,
+  .store-orbits-map,
+  .coming-soon__status
+) {
+  box-sizing: border-box;
+  border: 1px solid var(--orbits-line-light) !important;
+  border-radius: var(--orbits-card-radius) !important;
+  box-shadow: none !important;
+}
+
+.store-orbits-overlay {
+  padding: calc(var(--site-nav-height, 74px) + 1rem) 1rem 1rem !important;
+}
+
+.store-orbits-map {
+  background-color: var(--orbits-paper) !important;
+  background-image:
+    linear-gradient(rgba(3, 17, 12, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(3, 17, 12, 0.06) 1px, transparent 1px),
+    radial-gradient(circle at center, transparent 0 26%, rgba(3, 17, 12, 0.07) 26.2% 26.5%, transparent 26.7%) !important;
+  background-size: 3rem 3rem, 3rem 3rem, 100% 100% !important;
+}
+
+.compact-assistant__composer,
+.assistant-orbits-composer__row {
+  border: 1px solid var(--orbits-line-light) !important;
+  border-radius: 1.25rem !important;
+  background: #fffdf8 !important;
+}
+
+@media (max-width: 639px) {
+  :is(
+    .optical-hero,
+    .tryon-orbits-hero,
+    .eye-orbits-hero,
+    .catalog-orbits-hero,
+    .product-orbits-hero,
+    .mission-orbits-hero,
+    .about-orbits-hero,
+    .dashboard-orbits-hero,
+    .assistant-orbits-hero
+  ) {
+    min-height: clamp(620px, calc(100svh - 64px), 780px) !important;
+  }
+
+  .store-orbits-overlay {
+    padding: calc(var(--site-nav-height, 64px) + 0.5rem) 0.5rem 0.5rem !important;
+  }
+
+  .mission-orbits-hero {
+    padding-block: 2.5rem !important;
+  }
+
+  .mission-orbits-hero__grid {
+    gap: 2rem !important;
+  }
+
+  .mission-orbits-hero__grid > div:first-child > p:last-of-type,
+  .mission-orbits-boundary,
+  .mission-orbits-route__step p {
+    display: none;
+  }
+
+  .mission-orbits-route__step {
+    padding: 0.8rem 1rem !important;
+  }
+
+  .mission-orbits-route__step h2 {
+    font-size: 1.15rem;
+  }
+
+  .assistant-orbits-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .assistant-orbits-dialog,
+  .assistant-orbits-composer,
+  .assistant-orbits-composer__shell {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 }
