@@ -176,7 +176,13 @@ export function StoreLocator({ isOpen, onClose }: StoreLocatorProps) {
           <aside className="store-orbits-map" aria-label="Карта салонов">
             <div className="store-orbits-map__canvas">
               <Map size={24} />
-              <span className="store-orbits-map__label">Карта выбора</span>
+              <span className="store-orbits-map__label">Схема расположения салонов</span>
+              <div className="store-orbits-map__legend" aria-hidden="true">
+                <span><i /> Салон</span>
+                <span><i className="is-selected" /> Выбран</span>
+              </div>
+              <span className="store-orbits-map__direction is-north">Север</span>
+              <span className="store-orbits-map__direction is-center">Центр города</span>
               {filteredStores.slice(0, 24).map((store, index) => {
                 const x = 8 + ((store.lng * 17 + index * 23) % 84 + 84) % 84;
                 const y = 12 + ((store.lat * 13 + index * 19) % 74 + 74) % 74;

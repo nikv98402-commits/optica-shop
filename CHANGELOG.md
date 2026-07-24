@@ -2,6 +2,29 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.3.0.1] - 2026-07-24
+
+### Changed
+
+- Unified dark hero dimensions, warm-light surfaces, bordered functional cards,
+  typography scale, and responsive spacing across Optical Orbits pages.
+- Clarified the Store Locator map and redesigned compact and full Knowledge
+  Assistant composers as unmistakable conversational interfaces.
+
+### Fixed
+
+- Added working Focus Dot, 20-20-20, and Palming exercise modes with distinct
+  instructions, timers, and motion behavior.
+- Prevented the Store Locator overlay from colliding with navigation.
+- Made the catalog visit-preparation action available and routed unfinished
+  preparation to a dedicated, recoverable “in development” page.
+
+### Tests
+
+- Rechecked TypeScript, lint, 145 unit tests, production build, responsive
+  layouts, exercise switching, Store Locator, catalog navigation, and assistant
+  loading/error states.
+
 ## [0.3.0.0] - 2026-07-23
 
 ### Added

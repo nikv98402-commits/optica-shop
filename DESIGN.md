@@ -4,12 +4,14 @@
 
 Approved on 2026-07-23. This section supersedes older rules below where they conflict.
 
-- **Core idea:** ViLu turns uncertainty into a clear next step. The visual language combines calm optical fields, precise grids, restrained lime/mint signals, and conversational guidance.
+- **Core idea:** ViLu turns uncertainty into a clear next step. The visual language combines calm optical fields, precise grids, restrained lime signals, and conversational guidance.
 - **Primary type:** Manrope for product UI and large Cyrillic headings. Unbounded remains a legacy brand accent only and should not be introduced into new large content surfaces.
 - **Signature motion:** `AtomicHeading` softly disassembles and reassembles major narrative headings while they are visible. `OpticalOrbits` expresses guidance and focus around high-value interactive surfaces.
 - **Motion density:** expressive in the home hero, functional in try-on, restrained in catalog and knowledge content. Never place more than two continuously moving focal objects in one viewport.
 - **AI surface:** one dominant composer, compact suggestions, visible loading/retrieval state, concise answer, citations beside the answer, and a direct path to the full assistant.
-- **Surface palette:** deep optical ink `#07110d`, warm paper `#f8f3e8`, soft optical foam `#eef5e7`, signal lime `#d8ef4f`, trust green `#2f6658`, and supporting mint `#a9d8c5`.
+- **Surface palette:** exactly two page surfaces: Optical Black `#03110c` and warm paper `#f8f3e8`. Signal lime `#d7f53d` is an accent only. Trust green may appear in text/icons/status, never as a page or section background. Foam, mint, and pistachio backgrounds are deprecated.
+- **Card contract:** every functional box has a visible 1px border, a shared 28px radius, and a consistent 24-32px desktop / 16-24px mobile inset. Borderless containers are allowed only for editorial copy, never for controls, tools, results, maps, or assistant surfaces.
+- **Hero contract:** product heroes use the Mission-page full-bleed dark field and a common viewport-aware minimum height. Dense secondary explanations progressively collapse on small screens instead of stretching the first screen.
 - **Accessibility:** all continuous motion must stop with `prefers-reduced-motion`; animated headings keep screen-reader text; orbit layers never accept pointer events.
 - **Rollout:** the home page establishes the system. Catalog, product, try-on, salon, dashboard, knowledge pages, and `/assistant` should migrate incrementally using shared tokens rather than page-specific reinterpretations.
 
