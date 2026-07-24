@@ -2,6 +2,26 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.3.0.2] - 2026-07-24
+
+### Changed
+
+- Standardized the home page on a deterministic dark/light section cadence.
+- Added the Optical Orbits grid to both surfaces and restored readable
+  typography and controls in the knowledge, showcase, and dashboard sections.
+
+### Fixed
+
+- Removed late cascade overrides that flattened dark sections into a blank
+  light surface and made section labels and actions effectively invisible.
+- Consolidated the release CSS so the final cadence rules have one source of
+  truth.
+
+### Tests
+
+- Rechecked TypeScript, lint, unit tests, production build, and the home page
+  at 1440, 390, and 320 px without horizontal overflow.
+
 ## [0.3.0.1] - 2026-07-24
 
 ### Changed
