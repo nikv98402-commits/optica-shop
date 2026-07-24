@@ -393,11 +393,19 @@ export function KnowledgeAssistant({ onNavigate, onOpenStores }: KnowledgeAssist
           )}
 
           <form onSubmit={handleSubmit} className="assistant-orbits-composer sticky bottom-0 mt-6 border-t border-vilu-line bg-vilu-paper/95 py-4 backdrop-blur" data-testid="assistant-form">
-            <div className="flex items-end gap-2 rounded-3xl border border-vilu-line bg-vilu-card p-2 shadow-lg">
-              <textarea ref={inputRef} value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 1000))} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submitQuery(draft); } }} rows={2} minLength={2} maxLength={1000} placeholder={t.placeholder} className="min-h-14 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-base outline-none placeholder:text-vilu-muted" aria-label={t.placeholder} />
-              <button type="submit" aria-label={t.submit} disabled={loading || draft.trim().length < 2} className="vilu-primary-button h-12 shrink-0 gap-2 px-4 disabled:cursor-not-allowed disabled:opacity-45 sm:px-6">
-                <Send size={17} /><span className="hidden sm:inline">{t.submit}</span>
-              </button>
+            <div className="assistant-orbits-composer__shell">
+              <div className="assistant-orbits-composer__label">
+                <span className="compact-assistant__mark" aria-hidden="true">V</span>
+                <strong>{language === 'en' ? 'Message ViLu' : 'Сообщение ViLu'}</strong>
+                <small>{language === 'en' ? 'Verified knowledge base' : 'Проверенная база знаний'}</small>
+              </div>
+              <div className="assistant-orbits-composer__row">
+                <textarea ref={inputRef} value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 1000))} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submitQuery(draft); } }} rows={2} minLength={2} maxLength={1000} placeholder={t.placeholder} className="min-h-14 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-base outline-none placeholder:text-vilu-muted" aria-label={t.placeholder} />
+                <button type="submit" aria-label={t.submit} disabled={loading || draft.trim().length < 2} className="vilu-primary-button h-12 shrink-0 gap-2 px-4 disabled:cursor-not-allowed disabled:opacity-45 sm:px-6">
+                  <Send size={17} /><span className="hidden sm:inline">{t.submit}</span>
+                </button>
+              </div>
+              <p className="assistant-orbits-composer__hint">{language === 'en' ? 'Enter to send · Shift + Enter for a new line' : 'Enter — отправить · Shift + Enter — новая строка'}</p>
             </div>
           </form>
         </section>

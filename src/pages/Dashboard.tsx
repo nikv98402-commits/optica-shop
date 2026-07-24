@@ -86,18 +86,21 @@ const exercises = [
     title: 'Фокус-точка',
     duration: 30,
     description: 'Следите за движущейся точкой, не поворачивая голову. Помогает снять спазм аккомодации.',
+    instruction: 'Плавно следите взглядом за точкой. Голова остаётся неподвижной.',
   },
   {
     id: 'twenty-rule',
     title: '20-20-20',
     duration: 20,
     description: 'Каждые 20 минут смотрите на дальний объект. Короткая пауза для снижения зрительной нагрузки.',
+    instruction: 'Переведите взгляд от экрана на самый дальний объект и спокойно рассматривайте его.',
   },
   {
     id: 'palming',
     title: 'Пальминг',
     duration: 45,
     description: 'Закройте глаза ладонями и расслабьте мышцы. Хорошо после длительной работы за экраном.',
+    instruction: 'Закройте глаза ладонями без давления. Дышите медленно и расслабьте плечи.',
   },
 ];
 
@@ -433,7 +436,7 @@ export function Dashboard({ onNavigate, onOpenStores }: DashboardProps) {
                 ))}
               </div>
 
-              <div className={`relative flex h-80 items-center justify-center overflow-hidden rounded-[2rem] border-2 border-dashed transition ${isTraining ? 'border-vilu-lime bg-vilu-lime/20' : 'border-vilu-ink/10 bg-vilu-paper'}`}>
+              <div className={`dashboard-training-stage is-${activeExercise.id} ${isTraining ? 'is-running' : ''}`}>
                 {!isTraining ? (
                   <div className="max-w-md text-center">
                     <p className="mb-6 font-semibold text-vilu-ink/65">{activeExercise.description}</p>
@@ -441,8 +444,31 @@ export function Dashboard({ onNavigate, onOpenStores }: DashboardProps) {
                   </div>
                 ) : (
                   <>
-                    <div className="absolute h-9 w-9 rounded-full bg-vilu-lime shadow-2xl shadow-vilu-lime/40 transition-all duration-300" style={{ left: `${48 + 34 * Math.cos(timer * 0.5)}%`, top: `${46 + 24 * Math.sin(timer * 0.8)}%` }} />
-                    <p className="absolute bottom-6 left-0 right-0 text-center text-xs font-black uppercase tracking-[0.2em] text-vilu-green">Следите за точкой. Сессия сохранится автоматически.</p>
+                    {activeExercise.id === 'focus-dot' && (
+                      <div
+                        className="dashboard-training-stage__focus-dot"
+                        style={{ left: `${48 + 34 * Math.cos(timer * 0.5)}%`, top: `${46 + 24 * Math.sin(timer * 0.8)}%` }}
+                      />
+                    )}
+                    {activeExercise.id === 'twenty-rule' && (
+                      <div className="dashboard-training-stage__distance" aria-hidden="true">
+                        <span className="dashboard-training-stage__window" />
+                        <span className="dashboard-training-stage__horizon" />
+                        <span className="dashboard-training-stage__far-point" />
+                      </div>
+                    )}
+                    {activeExercise.id === 'palming' && (
+                      <div className="dashboard-training-stage__breath" aria-hidden="true">
+                        <span />
+                        <span />
+                        <strong>Вдох · выдох</strong>
+                      </div>
+                    )}
+                    <div className="dashboard-training-stage__guide">
+                      <strong>{activeExercise.title}</strong>
+                      <p>{activeExercise.instruction}</p>
+                      <button type="button" onClick={() => setIsTraining(false)}>Остановить</button>
+                    </div>
                   </>
                 )}
               </div>

@@ -13,6 +13,7 @@ import { VisionAccess } from './pages/VisionAccess';
 import { AboutBrand } from './pages/AboutBrand';
 import { PaymentStatus } from './pages/PaymentStatus';
 import { KnowledgeAssistant } from './pages/KnowledgeAssistant';
+import { ComingSoon } from './pages/ComingSoon';
 import { getKnowledgePage, KnowledgeBase } from './pages/KnowledgeBase';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -21,7 +22,7 @@ import { createServiceCheckoutDraft, readServiceCheckoutDraft, saveServiceChecko
 import type { ServiceCheckoutDraft, ServiceCheckoutFrame } from './types/backend';
 import { publicFeatures } from './config/features';
 
-type Page = 'home' | 'about' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess' | 'payment-return' | 'payment-success' | 'payment-failed' | 'assistant';
+type Page = 'home' | 'about' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess' | 'payment-return' | 'payment-success' | 'payment-failed' | 'assistant' | 'visit-preparation';
 
 const pathPageMap: Record<string, Page> = {
   '': 'home',
@@ -37,6 +38,7 @@ const pathPageMap: Record<string, Page> = {
   'vision-tracker': 'eyecheck',
   visiontracker: 'eyecheck',
   'vision-access': 'visionaccess',
+  'visit-preparation': 'visit-preparation',
   about: 'about',
   brand: 'about',
   impact: 'visionaccess',
@@ -184,6 +186,7 @@ function App() {
             {publicFeatures.knowledgeAssistant && currentPage === 'assistant' && (
               <KnowledgeAssistant onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />
             )}
+            {currentPage === 'visit-preparation' && <ComingSoon onNavigate={handleNavigate} />}
             {currentPage === 'payment-return' && <PaymentStatus mode="return" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}
             {currentPage === 'payment-success' && <PaymentStatus mode="success" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}
             {currentPage === 'payment-failed' && <PaymentStatus mode="failed" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}
