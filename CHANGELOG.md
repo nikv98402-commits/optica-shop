@@ -2,6 +2,22 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.3.0.3] - 2026-07-24
+
+### Added
+
+- Added the normalized Supabase foundation for Offer Finder markets, sources,
+  stores, products, observations, prices, freshness, and ingestion runs.
+- Added RLS policies, indexes, immutable raw observations, protected SQL search
+  functions, shared TypeScript contracts, and SQL integration coverage.
+- Added operational documentation for the Offer Finder data boundary,
+  retention, security model, testing, and rollback.
+
+### Tests
+
+- Rechecked TypeScript, lint, unit tests, production build, contract tests, and
+  the Offer Finder SQL security invariants.
+
 ## [0.3.0.2] - 2026-07-24
 
 ### Changed
