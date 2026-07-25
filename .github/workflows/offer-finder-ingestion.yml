@@ -1,0 +1,69 @@
+name: Offer Finder ingestion
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+    inputs:
+      source_id:
+        description: "Approved offer_sources.id (blank runs fixture canary only)"
+        required: false
+        type: string
+      market:
+        description: "Optional approved market shard"
+        required: false
+        type: string
+      dry_run:
+        description: "Do not write production data"
+        required: true
+        default: true
+        type: boolean
+      canary:
+        description: "Run the explicitly approved read-only canary"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offer-finder-${{ inputs.source_id || 'fixture-canary' }}
+  cancel-in-progress: false
+
+jobs:
+  fixture-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Security and adapter contract tests
+        run: npx vitest run scripts/offer-finder/ingestion.test.ts
+      - name: Fixture-only canary
+        run: node --experimental-strip-types scripts/offer-finder/canary.ts --dry-run
+
+  approved-live-canary:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.canary && !inputs.dry_run && inputs.source_id != '' }}
+    needs: fixture-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: offer-finder-production
+    env:
+      OFFER_FINDER_SUPABASE_URL: ${{ secrets.OFFER_FINDER_SUPABASE_URL }}
+      OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY }}
+      OFFER_FINDER_SOURCE_ID: ${{ inputs.source_id }}
+      OFFER_FINDER_MARKET: ${{ inputs.market }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run bounded live canary
+        run: node --experimental-strip-types scripts/offer-finder/canary.ts --live-canary
