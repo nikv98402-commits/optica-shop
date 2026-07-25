@@ -40,6 +40,7 @@ export interface StoredObservation extends AdapterObservation {
   runId: string;
   sourceId: string;
   sourceUrlHash: string;
+  protectedUrl: string;
   observationHash: string;
   parserVersion: string;
 }
@@ -191,12 +192,16 @@ function sha256(value: string): string {
 }
 
 function sanitizedUrlHash(rawUrl: string): string {
+  return sha256(sanitizedUrl(rawUrl));
+}
+
+function sanitizedUrl(rawUrl: string): string {
   const url = new URL(rawUrl);
   for (const key of [...url.searchParams.keys()]) {
     if (REDACTED_QUERY_KEYS.test(key)) url.searchParams.delete(key);
   }
   url.hash = '';
-  return sha256(url.toString());
+  return url.toString();
 }
 
 function isBlockedIpv4(address: string): boolean {
@@ -529,6 +534,7 @@ function validateObservation(
     sourceId: source.id,
     externalOfferId: observation.externalOfferId.trim(),
     sourceUrlHash: sanitizedUrlHash(observation.sourceUrl),
+    protectedUrl: sanitizedUrl(observation.sourceUrl),
     observationHash: sha256(
       canonicalJson({
         externalOfferId: observation.externalOfferId.trim(),
@@ -707,6 +713,7 @@ export class SupabaseIngestionStore implements IngestionStore {
       source_id: item.sourceId,
       external_offer_id: item.externalOfferId,
       source_url_hash: item.sourceUrlHash,
+      protected_url: item.protectedUrl,
       observation_hash: item.observationHash,
       payload_json: item.payload,
       collected_at: item.collectedAt,
