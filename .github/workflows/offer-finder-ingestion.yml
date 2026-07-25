@@ -43,7 +43,11 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Security and adapter contract tests
-        run: npx vitest run scripts/offer-finder/ingestion.test.ts
+        run: >-
+          npx vitest run
+          scripts/offer-finder/ingestion.test.ts
+          scripts/offer-finder/normalization.test.ts
+          scripts/offer-finder/normalization-runner.test.ts
       - name: Fixture-only canary
         run: node --experimental-strip-types scripts/offer-finder/canary.ts --dry-run
 
@@ -67,3 +71,8 @@ jobs:
       - run: npm ci
       - name: Run bounded live canary
         run: node --experimental-strip-types scripts/offer-finder/canary.ts --live-canary
+      - name: Normalize the bounded canary batch
+        run: >-
+          node --experimental-strip-types
+          scripts/offer-finder/normalization-runner.ts
+          --source-id "${OFFER_FINDER_SOURCE_ID}"

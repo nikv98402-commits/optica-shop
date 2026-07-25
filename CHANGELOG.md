@@ -2,6 +2,33 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.0.1] - 2026-07-25
+
+### Added
+
+- Added deterministic Offer Finder normalization for price, currency,
+  availability, product identity, catalog matching, and 72-hour / 7-day
+  freshness classification.
+- Added a bounded normalization runner connected to the approved ingestion
+  canary, with exact-match publication and review or quarantine routing for
+  ambiguous, anomalous, and invalid observations.
+- Added service-role-only SQL contracts for pending batches, idempotent review
+  work, atomic offer publication, and audited comparable split or merge actions.
+
+### Security
+
+- Serialized publication per logical offer to prevent concurrent price-anomaly
+  bypasses, enforced source-market package boundaries, and retained sanitized
+  source URLs only after removing sensitive query parameters and fragments.
+- Kept all normalization mutations unavailable to browser roles and preserved
+  immutable raw-observation provenance for every published price or review.
+
+### Tests
+
+- Added fixture, runner, and SQL integration coverage for exact and fuzzy
+  matching, malformed input, ambiguity, freshness, retry idempotency, market
+  boundaries, ACLs, provenance, and split or merge regressions.
+
 ## [0.4.0.0] - 2026-07-25
 
 ### Added

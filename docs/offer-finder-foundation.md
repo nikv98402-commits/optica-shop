@@ -5,6 +5,9 @@ the normalized Offer Finder schema, immutable observation boundary, freshness pr
 RLS boundary, indexes, and versioned SQL functions. It does not enable ingestion, parsers,
 the Edge Function BFF, or UI.
 
+The additive normalization extension and its service-role operations are documented in
+[Offer Finder normalization](offer-finder-normalization.md).
+
 ## Security boundary
 
 - `anon` and `authenticated` cannot read or mutate Offer Finder tables.

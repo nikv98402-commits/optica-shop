@@ -1,8 +1,9 @@
 # Offer Finder ingestion runtime (#54)
 
 The ingestion boundary runs in Node.js/TypeScript through GitHub Actions. Supabase remains
-the system of record. Browser code, Edge Functions, UI, normalization (#55), product
-experience (#56), and launch integration (#57) are outside this change.
+the system of record. Browser code, Edge Functions, UI, product experience (#56), and launch
+integration (#57) are outside this boundary. The downstream normalization stage is documented
+in [Offer Finder normalization](offer-finder-normalization.md).
 
 ## Safety model
 
@@ -53,13 +54,16 @@ Create a protected environment named `offer-finder-production` with:
 
 Pull requests and forks run fixtures only and never receive these secrets. The scheduled job is
 deliberately fixture-only until a real source completes the terms/robots and enablement gate.
+The same protected credentials are used by the downstream normalization runner. They must
+remain scoped to the protected environment and must never be added to adapter configuration.
 
 ## Canary limitation
 
 `vilu_fixture_canary` is a contract canary, not a production scraper. CI injects a deterministic
 JSON fixture and performs no external request or database write. The live switch exists to prove
 the protected execution boundary after an approved endpoint is configured; it must not be used
-for bulk collection.
+for bulk collection. After a successful bounded live canary, the workflow normalizes only the
+same approved `source_id`; it does not run an unfiltered production batch.
 
 ## Rollback
 
