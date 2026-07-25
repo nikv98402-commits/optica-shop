@@ -2,6 +2,26 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.0.0] - 2026-07-25
+
+### Added
+
+- Added the Offer Finder ingestion runtime with isolated source adapters,
+  idempotent raw observations, parser quarantine, and run accounting.
+- Added bounded source access with exact HTTPS allowlists, robots and terms
+  gates, SSRF protection, rate and concurrency limits, timeouts, response-size
+  limits, and retry backoff.
+- Added a fixture-only canary, a protected manual live-canary workflow, source
+  onboarding guidance, and security and adapter contract coverage.
+
+### Tests
+
+- Rechecked 26 ingestion security and contract tests, strict TypeScript for the
+  runtime, the full 176-test unit suite, lint, checkout contracts, and the
+  production build.
+- Recorded four pre-existing Knowledge Assistant E2E expectation failures
+  separately; this release does not change its UI or backend.
+
 ## [0.3.0.3] - 2026-07-24
 
 ### Added
@@ -228,4 +248,3 @@ All notable ViLu MVP changes should be documented here.
 ### Changed
 
 - Deployment base moved to root domain paths for `https://vilu.store/`.
-
