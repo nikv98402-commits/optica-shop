@@ -59,7 +59,20 @@ function currentKnowledgeSlug() {
 }
 
 function currentAppPage(): Page {
+  if (/^products\/[^/]+$/.test(currentKnowledgeSlug())) {
+    return 'product';
+  }
   return pathPageMap[currentKnowledgeSlug()] ?? 'home';
+}
+
+function currentProductId() {
+  const match = currentKnowledgeSlug().match(/^products\/([^/]+)$/);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
 }
 
 function App() {
@@ -67,7 +80,7 @@ function App() {
     window.history.replaceState({}, '', '/');
   }
   const [currentPage, setCurrentPage] = useState<Page>(getKnowledgePage(currentKnowledgeSlug()) ? 'home' : currentAppPage());
-  const [selectedProductId, setSelectedProductId] = useState<string>('aurora-crystal');
+  const [selectedProductId, setSelectedProductId] = useState<string>(() => currentProductId() ?? 'aurora-crystal');
   const [isStoreLocatorOpen, setIsStoreLocatorOpen] = useState(false);
   const [fittingCart, setFittingCart] = useState<string[]>([]);
   const [checkoutDraft, setCheckoutDraft] = useState<ServiceCheckoutDraft | null>(readServiceCheckoutDraft);
@@ -89,6 +102,9 @@ function App() {
     }
     if (knowledgePage) {
       window.history.pushState({}, '', '/');
+    }
+    if (page === 'product' && productId) {
+      window.history.pushState({}, '', `/products/${encodeURIComponent(productId)}`);
     }
     const targetPage = pathPageMap[page] ?? (page as Page);
     if (page in pathPageMap) {

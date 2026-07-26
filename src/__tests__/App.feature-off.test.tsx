@@ -11,13 +11,18 @@ vi.mock('../contexts/AuthContext', () => ({ AuthProvider: ({ children }: { child
 vi.mock('../components/LanguageDomBridge', () => ({ LanguageDomBridge: () => null }));
 vi.mock('../components/StoreLocator', () => ({ StoreLocator: () => null }));
 vi.mock('../components/Navigation', () => ({
-  Navigation: ({ onNavigate }: { onNavigate: (page: string) => void }) => (
-    <button type="button" onClick={() => onNavigate('assistant')}>Try assistant route</button>
+  Navigation: ({ onNavigate }: { onNavigate: (page: string, productId?: string) => void }) => (
+    <>
+      <button type="button" onClick={() => onNavigate('assistant')}>Try assistant route</button>
+      <button type="button" onClick={() => onNavigate('product', 'aurora crystal')}>Open product</button>
+    </>
   ),
 }));
 vi.mock('../pages/Home', () => ({ Home: () => <h1>Home page</h1> }));
 vi.mock('../pages/Products', () => ({ Products: () => null }));
-vi.mock('../pages/ProductDetail', () => ({ ProductDetail: () => null }));
+vi.mock('../pages/ProductDetail', () => ({
+  ProductDetail: ({ productId }: { productId: string }) => <h1>Product detail: {productId}</h1>,
+}));
 vi.mock('../pages/Checkout', () => ({ Checkout: () => null }));
 vi.mock('../pages/Dashboard', () => ({ Dashboard: () => null }));
 vi.mock('../pages/TryOnPilot', () => ({ TryOnPilot: () => null }));
@@ -54,5 +59,31 @@ describe('App with Knowledge Assistant disabled', () => {
     expect(window.location.pathname).toBe('/');
     expect(screen.getByRole('heading', { name: 'Home page' })).toBeVisible();
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+  });
+
+  it('opens a product deep-link with the product id from the URL', () => {
+    window.history.replaceState({}, '', '/products/aurora-crystal');
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'Product detail: aurora-crystal' })).toBeVisible();
+  });
+
+  it('decodes an encoded product id from a deep-link', () => {
+    window.history.replaceState({}, '', '/products/aurora%20crystal');
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'Product detail: aurora crystal' })).toBeVisible();
+  });
+
+  it('falls back to the raw product id when percent-encoding is malformed', () => {
+    window.history.replaceState({}, '', '/products/aurora%ZZ');
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'Product detail: aurora%ZZ' })).toBeVisible();
+  });
+
+  it('writes a canonical product URL during in-app navigation', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Open product' }));
+    expect(window.location.pathname).toBe('/products/aurora%20crystal');
+    expect(screen.getByRole('heading', { name: 'Product detail: aurora crystal' })).toBeVisible();
   });
 });
