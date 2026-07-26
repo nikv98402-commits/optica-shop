@@ -1,11 +1,16 @@
 import { ArrowLeft, Check, ShieldCheck, Sparkles, Truck } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { VirtualTryOn } from '../components/VirtualTryOn';
 import { formatPrice, getProductById } from '../data/products';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { ServiceCheckoutFrame } from '../types/backend';
 import { AtomicHeading } from '../components/home/AtomicHeading';
 import { OpticalOrbits } from '../components/home/OpticalOrbits';
+import {
+  formatOfferPrice,
+  searchProductOffers,
+  type ProductOfferSearchResult,
+} from '../lib/offerFinder/contracts';
 
 interface ProductDetailProps {
   productId: string;
@@ -17,6 +22,31 @@ export function ProductDetail({ productId, onNavigate, onStartCheckout }: Produc
   const { language } = useLanguage();
   const product = getProductById(productId);
   const [purchaseType, setPurchaseType] = useState<'one-time' | 'subscription'>('subscription');
+  const [offerState, setOfferState] = useState<
+    | { status: 'loading' }
+    | { status: 'ready'; result: ProductOfferSearchResult }
+    | { status: 'error' }
+  >({ status: 'loading' });
+
+  useEffect(() => {
+    if (!product) return;
+    const controller = new AbortController();
+    setOfferState({ status: 'loading' });
+    searchProductOffers({
+      market: 'RU',
+      product: product.name,
+      brand: product.brand_name,
+      signal: controller.signal,
+    }).then(
+      (result) => setOfferState({ status: 'ready', result }),
+      (error: unknown) => {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          setOfferState({ status: 'error' });
+        }
+      },
+    );
+    return () => controller.abort();
+  }, [product]);
 
   if (!product) {
     return (
@@ -110,6 +140,103 @@ export function ProductDetail({ productId, onNavigate, onStartCheckout }: Produc
                 )}
               </div>
             </div>
+
+            <section
+              aria-labelledby="offer-finder-product-heading"
+              className="mt-6 rounded-[1.75rem] border border-vilu-paper/20 bg-vilu-paper/5 p-5 text-vilu-paper"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-vilu-lime">
+                    Offer Finder · Россия
+                  </p>
+                  <h2 id="offer-finder-product-heading" className="mt-2 text-2xl font-extrabold">
+                    Подтверждённые предложения
+                  </h2>
+                </div>
+                {offerState.status === 'ready' && offerState.result.minimumConfirmedPrice && (
+                  <span className="rounded-full bg-vilu-lime px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-vilu-ink">
+                    Минимальная цена
+                  </span>
+                )}
+              </div>
+
+              {offerState.status === 'loading' && (
+                <div role="status" className="mt-5 animate-pulse rounded-2xl border border-vilu-paper/15 p-4 text-vilu-paper/65">
+                  Проверяем актуальные цены и наличие…
+                </div>
+              )}
+              {offerState.status === 'error' && (
+                <div role="alert" className="mt-5 rounded-2xl border border-vilu-paper/15 p-4">
+                  <p className="font-bold">Не удалось проверить предложения</p>
+                  <p className="mt-1 text-sm text-vilu-paper/65">
+                    Цена товара выше остаётся доступна. Попробуйте обновить страницу позже.
+                  </p>
+                </div>
+              )}
+              {offerState.status === 'ready' && offerState.result.offers.length === 0 && (
+                <div className="mt-5 rounded-2xl border border-vilu-paper/15 p-4">
+                  <p className="font-bold">Свежих предложений пока нет</p>
+                  <p className="mt-1 text-sm text-vilu-paper/65">
+                    Мы показываем только цены, подтверждённые не более 72 часов назад.
+                  </p>
+                </div>
+              )}
+              {offerState.status === 'ready' && offerState.result.offers.length > 0 && (
+                <div className="mt-5 grid gap-3">
+                  {offerState.result.offers.slice(0, 3).map((offer) => {
+                    const actionHref = offer.nextAction?.kind === 'phone'
+                      ? `tel:${offer.nextAction.value}`
+                      : offer.nextAction?.kind === 'route'
+                        ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(offer.nextAction.value)}`
+                        : offer.nextAction?.value;
+                    const actionLabel = offer.nextAction?.kind === 'phone'
+                      ? 'Позвонить'
+                      : offer.nextAction?.kind === 'route'
+                        ? 'Маршрут'
+                        : 'На сайт';
+                    return (
+                      <article key={offer.offerId} className="rounded-2xl border border-vilu-paper/15 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="font-extrabold">{offer.merchantName}</p>
+                            <p className="mt-1 text-sm text-vilu-paper/60">
+                              Источник: {offer.source} · проверено{' '}
+                              {new Intl.DateTimeFormat(language === 'ru' ? 'ru-RU' : 'en-GB', {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              }).format(new Date(offer.lastVerifiedAt))}
+                            </p>
+                          </div>
+                          <strong className="text-xl">
+                            {formatOfferPrice(offer.amountMinor, offer.currency, language === 'ru' ? 'ru-RU' : 'en-GB')}
+                          </strong>
+                        </div>
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                          <span className="text-sm text-vilu-paper/70">
+                            {offer.availability === 'in_stock' ? 'В наличии' : 'Под заказ'}
+                            {offer.storeName ? ` · ${offer.storeName}` : ''}
+                          </span>
+                          {actionHref && (
+                            <a
+                              href={actionHref}
+                              target={offer.nextAction?.kind === 'phone' ? undefined : '_blank'}
+                              rel={offer.nextAction?.kind === 'phone' ? undefined : 'noreferrer'}
+                              className="rounded-full border border-vilu-lime px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-vilu-lime transition hover:bg-vilu-lime hover:text-vilu-ink"
+                            >
+                              {actionLabel}
+                            </a>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="mt-4 text-xs leading-5 text-vilu-paper/50">
+                Цена и наличие не гарантируются: подтвердите их на сайте, по телефону или в салоне перед визитом.
+              </p>
+            </section>
 
             <div className="mt-8 grid gap-4 text-sm font-semibold leading-6 text-vilu-paper/70 sm:grid-cols-2">
               <div className="flex gap-3"><Truck className="mt-1 text-vilu-lime" size={20} /> Бесплатная доставка в салон или курьером от 7 000 ₽.</div>
