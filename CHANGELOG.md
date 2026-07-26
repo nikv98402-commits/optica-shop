@@ -2,6 +2,30 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.0.2] - 2026-07-26
+
+### Added
+
+- Added a service-role-only Offer Finder product projection and versioned
+  read-only Edge API for fresh, published offers and minimum confirmed prices.
+- Added product-card states for loading, unavailable data, errors, verified
+  offer sources, availability, currencies, and website, phone, or route actions.
+
+### Security
+
+- Kept operational Offer Finder tables behind the Edge BFF, with strict request
+  validation, origin controls, bounded rate limiting, and no browser access to
+  the service-role credential.
+- Excluded quarantined, unpublished, stale, and expired observations from
+  product-card results.
+
+### Tests
+
+- Added API contract, Edge integration, frontend state, and SQL permission
+  coverage for the Offer Finder product-card flow.
+- Rechecked TypeScript, lint, all 224 unit and integration tests, checkout
+  contracts, SQL migrations, and the production build.
+
 ## [0.4.0.1] - 2026-07-25
 
 ### Added
