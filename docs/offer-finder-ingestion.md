@@ -68,6 +68,13 @@ the protected execution boundary after an approved endpoint is configured; it mu
 for bulk collection. After a successful bounded live canary, the workflow normalizes only the
 same approved `source_id`; it does not run an unfiltered production batch.
 
+`vilu_public_catalog` is the first real source and remains a bounded first-party canary.
+Its decision record is in
+[`offer-finder-sources/vilu-public-catalog.md`](./offer-finder-sources/vilu-public-catalog.md).
+It performs one request to one exact `vilu.store` feed and rejects any response containing
+anything other than the single approved Aurora Crystal offer. It has no schedule and does
+not authorize additional sources or markets.
+
 ## Rollback
 
 Disable the affected row in `offer_sources` or disable the workflow. Existing observations and

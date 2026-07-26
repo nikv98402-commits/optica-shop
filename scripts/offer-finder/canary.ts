@@ -9,6 +9,7 @@ import {
   type SourceAdapter,
 } from './ingestion.ts';
 import { pathToFileURL } from 'node:url';
+import { viluPublicCatalogAdapter } from './adapters/vilu-public-catalog.ts';
 
 interface CanaryDocument {
   offers: Array<{
@@ -73,7 +74,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  const registry = new AdapterRegistry().register(canaryAdapter);
+  const registry = new AdapterRegistry()
+    .register(canaryAdapter)
+    .register(viluPublicCatalogAdapter);
   const store = SupabaseIngestionStore.fromEnvironment();
   const sourceId = process.env.OFFER_FINDER_SOURCE_ID;
   if (!sourceId) throw new Error('OFFER_FINDER_SOURCE_ID is required for a live canary');
