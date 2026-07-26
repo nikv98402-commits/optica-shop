@@ -56,6 +56,8 @@ Pull requests and forks run fixtures only and never receive these secrets. The s
 deliberately fixture-only until a real source completes the terms/robots and enablement gate.
 The same protected credentials are used by the downstream normalization runner. They must
 remain scoped to the protected environment and must never be added to adapter configuration.
+Production scheduling, alert thresholds, and recovery are documented in
+[`offer-finder-operations.md`](./offer-finder-operations.md).
 
 ## Canary limitation
 

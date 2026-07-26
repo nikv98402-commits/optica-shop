@@ -292,6 +292,7 @@ describe('ingestion runner', () => {
   });
 
   it('parses the canary adapter from an injected fixture without network access', async () => {
+    vi.stubEnv('OFFER_FINDER_CANARY_URL', 'https://example.com/vilu-offer-finder-canary.json');
     const fixtureFetch = vi.fn().mockResolvedValue(
       response('{"offers":[{"id":"canary-1","listedPriceMinor":1299000,"currency":"RUB","available":true}]}'),
     );
@@ -313,6 +314,7 @@ describe('ingestion runner', () => {
       },
     });
     expect(observations).toHaveLength(1);
+    vi.unstubAllEnvs();
     expect(observations[0].payload).toEqual({
       listedPriceMinor: 1299000,
       currency: 'RUB',

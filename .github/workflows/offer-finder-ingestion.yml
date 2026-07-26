@@ -28,7 +28,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: offer-finder-${{ inputs.source_id || 'fixture-canary' }}
+  group: offer-finder-${{ inputs.source_id || vars.OFFER_FINDER_CANARY_SOURCE_ID || 'fixture-canary' }}
   cancel-in-progress: false
 
 jobs:
@@ -46,22 +46,18 @@ jobs:
         run: >-
           npx vitest run
           scripts/offer-finder/ingestion.test.ts
+          scripts/offer-finder/operations.test.ts
           scripts/offer-finder/normalization.test.ts
           scripts/offer-finder/normalization-runner.test.ts
       - name: Fixture-only canary
         run: node --experimental-strip-types scripts/offer-finder/canary.ts --dry-run
 
   approved-live-canary:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.canary && !inputs.dry_run && inputs.source_id != '' }}
+    if: ${{ (github.event_name == 'schedule' && vars.OFFER_FINDER_CANARY_SOURCE_ID != '') || (github.event_name == 'workflow_dispatch' && inputs.canary && !inputs.dry_run && inputs.source_id != '') }}
     needs: fixture-contract
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: offer-finder-production
-    env:
-      OFFER_FINDER_SUPABASE_URL: ${{ secrets.OFFER_FINDER_SUPABASE_URL }}
-      OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY }}
-      OFFER_FINDER_SOURCE_ID: ${{ inputs.source_id }}
-      OFFER_FINDER_MARKET: ${{ inputs.market }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -69,10 +65,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Run bounded live canary
-        run: node --experimental-strip-types scripts/offer-finder/canary.ts --live-canary
-      - name: Normalize the bounded canary batch
-        run: >-
-          node --experimental-strip-types
-          scripts/offer-finder/normalization-runner.ts
-          --source-id "${OFFER_FINDER_SOURCE_ID}"
+      - name: Select the single approved source
+        shell: bash
+        env:
+          MANUAL_SOURCE_ID: ${{ inputs.source_id }}
+          SCHEDULED_SOURCE_ID: ${{ vars.OFFER_FINDER_CANARY_SOURCE_ID }}
+        run: echo "OFFER_FINDER_SOURCE_ID=${MANUAL_SOURCE_ID:-${SCHEDULED_SOURCE_ID}}" >> "$GITHUB_ENV"
+      - name: Run bounded canary, normalization and health checks
+        env:
+          OFFER_FINDER_SUPABASE_URL: ${{ secrets.OFFER_FINDER_SUPABASE_URL }}
+          OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY }}
+          OFFER_FINDER_CANARY_URL: ${{ secrets.OFFER_FINDER_CANARY_URL }}
+        run: node --experimental-strip-types scripts/offer-finder/operations.ts
