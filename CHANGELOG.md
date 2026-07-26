@@ -2,6 +2,20 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.0.5] - 2026-07-26
+
+### Fixed
+
+- Prioritized store routes and phone calls over merchant websites in Offer
+  Finder responses, so every available next-step action can reach the product
+  card instead of being masked by the mandatory source URL.
+
+### Tests
+
+- Added Edge contract coverage for route, phone, and website fallback priority.
+- Added product-card coverage for safe `tel:` and Google Maps destinations.
+- Rechecked all 231 tests, TypeScript, lint, and the production build.
+
 ## [0.4.0.4] - 2026-07-26
 
 ### Added

@@ -212,6 +212,29 @@ describe('Offer Finder Edge BFF integration', () => {
     expect(JSON.stringify(body)).not.toMatch(/protected_url|phone|latitude|longitude|observation|payload/);
   });
 
+  it('prefers a store route, then a phone call, and uses the website as fallback', async () => {
+    const rpc = vi.fn(async () => [
+      { ...offerRow, offer_id: crypto.randomUUID(), latitude: 55.7558, longitude: 37.6173, phone: '+74950000000' },
+      { ...offerRow, offer_id: crypto.randomUUID(), latitude: null, longitude: null, phone: '+74951111111' },
+      { ...offerRow, offer_id: crypto.randomUUID(), latitude: null, longitude: null, phone: null },
+    ]);
+    const response = await handleOfferFinderRequest(new Request(
+      'https://project.supabase.co/functions/v1/offer-finder/v1/search?market=RU&product=Aurora',
+      { headers: { origin: 'https://vilu.store', apikey: 'anon' } },
+    ), {
+      publicApiKeys: new Set(['anon']),
+      allowedOrigins: new Set(['https://vilu.store']),
+      rpc,
+    });
+    const body = await response.json();
+
+    expect(body.data.offers.map((offer: { nextAction: unknown }) => offer.nextAction)).toEqual([
+      { kind: 'route', value: '55.7558,37.6173' },
+      { kind: 'phone', value: '+74951111111' },
+      { kind: 'website', value: 'https://merchant.example/aurora' },
+    ]);
+  });
+
   it('rejects unknown origins and malformed store filters before calling RPC', async () => {
     const rpc = vi.fn(async () => []);
     const response = await handleOfferFinderRequest(new Request(
@@ -322,5 +345,50 @@ describe('Product detail Offer Finder states', () => {
       'https://merchant.example/aurora',
     );
     await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+  });
+
+  it('renders call and route actions with safe destination URLs', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://project.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'anon');
+    const baseOffer = {
+      offerId: offerRow.offer_id,
+      market: 'RU',
+      source: offerRow.source_name,
+      merchantName: offerRow.merchant_name,
+      storeId: null,
+      storeName: null,
+      city: offerRow.city,
+      productName: offerRow.product_name,
+      brandName: offerRow.brand_name,
+      comparableKey: offerRow.comparable_key,
+      amountMinor: offerRow.amount_minor,
+      currency: 'RUB',
+      availability: 'in_stock',
+      freshness: 'fresh',
+      lastVerifiedAt: offerRow.last_verified_at,
+      isMinimumConfirmedPrice: false,
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      data: {
+        offers: [
+          { ...baseOffer, offerId: crypto.randomUUID(), nextAction: { kind: 'phone', value: '+74951111111' } },
+          { ...baseOffer, offerId: crypto.randomUUID(), nextAction: { kind: 'route', value: '55.7558,37.6173' } },
+        ],
+        minimumConfirmedPrice: null,
+      },
+      meta: { version: 'v1', generatedAt: '2026-07-26T09:00:00.000Z' },
+      error: null,
+    }), { status: 200 })));
+
+    renderProduct();
+
+    expect(await screen.findByRole('link', { name: 'Позвонить' })).toHaveAttribute(
+      'href',
+      'tel:+74951111111',
+    );
+    expect(screen.getByRole('link', { name: 'Маршрут' })).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/dir/?api=1&destination=55.7558%2C37.6173',
+    );
   });
 });

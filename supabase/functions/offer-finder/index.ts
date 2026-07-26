@@ -95,11 +95,11 @@ async function isRateLimited(request: Request, now = Date.now()) {
 }
 
 function nextAction(row: RpcRow) {
-  if (row.outbound_url) return { kind: 'website', value: row.outbound_url };
-  if (row.phone) return { kind: 'phone', value: row.phone };
   if (row.latitude !== null && row.longitude !== null) {
     return { kind: 'route', value: `${row.latitude},${row.longitude}` };
   }
+  if (row.phone) return { kind: 'phone', value: row.phone };
+  if (row.outbound_url) return { kind: 'website', value: row.outbound_url };
   return null;
 }
 
