@@ -7,8 +7,9 @@ ingestion canary. Supabase remains the system of record.
 Normalization does not scrape sources, expose data to the browser, or make fuzzy catalog
 matches automatically. The downstream product API consumes accepted results through its own
 Edge boundary; its contract is documented in
-[Offer Finder foundation](offer-finder-foundation.md#product-api-56). Task #57 remains outside
-this stage.
+[Offer Finder foundation](offer-finder-foundation.md#product-api-56). Production scheduling,
+health checks, and recovery are documented in
+[Offer Finder production operations](offer-finder-operations.md).
 
 ## Data flow
 
@@ -64,9 +65,10 @@ The protected GitHub environment `offer-finder-production` must contain:
 - `OFFER_FINDER_SUPABASE_URL`
 - `OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY`
 
-The scheduled workflow remains fixture-only. A live normalization batch runs only after a
-manual `workflow_dispatch` with an approved `source_id`, `canary=true`, and `dry_run=false`.
-The live canary first runs the bounded ingestion adapter, then invokes:
+Pull requests remain fixture-only. Production normalization runs either for the single source
+configured in `OFFER_FINDER_CANARY_SOURCE_ID` on the daily schedule, or after a manual
+`workflow_dispatch` with an approved `source_id`, `canary=true`, and `dry_run=false`. In both
+cases the live canary first runs the bounded ingestion adapter, then invokes:
 
 ```text
 node --experimental-strip-types \

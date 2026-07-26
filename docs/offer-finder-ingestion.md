@@ -52,10 +52,13 @@ Create a protected environment named `offer-finder-production` with:
 - `OFFER_FINDER_SUPABASE_URL`
 - `OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY`
 
-Pull requests and forks run fixtures only and never receive these secrets. The scheduled job is
-deliberately fixture-only until a real source completes the terms/robots and enablement gate.
-The same protected credentials are used by the downstream normalization runner. They must
-remain scoped to the protected environment and must never be added to adapter configuration.
+Pull requests and forks run fixtures only and never receive these secrets. After a real source
+completes the terms/robots and enablement gate, the scheduled job runs exactly the source UUID
+configured in `OFFER_FINDER_CANARY_SOURCE_ID`; an empty variable keeps the scheduled live job
+disabled. The same protected credentials are used by the downstream normalization runner. They
+must remain scoped to the protected environment and must never be added to adapter configuration.
+Production scheduling, alert thresholds, and recovery are documented in
+[`offer-finder-operations.md`](./offer-finder-operations.md).
 
 ## Canary limitation
 

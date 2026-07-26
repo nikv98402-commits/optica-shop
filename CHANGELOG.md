@@ -2,6 +2,32 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.0.4] - 2026-07-26
+
+### Added
+
+- Added scheduled, single-source Offer Finder production operations with a
+  bounded live canary, normalization, health checks, and clear workflow alerts.
+- Added service-only health reporting for data freshness, parser success,
+  quarantine volume, fresh offers, open incidents, and stalled runs.
+- Added an operations runbook covering protected configuration, manual canary
+  checks, recovery, interruption handling, and rollback.
+
+### Changed
+
+- Protected each source from overlapping queued or running ingestion jobs at
+  both the workflow and database layers.
+- Added bounded retry with exponential backoff and jitter for canary,
+  normalization, and health-check failures.
+- Limited production credentials to the execution step that requires them.
+
+### Tests
+
+- Added scheduler operations tests and SQL integration coverage for active-run
+  exclusivity, source health counters, health alerts, and RPC permissions.
+- Rechecked all 229 tests, TypeScript, lint, SQL integration tests, and the
+  production build.
+
 ## [0.4.0.3] - 2026-07-26
 
 ### Fixed

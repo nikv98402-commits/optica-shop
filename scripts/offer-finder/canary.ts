@@ -37,7 +37,11 @@ export const canaryAdapter: SourceAdapter = {
   key: 'vilu_fixture_canary',
   version: '1.0.0',
   async collect(context): Promise<AdapterObservation[]> {
-    const response = await context.fetch('https://example.com/vilu-offer-finder-canary.json', {
+    const canaryUrl = process.env.OFFER_FINDER_CANARY_URL;
+    if (!canaryUrl) {
+      throw new IngestionError('POLICY_BLOCKED', 'OFFER_FINDER_CANARY_URL is not configured');
+    }
+    const response = await context.fetch(canaryUrl, {
       accept: ['application/json'],
     });
     const document = response.json<CanaryDocument>();
