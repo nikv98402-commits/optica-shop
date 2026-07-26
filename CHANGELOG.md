@@ -2,6 +2,22 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.2.0] - 2026-07-26
+
+### Fixed
+
+- Restored direct product links such as `/products/aurora-crystal`, so a
+  confirmed Offer Finder result now opens the matching ViLu product instead of
+  a 404 page.
+- Kept the canonical product URL in the browser during in-app navigation and
+  safely handled encoded product identifiers.
+
+### Tests
+
+- Added regression coverage for direct, encoded, malformed, and in-app product
+  links.
+- Rechecked all tests, TypeScript, lint, and the production build.
+
 ## [0.4.1.0] - 2026-07-26
 
 ### Added
