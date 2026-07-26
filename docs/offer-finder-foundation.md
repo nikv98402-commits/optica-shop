@@ -27,7 +27,8 @@ GET /functions/v1/offer-finder/v1/search
 - The response uses the shared `OfferFinderEnvelope<ProductOfferSearchResult>` contract.
 - Results contain only fresh `in_stock` or `preorder` offers. The response identifies the
   minimum confirmed price inside an exact comparable group.
-- Each offer may expose one next action: partner website, phone, or route coordinates.
+- Each offer exposes at most one next action, selected in this order: route coordinates,
+  phone, then the partner website as the final fallback.
 - Product cards show explicit loading, empty, and safe error states. A failed Offer Finder
   request does not hide the catalogue price or block the normal purchase flow.
 
