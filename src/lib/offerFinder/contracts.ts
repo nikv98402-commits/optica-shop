@@ -88,8 +88,53 @@ export interface RawOfferObservationInput {
   parserVersion: string;
 }
 
+export type OfferNextAction =
+  | { kind: 'website'; value: string }
+  | { kind: 'phone'; value: string }
+  | { kind: 'route'; value: string };
+
+export interface ProductCardOffer {
+  offerId: string;
+  market: OfferMarketCode;
+  source: string;
+  merchantName: string;
+  storeId: string | null;
+  storeName: string | null;
+  city: string | null;
+  productName: string;
+  brandName: string | null;
+  comparableKey: string;
+  amountMinor: number;
+  currency: OfferCurrency;
+  availability: 'in_stock' | 'preorder';
+  freshness: 'fresh';
+  lastVerifiedAt: string;
+  isMinimumConfirmedPrice: boolean;
+  nextAction: OfferNextAction | null;
+}
+
+export interface ProductOfferSearchResult {
+  offers: ProductCardOffer[];
+  minimumConfirmedPrice: ProductCardOffer | null;
+}
+
+export interface ProductOfferSearchInput {
+  market: OfferMarketCode;
+  product: string;
+  brand?: string;
+  storeId?: string;
+  signal?: AbortSignal;
+}
+
+interface ProductOfferSearchOptions {
+  fetcher?: typeof fetch;
+  baseUrl?: string;
+  anonKey?: string;
+}
+
 const MARKET_SET = new Set<string>(OFFER_MARKETS);
 const PRODUCT_TYPE_SET = new Set<string>(['eyeglasses', 'sunglasses', 'contact_lenses', 'service']);
+const CURRENCY_SET = new Set<string>(OFFER_CURRENCIES);
 
 export function classifyOfferFreshness(
   lastVerifiedAt: string | Date,
@@ -126,5 +171,73 @@ export function normalizeOfferSearchQuery(input: OfferSearchQuery): Required<
     comparableKey: input.comparableKey?.trim() || undefined,
     includeStale: input.includeStale ?? false,
     limit,
+  };
+}
+
+function isProductCardOffer(value: unknown): value is ProductCardOffer {
+  if (!value || typeof value !== 'object') return false;
+  const offer = value as Partial<ProductCardOffer>;
+  return typeof offer.offerId === 'string'
+    && MARKET_SET.has(offer.market || '')
+    && typeof offer.source === 'string'
+    && typeof offer.merchantName === 'string'
+    && typeof offer.productName === 'string'
+    && typeof offer.comparableKey === 'string'
+    && Number.isSafeInteger(offer.amountMinor)
+    && (offer.amountMinor || 0) >= 0
+    && CURRENCY_SET.has(offer.currency || '')
+    && (offer.availability === 'in_stock' || offer.availability === 'preorder')
+    && offer.freshness === 'fresh'
+    && typeof offer.lastVerifiedAt === 'string'
+    && typeof offer.isMinimumConfirmedPrice === 'boolean';
+}
+
+export function formatOfferPrice(amountMinor: number, currency: OfferCurrency, locale = 'ru-RU') {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 2,
+  }).format(amountMinor / 100);
+}
+
+export async function searchProductOffers(
+  input: ProductOfferSearchInput,
+  options: ProductOfferSearchOptions = {},
+): Promise<ProductOfferSearchResult> {
+  if (!MARKET_SET.has(input.market)) throw new TypeError('Unsupported market');
+  const product = input.product.trim();
+  const brand = input.brand?.trim() || '';
+  if (!product || product.length > 160 || brand.length > 120) {
+    throw new TypeError('Invalid product identity');
+  }
+
+  const baseUrl = (options.baseUrl ?? import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/+$/, '');
+  const anonKey = options.anonKey ?? import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+  if (!baseUrl || !anonKey) throw new Error('offer_finder_not_configured');
+
+  const url = new URL(`${baseUrl}/functions/v1/offer-finder/v1/search`);
+  url.searchParams.set('market', input.market);
+  url.searchParams.set('product', product);
+  if (brand) url.searchParams.set('brand', brand);
+  if (input.storeId) url.searchParams.set('store', input.storeId);
+
+  const response = await (options.fetcher ?? fetch)(url, {
+    method: 'GET',
+    headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+    signal: input.signal,
+  });
+  if (!response.ok) throw new Error(`offer_finder_http_${response.status}`);
+  const payload = await response.json() as OfferFinderEnvelope<ProductOfferSearchResult>;
+  const offers = payload.data?.offers;
+  if (payload.error || !Array.isArray(offers) || !offers.every(isProductCardOffer)) {
+    throw new Error('offer_finder_invalid_response');
+  }
+  const minimum = payload.data?.minimumConfirmedPrice;
+  if (minimum !== null && minimum !== undefined && !isProductCardOffer(minimum)) {
+    throw new Error('offer_finder_invalid_response');
+  }
+  return {
+    offers,
+    minimumConfirmedPrice: minimum ?? null,
   };
 }

@@ -5,8 +5,10 @@ comparable Offer Finder records. It runs in Node.js/TypeScript after an approved
 ingestion canary. Supabase remains the system of record.
 
 Normalization does not scrape sources, expose data to the browser, or make fuzzy catalog
-matches automatically. UI, the public Offer Finder API, and tasks #56–#57 are outside this
-stage.
+matches automatically. The downstream product API consumes accepted results through its own
+Edge boundary; its contract is documented in
+[Offer Finder foundation](offer-finder-foundation.md#product-api-56). Task #57 remains outside
+this stage.
 
 ## Data flow
 

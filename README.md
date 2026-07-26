@@ -261,4 +261,17 @@ VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
 ```
 
-Текущая витрина использует `src/data/products.ts`, поэтому может запускаться как автономный demo-магазин.
+Текущая витрина использует `src/data/products.ts`, поэтому может запускаться как автономный
+demo-магазин. Если Supabase настроен, карточка товара дополнительно запрашивает свежие
+предложения через Edge Function `offer-finder`. При недоступном API каталожная цена и основной
+сценарий покупки остаются доступными.
+
+Для Edge Function задайте список разрешённых origins на стороне Supabase:
+
+```bash
+OFFER_FINDER_ALLOWED_ORIGINS=https://vilu.store,https://www.vilu.store
+```
+
+Сервисный ключ остаётся только в окружении Supabase Edge Functions. Его нельзя добавлять в
+`VITE_*`, frontend-код или публичные настройки Vercel. Контракт endpoint, правила свежести и
+проверки описаны в [`docs/offer-finder-foundation.md`](docs/offer-finder-foundation.md).
