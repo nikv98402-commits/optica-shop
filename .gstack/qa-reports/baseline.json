@@ -1,35 +1,30 @@
 {
-  "date": "2026-07-02",
-  "url": "http://127.0.0.1:5173",
-  "healthScore": 82,
-  "issues": [
-    {
-      "id": "QA-001",
-      "title": "Browser screenshot/click QA could not be completed in this environment",
-      "severity": "Medium",
-      "category": "QA coverage"
-    },
-    {
-      "id": "QA-002",
-      "title": "Production build depends on running outside sandbox on this Windows machine",
-      "severity": "Low",
-      "category": "Developer environment"
-    },
-    {
-      "id": "QA-003",
-      "title": "Bundle size warning remains",
-      "severity": "Low",
-      "category": "Performance"
-    }
-  ],
-  "categoryScores": {
-    "console": 80,
-    "links": 100,
-    "visual": 75,
-    "functional": 80,
-    "ux": 80,
-    "performance": 85,
-    "content": 95,
-    "accessibility": 75
+  "site": "https://vilu.store",
+  "date": "2026-07-26",
+  "scope": "Epic #58 Offer Finder",
+  "healthScore": 96,
+  "routesChecked": 8,
+  "viewports": [1440, 390, 320],
+  "productionApi": {
+    "allowed": 200,
+    "missingKey": 401,
+    "badOrigin": 403,
+    "badMarket": 400,
+    "rawTable": 401,
+    "publicHealthRpc": 401
+  },
+  "canary": {
+    "runId": 30192638246,
+    "fetched": 1,
+    "observed": 1,
+    "published": 0,
+    "review": 1,
+    "quarantined": 0,
+    "failed": 0
+  },
+  "issues": {
+    "found": 1,
+    "fixedLocally": 1,
+    "remainingProductBlockers": 0
   }
 }
