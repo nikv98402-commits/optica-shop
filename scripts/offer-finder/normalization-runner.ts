@@ -46,7 +46,11 @@ export interface NormalizationRunSummary {
 }
 
 export class NormalizationRunner {
-  constructor(private readonly store: NormalizationStore) {}
+  private readonly store: NormalizationStore;
+
+  constructor(store: NormalizationStore) {
+    this.store = store;
+  }
 
   async run(sourceId: string | null = null, limit = 100): Promise<NormalizationRunSummary> {
     const [rows, catalog] = await Promise.all([
@@ -99,7 +103,11 @@ function safeMessage(value: unknown): string {
 }
 
 export class SupabaseNormalizationStore implements NormalizationStore {
-  constructor(private readonly client: SupabaseClient) {}
+  private readonly client: SupabaseClient;
+
+  constructor(client: SupabaseClient) {
+    this.client = client;
+  }
 
   static fromEnvironment(env: NodeJS.ProcessEnv = process.env): SupabaseNormalizationStore {
     const url = env.OFFER_FINDER_SUPABASE_URL;
