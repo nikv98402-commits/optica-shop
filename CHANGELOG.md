@@ -2,6 +2,20 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.0.3] - 2026-07-26
+
+### Fixed
+
+- Allowed the Offer Finder Edge API to authenticate browser requests with both
+  Supabase legacy anonymous keys and current publishable keys.
+- Kept secret API keys excluded while supporting publishable-key rotation from
+  Supabase platform metadata.
+
+### Tests
+
+- Added compatibility coverage for legacy, current, rotated, and secret key
+  formats and rechecked all 225 tests, TypeScript, and the production build.
+
 ## [0.4.0.2] - 2026-07-26
 
 ### Added

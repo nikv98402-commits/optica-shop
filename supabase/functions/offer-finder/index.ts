@@ -27,7 +27,7 @@ type RpcRow = {
 };
 
 type Dependencies = {
-  anonKey: string;
+  publicApiKeys: Set<string>;
   allowedOrigins: Set<string>;
   rpc: (params: Record<string, unknown>) => Promise<RpcRow[]>;
 };
@@ -140,7 +140,8 @@ export async function handleOfferFinderRequest(request: Request, deps: Dependenc
       message: 'Origin is not allowed',
     }), 403);
   }
-  if (!deps.anonKey || request.headers.get('apikey') !== deps.anonKey) {
+  const requestApiKey = request.headers.get('apikey') || '';
+  if (!requestApiKey || !deps.publicApiKeys.has(requestApiKey)) {
     return json(request, deps.allowedOrigins, envelope(null, {
       code: 'validation_failed',
       message: 'Client authentication is required',
@@ -202,17 +203,44 @@ export async function handleOfferFinderRequest(request: Request, deps: Dependenc
   }
 }
 
+function collectPublishableKeys(value: unknown, keys: Set<string>) {
+  if (typeof value === 'string') {
+    if (value.startsWith('sb_publishable_')) keys.add(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectPublishableKeys(entry, keys));
+    return;
+  }
+  if (value && typeof value === 'object') {
+    Object.values(value).forEach((entry) => collectPublishableKeys(entry, keys));
+  }
+}
+
+export function resolvePublicApiKeys(legacyAnonKey: string, publishableKeysJson: string) {
+  const keys = new Set<string>();
+  if (legacyAnonKey) keys.add(legacyAnonKey);
+  if (!publishableKeysJson) return keys;
+  try {
+    collectPublishableKeys(JSON.parse(publishableKeysJson), keys);
+  } catch {
+    // Ignore malformed platform metadata and retain legacy-key compatibility.
+  }
+  return keys;
+}
+
 async function productionDependencies(): Promise<Dependencies> {
   const supabaseUrl = Deno?.env.get('SUPABASE_URL') || '';
   const serviceRoleKey = Deno?.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
   const anonKey = Deno?.env.get('SUPABASE_ANON_KEY') || '';
+  const publishableKeys = Deno?.env.get('SUPABASE_PUBLISHABLE_KEYS') || '';
   const allowedOrigins = new Set(
     (Deno?.env.get('OFFER_FINDER_ALLOWED_ORIGINS')
       || 'https://vilu.store,https://www.vilu.store,http://localhost:5173,http://127.0.0.1:5173')
       .split(',').map((value) => value.trim()).filter(Boolean),
   );
   return {
-    anonKey,
+    publicApiKeys: resolvePublicApiKeys(anonKey, publishableKeys),
     allowedOrigins,
     rpc: async (params) => {
       const response = await fetch(`${supabaseUrl}/rest/v1/rpc/offer_product_card_v1`, {

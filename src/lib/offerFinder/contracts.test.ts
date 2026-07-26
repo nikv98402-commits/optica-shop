@@ -3,7 +3,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LanguageProvider } from '../../contexts/LanguageContext';
 import { ProductDetail } from '../../pages/ProductDetail';
-import { handleOfferFinderRequest } from '../../../supabase/functions/offer-finder/index';
+import {
+  handleOfferFinderRequest,
+  resolvePublicApiKeys,
+} from '../../../supabase/functions/offer-finder/index';
 import {
   classifyOfferFreshness,
   formatOfferPrice,
@@ -166,6 +169,20 @@ describe('Offer Finder v1 contracts', () => {
 });
 
 describe('Offer Finder Edge BFF integration', () => {
+  it('accepts both legacy anon and current Supabase publishable keys', () => {
+    const keys = resolvePublicApiKeys('legacy-anon', JSON.stringify({
+      default: 'sb_publishable_browser',
+      nested: { key: 'sb_publishable_rotated' },
+      ignored: 'sb_secret_server',
+    }));
+
+    expect([...keys]).toEqual([
+      'legacy-anon',
+      'sb_publishable_browser',
+      'sb_publishable_rotated',
+    ]);
+  });
+
   it('maps the protected RPC projection without leaking operational fields', async () => {
     const rpc = vi.fn(async () => [offerRow]);
     const request = new Request(
@@ -173,7 +190,7 @@ describe('Offer Finder Edge BFF integration', () => {
       { headers: { origin: 'https://vilu.store', apikey: 'anon' } },
     );
     const response = await handleOfferFinderRequest(request, {
-      anonKey: 'anon',
+      publicApiKeys: new Set(['anon', 'sb_publishable_browser']),
       allowedOrigins: new Set(['https://vilu.store']),
       rpc,
     });
@@ -201,7 +218,7 @@ describe('Offer Finder Edge BFF integration', () => {
       'https://project.supabase.co/functions/v1/offer-finder/v1/search?market=RU&product=Aurora&store=not-a-uuid',
       { headers: { origin: 'https://evil.example', apikey: 'anon' } },
     ), {
-      anonKey: 'anon',
+      publicApiKeys: new Set(['anon']),
       allowedOrigins: new Set(['https://vilu.store']),
       rpc,
     });
