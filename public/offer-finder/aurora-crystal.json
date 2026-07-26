@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "offers": [
+    {
+      "id": "vilu-aurora-crystal-52",
+      "offerUrl": "https://vilu.store/products/aurora-crystal",
+      "listedPriceMinor": 1299000,
+      "regularPriceMinor": 1299000,
+      "currency": "RUB",
+      "availability": "in_stock",
+      "title": "ViLu Aurora Crystal 52",
+      "brand": "ViLu",
+      "model": "Aurora Crystal",
+      "productType": "eyeglasses",
+      "sku": "VILU-AURORA-52",
+      "mpn": "AURORA-52"
+    }
+  ]
+}

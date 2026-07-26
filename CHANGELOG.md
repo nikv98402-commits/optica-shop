@@ -2,6 +2,30 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.1.0] - 2026-07-26
+
+### Added
+
+- Connected the first owner-authorized Offer Finder source for one Aurora
+  Crystal offer in the Russian market.
+- Published a bounded first-party JSON feed that lets Offer Finder verify the
+  confirmed price, availability, catalog identity, and product destination.
+- Added an idempotent Supabase migration for the single ViLu merchant, product,
+  variant, and unscheduled source.
+
+### Changed
+
+- Restricted the canary to one request, one offer, one exact feed URL, and one
+  exact product URL; additional sources, products, and markets remain blocked.
+- Documented the source authorization, robots and terms review, request limits,
+  freshness rules, and rollback boundary.
+
+### Tests
+
+- Added adapter, normalization, price, destination, and scope-regression
+  coverage for the bounded real-source canary.
+- Rechecked all 235 tests, TypeScript, lint, and the production build.
+
 ## [0.4.0.5] - 2026-07-26
 
 ### Fixed
