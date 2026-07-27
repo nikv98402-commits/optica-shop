@@ -135,7 +135,9 @@ ViLu должен продвигаться не как очередная онл
 - `public/sitemap.xml` перечисляет главную и 7 Knowledge Base страниц.
 - `public/llms.txt` дает LLM краткую карту проекта, ключевые страницы и ограничения.
 - `public/404.html` нужен для прямых ссылок GitHub Pages на SPA-маршруты.
-- `vercel.json` добавлен для Vercel: прямые URL Knowledge Base переписываются в `index.html`, а публичные файлы `robots.txt`, `sitemap.xml`, `llms.txt` остаются статическими.
+- `vercel.json` добавлен для Vercel: прямые SPA URL переписываются в extensionless
+  entrypoint `/index`, совместимый с `cleanUrls`, а публичные файлы `robots.txt`,
+  `sitemap.xml`, `llms.txt` остаются статическими.
 - `docs/promotion-kit.md` содержит 3 готовых внешних поста для 7-го дня распространения.
 
 ## GenEO-измерение

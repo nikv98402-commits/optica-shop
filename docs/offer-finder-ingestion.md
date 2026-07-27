@@ -52,11 +52,11 @@ Create a protected environment named `offer-finder-production` with:
 - `OFFER_FINDER_SUPABASE_URL`
 - `OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY`
 
-Pull requests and forks run fixtures only and never receive these secrets. After a real source
-completes the terms/robots and enablement gate, the scheduled job runs exactly the source UUID
-configured in `OFFER_FINDER_CANARY_SOURCE_ID`; an empty variable keeps the scheduled live job
-disabled. The same protected credentials are used by the downstream normalization runner. They
-must remain scoped to the protected environment and must never be added to adapter configuration.
+Pull requests and forks run fixtures only and never receive these secrets. The scheduled job is
+pinned in the workflow to the single approved ViLu public-catalog source UUID. Manual dispatch
+still requires an explicit approved `source_id`; it cannot discover or fan out to other sources.
+The same protected credentials are used by the downstream normalization runner. They must remain
+scoped to the protected environment and must never be added to adapter configuration.
 Production scheduling, alert thresholds, and recovery are documented in
 [`offer-finder-operations.md`](./offer-finder-operations.md).
 
@@ -72,8 +72,8 @@ same approved `source_id`; it does not run an unfiltered production batch.
 Its decision record is in
 [`offer-finder-sources/vilu-public-catalog.md`](./offer-finder-sources/vilu-public-catalog.md).
 It performs one request to one exact `vilu.store` feed and rejects any response containing
-anything other than the single approved Aurora Crystal offer. It has no schedule and does
-not authorize additional sources or markets.
+anything other than the single approved Aurora Crystal offer. The daily workflow runs only this
+bounded source; that schedule does not authorize additional sources, offers, or markets.
 
 ## Rollback
 

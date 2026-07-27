@@ -2,20 +2,22 @@
 
 ## Safety boundary
 
-The scheduled workflow runs exactly one source configured in the protected
-`offer-finder-production` GitHub environment. It does not discover sources or
+The scheduled workflow runs exactly one source: the approved ViLu public-catalog
+source whose UUID is pinned in the workflow. It does not discover sources or
 fan out across markets. Pull requests remain fixture-only.
 
 Protected configuration:
 
 - secrets `OFFER_FINDER_SUPABASE_URL`, `OFFER_FINDER_SUPABASE_SERVICE_ROLE_KEY`
   and `OFFER_FINDER_CANARY_URL`;
-- variable `OFFER_FINDER_CANARY_SOURCE_ID`.
+- variable `OFFER_FINDER_CANARY_SOURCE_ID` for manual operational compatibility;
+  the scheduled source remains pinned in the workflow.
 
 The canary URL origin must be in the source `approved_origins`. Terms/robots,
 SSRF, response size/type, timeout and rate-limit guards remain mandatory.
-The selected source must use adapter key `vilu_fixture_canary`; the scheduler
-does not dynamically load or execute arbitrary adapter modules.
+The scheduled source must use adapter key `vilu_public_catalog`; manual dry-run
+checks may use `vilu_fixture_canary`. The scheduler does not dynamically load or
+execute arbitrary adapter modules.
 
 ## Schedule and observability
 
@@ -26,8 +28,11 @@ source, then the service-role-only health RPC. Transient steps retry three times
 with exponential backoff and jitter.
 
 Blocking alerts are `NO_SUCCESS_30H`, `CONSECUTIVE_FAILURES`,
-`STALE_HEARTBEAT`, and `MISSING_TERMINAL_HEARTBEAT`. Warnings are
-`PARSE_SUCCESS_BELOW_95`, `QUARANTINE_ABOVE_5`, and `NO_FRESH_OFFERS`.
+`STALE_HEARTBEAT`, and `MISSING_TERMINAL_HEARTBEAT`. For the approved real
+source, `NO_FRESH_OFFERS` is also blocking so a successful workflow cannot hide
+an empty product result. Warnings include `PARSE_SUCCESS_BELOW_95` and
+`QUARANTINE_ABOVE_5`; fixture-only health checks keep `NO_FRESH_OFFERS`
+non-blocking.
 Inspect `offer_ingestion_runs`, `offer_sources` and `offer_parser_incidents`.
 
 ## Manual canary and recovery

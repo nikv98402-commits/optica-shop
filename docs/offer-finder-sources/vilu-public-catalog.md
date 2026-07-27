@@ -22,7 +22,8 @@ Reviewed: 2026-07-26.
 - Concurrency: one.
 - Response remains subject to the shared 2 MB, timeout, redirect, content-type,
   DNS, private-network, and SSRF guards.
-- No `schedule_cron`; the source is not selected by the production scheduler.
+- The production workflow invokes only this source once per day; every run remains
+  bounded to one request and one approved offer.
 - Market remains `RU`; no other source or geography is introduced.
 
 ## Expected normalization
