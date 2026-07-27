@@ -1,7 +1,7 @@
 import { ArrowLeft, Check, ShieldCheck, Sparkles, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { VirtualTryOn } from '../components/VirtualTryOn';
-import { formatPrice, getProductById } from '../data/products';
+import { formatPrice, getOfferFinderBrandName, getProductById } from '../data/products';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { ServiceCheckoutFrame } from '../types/backend';
 import { AtomicHeading } from '../components/home/AtomicHeading';
@@ -35,7 +35,7 @@ export function ProductDetail({ productId, onNavigate, onStartCheckout }: Produc
     searchProductOffers({
       market: 'RU',
       product: product.name,
-      brand: product.brand_name,
+      brand: getOfferFinderBrandName(product),
       signal: controller.signal,
     }).then(
       (result) => setOfferState({ status: 'ready', result }),

@@ -51,4 +51,26 @@ describe('Offer Finder production operations', () => {
       'source:MISSING_TERMINAL_HEARTBEAT',
     ]);
   });
+
+  it('blocks a successful real-source canary when no fresh offer was published', () => {
+    expect(criticalAlerts([{
+      source_id: '00000000-0000-4000-8000-000000000068',
+      source_name: 'ViLu public catalog bounded canary',
+      alert_codes: ['NO_FRESH_OFFERS'],
+      fresh_offer_count: 0,
+      open_incident_count: 0,
+    }])).toEqual([
+      '00000000-0000-4000-8000-000000000068:NO_FRESH_OFFERS',
+    ]);
+  });
+
+  it('keeps NO_FRESH_OFFERS non-blocking for infrastructure-only canaries', () => {
+    expect(criticalAlerts([{
+      source_id: '00000000-0000-4000-8000-000000000903',
+      source_name: 'ViLu bounded operations canary',
+      alert_codes: ['NO_FRESH_OFFERS'],
+      fresh_offer_count: 0,
+      open_incident_count: 0,
+    }])).toEqual([]);
+  });
 });

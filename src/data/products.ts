@@ -9,6 +9,7 @@ export const demoProducts: Product[] = [
     category: 'eyeglasses',
     brand_type: 'our_brand',
     brand_name: 'ViLu Atelier',
+    offer_finder_brand_name: 'ViLu',
     image_url: 'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?auto=format&fit=crop&w=900&q=80',
     stock: 18,
     featured: true,
@@ -89,4 +90,8 @@ export function formatPrice(price: number) {
 
 export function getProductById(productId: string) {
   return demoProducts.find((product) => product.id === productId);
+}
+
+export function getOfferFinderBrandName(product: Product) {
+  return product.offer_finder_brand_name ?? product.brand_name;
 }
