@@ -3,8 +3,9 @@
 ## Safety boundary
 
 The scheduled workflow runs exactly one source: the approved ViLu public-catalog
-source whose UUID is pinned in the workflow. It does not discover sources or
-fan out across markets. Pull requests remain fixture-only.
+source with canonical UUID `00000000-0000-4000-8000-000000000068`, pinned in
+the workflow. It does not discover sources or fan out across markets. Pull
+requests remain fixture-only.
 
 Protected configuration:
 

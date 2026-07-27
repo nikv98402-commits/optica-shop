@@ -134,7 +134,9 @@ ViLu должен продвигаться не как очередная онл
 - `public/robots.txt` разрешает OAI-SearchBot, ChatGPT-User, PerplexityBot, Perplexity-User, Googlebot, Bingbot и Yandex; `GPTBot` закрыт.
 - `public/sitemap.xml` перечисляет главную и 7 Knowledge Base страниц.
 - `public/llms.txt` дает LLM краткую карту проекта, ключевые страницы и ограничения.
-- `public/404.html` нужен для прямых ссылок GitHub Pages на SPA-маршруты.
+- `scripts/add-github-pages-routes.mjs` после сборки создаёт `404.html` и
+  статические `index.html` для поддерживаемых SPA-маршрутов, включая прямые
+  ссылки на все текущие карточки товаров GitHub Pages.
 - `vercel.json` добавлен для Vercel: прямые SPA URL переписываются в extensionless
   entrypoint `/index`, совместимый с `cleanUrls`, а публичные файлы `robots.txt`,
   `sitemap.xml`, `llms.txt` остаются статическими.

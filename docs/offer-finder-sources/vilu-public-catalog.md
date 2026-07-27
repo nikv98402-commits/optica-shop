@@ -5,6 +5,7 @@ Reviewed: 2026-07-26.
 ## Authorization and policy
 
 - Source owner/operator: ViLu (first-party source).
+- Canonical source UUID: `00000000-0000-4000-8000-000000000068`.
 - Exact approved origin: `https://vilu.store`.
 - Exact feed: `https://vilu.store/offer-finder/aurora-crystal.json`.
 - Product destination: `https://vilu.store/products/aurora-crystal`.
@@ -25,6 +26,11 @@ Reviewed: 2026-07-26.
 - The production workflow invokes only this source once per day; every run remains
   bounded to one request and one approved offer.
 - Market remains `RU`; no other source or geography is introduced.
+
+Production reconciliation is forward-only and fail-closed. If an existing
+`vilu_public_catalog` row uses another UUID, the migration changes it only when
+there are no dependent ingestion, observation, incident, or offer rows;
+otherwise it aborts and requires an explicit data-preserving recovery plan.
 
 ## Expected normalization
 
