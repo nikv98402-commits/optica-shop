@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/((?!robots.txt|sitemap.xml|llms.txt|CNAME|favicon.svg|icons.svg|assets/|frames/).*)",
-      "destination": "/index.html"
+      "destination": "/index"
     }
   ],
   "headers": [

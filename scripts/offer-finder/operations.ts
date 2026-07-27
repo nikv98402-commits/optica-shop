@@ -31,6 +31,10 @@ const CRITICAL_ALERTS = new Set([
   'MISSING_TERMINAL_HEARTBEAT',
 ]);
 
+const FRESH_OFFER_REQUIRED_SOURCE_IDS = new Set([
+  '00000000-0000-4000-8000-000000000068',
+]);
+
 export async function withRetry<T>(
   operation: () => Promise<T>,
   options: RetryOptions = DEFAULT_RETRY,
@@ -62,7 +66,11 @@ export function validateSourceId(value: string | undefined): string {
 
 export function criticalAlerts(rows: HealthRow[]): string[] {
   return rows.flatMap((row) =>
-    row.alert_codes.filter((code) => CRITICAL_ALERTS.has(code)).map((code) => `${row.source_id}:${code}`),
+    row.alert_codes
+      .filter((code) =>
+        CRITICAL_ALERTS.has(code)
+        || (code === 'NO_FRESH_OFFERS' && FRESH_OFFER_REQUIRED_SOURCE_IDS.has(row.source_id)))
+      .map((code) => `${row.source_id}:${code}`),
   );
 }
 
@@ -102,7 +110,9 @@ async function main(): Promise<void> {
   console.log(JSON.stringify({ sourceId, health }));
   for (const row of health) {
     for (const alert of row.alert_codes) {
-      console.log(`::${CRITICAL_ALERTS.has(alert) ? 'error' : 'warning'}::Offer Finder ${row.source_name}: ${alert}`);
+      const isCritical = CRITICAL_ALERTS.has(alert)
+        || (alert === 'NO_FRESH_OFFERS' && FRESH_OFFER_REQUIRED_SOURCE_IDS.has(row.source_id));
+      console.log(`::${isCritical ? 'error' : 'warning'}::Offer Finder ${row.source_name}: ${alert}`);
     }
   }
   if (criticalAlerts(health).length > 0) process.exitCode = 1;

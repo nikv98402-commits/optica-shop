@@ -28,7 +28,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: offer-finder-${{ inputs.source_id || vars.OFFER_FINDER_CANARY_SOURCE_ID || 'fixture-canary' }}
+  group: offer-finder-${{ inputs.source_id || (github.event_name == 'schedule' && '00000000-0000-4000-8000-000000000068') || 'fixture-canary' }}
   cancel-in-progress: false
 
 jobs:
@@ -53,7 +53,7 @@ jobs:
         run: node --experimental-strip-types scripts/offer-finder/canary.ts --dry-run
 
   approved-live-canary:
-    if: ${{ (github.event_name == 'schedule' && vars.OFFER_FINDER_CANARY_SOURCE_ID != '') || (github.event_name == 'workflow_dispatch' && inputs.canary && !inputs.dry_run && inputs.source_id != '') }}
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.canary && !inputs.dry_run && inputs.source_id != '') }}
     needs: fixture-contract
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -69,7 +69,9 @@ jobs:
         shell: bash
         env:
           MANUAL_SOURCE_ID: ${{ inputs.source_id }}
-          SCHEDULED_SOURCE_ID: ${{ vars.OFFER_FINDER_CANARY_SOURCE_ID }}
+          # The only scheduled production source is the owner-authorized,
+          # exactly-one-offer ViLu feed. Keep manual runs explicitly scoped.
+          SCHEDULED_SOURCE_ID: ${{ github.event_name == 'schedule' && '00000000-0000-4000-8000-000000000068' || '' }}
         run: echo "OFFER_FINDER_SOURCE_ID=${MANUAL_SOURCE_ID:-${SCHEDULED_SOURCE_ID}}" >> "$GITHUB_ENV"
       - name: Run bounded canary, normalization and health checks
         env:
