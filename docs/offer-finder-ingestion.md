@@ -75,6 +75,12 @@ It performs one request to one exact `vilu.store` feed and rejects any response 
 anything other than the single approved Aurora Crystal offer. The daily workflow runs only this
 bounded source; that schedule does not authorize additional sources, offers, or markets.
 
+`vilu_github_raw_catalog` is the second owner-authorized source and is manual-only.
+Its decision record is in
+[`offer-finder-sources/vilu-github-raw-catalog.md`](./offer-finder-sources/vilu-github-raw-catalog.md).
+It performs one request to the one exact GitHub raw feed for the same Aurora Crystal
+offer. It does not change the first source, scheduled source, market, or geography.
+
 ## Rollback
 
 Disable the affected row in `offer_sources` or disable the workflow. Existing observations and

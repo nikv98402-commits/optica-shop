@@ -9,6 +9,7 @@ import {
   type SourceAdapter,
 } from './ingestion.ts';
 import { pathToFileURL } from 'node:url';
+import { viluGitHubRawCatalogAdapter } from './adapters/vilu-github-raw-catalog.ts';
 import { viluPublicCatalogAdapter } from './adapters/vilu-public-catalog.ts';
 
 interface CanaryDocument {
@@ -76,6 +77,7 @@ async function main(): Promise<void> {
 
   const registry = new AdapterRegistry()
     .register(canaryAdapter)
+    .register(viluGitHubRawCatalogAdapter)
     .register(viluPublicCatalogAdapter);
   const store = SupabaseIngestionStore.fromEnvironment();
   const sourceId = process.env.OFFER_FINDER_SOURCE_ID;
