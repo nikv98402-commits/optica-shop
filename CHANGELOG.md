@@ -2,6 +2,23 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.3.0] - 2026-07-27
+
+### Fixed
+
+- Restored HTTP 200 responses for direct product links on Vercel while keeping
+  clean URLs enabled.
+- Made the bounded Offer Finder production check use the single approved ViLu
+  source and fail clearly when that source publishes no fresh offer.
+- Matched Aurora Crystal to its confirmed Offer Finder offer without changing
+  the customer-facing ViLu Atelier brand name.
+
+### Tests
+
+- Added regression coverage for Vercel SPA routing, production canary health
+  behavior, and canonical Offer Finder brand matching.
+- Rechecked all 245 tests, TypeScript, lint, and the production build.
+
 ## [0.4.2.0] - 2026-07-26
 
 ### Fixed
