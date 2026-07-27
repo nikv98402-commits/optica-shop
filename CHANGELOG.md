@@ -2,6 +2,24 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.4.0] - 2026-07-27
+
+### Fixed
+
+- Restored direct GitHub Pages product links, including
+  `/products/aurora-crystal`, by publishing static entries for every current
+  catalog product.
+- Added a safe forward migration that restores the single approved bounded
+  ViLu Offer Finder source under the production workflow's canonical ID while
+  refusing to rewrite a source that already has dependent data.
+
+### Tests
+
+- Added regression coverage that keeps GitHub Pages product routes aligned
+  with the catalog and preserves the bounded source's origin, limits, schedule,
+  and stable identifier.
+- Rechecked all 249 tests, TypeScript, lint, and the production build.
+
 ## [0.4.3.0] - 2026-07-27
 
 ### Fixed
