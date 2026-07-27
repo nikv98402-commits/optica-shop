@@ -2,6 +2,28 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.5.0] - 2026-07-27
+
+### Added
+
+- Added a second owner-authorized, bounded Offer Finder source for the existing
+  Aurora Crystal offer in the Russian market.
+- Added a separate fail-closed adapter for the exact public GitHub raw feed,
+  without changing the first source, geography, or scheduler.
+
+### Security
+
+- Kept the source limited to one exact URL, one offer, one request per minute,
+  one concurrent request, and manual canary execution only.
+- Added a forward migration that verifies the first source remains unchanged
+  while registering the second source with no schedule.
+
+### Tests
+
+- Added adapter, normalization, deduplication, path-override, destination, and
+  scope-regression coverage.
+- Rechecked all 252 tests, TypeScript, lint, and the production build.
+
 ## [0.4.4.0] - 2026-07-27
 
 ### Fixed
