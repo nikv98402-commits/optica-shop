@@ -56,10 +56,11 @@ BEGIN
   INSERT INTO public.offer_merchants (id, market_id, name, slug)
   VALUES (v_merchant_id, v_market_id, 'Fixture merchant', 'fixture-merchant');
   INSERT INTO public.offer_sources
-    (id, merchant_id, name, adapter_key, adapter_version, source_type, approved_origins)
+    (id, merchant_id, name, adapter_key, adapter_version, source_type,
+     approved_origins, approved_fetch_origins)
   VALUES (
     v_source_id, v_merchant_id, 'Fixture source', 'fixture', '1.0.0', 'manual_file',
-    '["https://fixture.invalid"]'::jsonb
+    '["https://fixture.invalid"]'::jsonb, '["https://fixture.invalid"]'::jsonb
   );
   INSERT INTO public.offer_ingestion_runs
     (id, source_id, trigger, status, adapter_version, started_at)

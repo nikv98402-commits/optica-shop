@@ -14,7 +14,8 @@ const SOURCE: IngestionSource = {
   adapterKey: 'vilu_github_raw_catalog',
   adapterVersion: '1.0.0',
   sourceType: 'feed',
-  approvedOrigins: ['https://raw.githubusercontent.com'],
+  approvedOrigins: ['https://vilu.store'],
+  approvedFetchOrigins: ['https://raw.githubusercontent.com'],
   rateLimitPerMinute: 1,
   concurrencyLimit: 1,
   termsReviewedAt: '2026-07-27T00:00:00.000Z',
@@ -64,6 +65,10 @@ describe('ViLu GitHub raw catalog adapter', () => {
     const adapterContext = context({ schemaVersion: '1.0', offers: [OFFER] });
     const [observation] = await viluGitHubRawCatalogAdapter.collect(adapterContext);
     expect(adapterContext.fetch).toHaveBeenCalledTimes(1);
+    expect(adapterContext.fetch).toHaveBeenCalledWith(FEED_URL, {
+      accept: ['application/json', 'text/plain'],
+    });
+    expect(observation.sourceUrl).toBe(OFFER.offerUrl);
     const normalized = normalizeObservation({
       ...BASE_NORMALIZATION_INPUT,
       sourceId: SOURCE.id,

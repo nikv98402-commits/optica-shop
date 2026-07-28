@@ -20,7 +20,10 @@ export interface IngestionSource {
   adapterKey: string;
   adapterVersion: string;
   sourceType: SourceType;
+  /** Origins that may be exposed as outbound product links. */
   approvedOrigins: string[];
+  /** Origins that the ingestion transport may fetch. Falls back to approvedOrigins for legacy rows. */
+  approvedFetchOrigins?: string[];
   rateLimitPerMinute: number;
   concurrencyLimit: number;
   termsReviewedAt: string | null;
@@ -331,7 +334,10 @@ export class RestrictedFetcher {
     if (url.protocol !== 'https:' || url.username || url.password || isIP(url.hostname)) {
       throw new IngestionError('DESTINATION_NOT_ALLOWED', 'Only credential-free HTTPS hostnames are allowed');
     }
-    const approved = new Set(source.approvedOrigins.map((origin) => new URL(origin).origin));
+    const approved = new Set(
+      (source.approvedFetchOrigins ?? source.approvedOrigins)
+        .map((origin) => new URL(origin).origin),
+    );
     if (!approved.has(url.origin)) {
       throw new IngestionError('DESTINATION_NOT_ALLOWED', 'Destination origin is not allowlisted');
     }
@@ -500,7 +506,10 @@ function assertPolicy(source: IngestionSource): void {
     throw new IngestionError('ROBOTS_POLICY_BLOCKED', 'Recorded robots policy does not allow ingestion');
   }
   if (!source.approvedOrigins.length) {
-    throw new IngestionError('DESTINATION_NOT_ALLOWED', 'Source has no approved origins');
+    throw new IngestionError('DESTINATION_NOT_ALLOWED', 'Source has no approved outbound origins');
+  }
+  if (!(source.approvedFetchOrigins ?? source.approvedOrigins).length) {
+    throw new IngestionError('DESTINATION_NOT_ALLOWED', 'Source has no approved fetch origins');
   }
 }
 
@@ -650,26 +659,59 @@ export class SupabaseIngestionStore implements IngestionStore {
   }
 
   async loadSource(sourceId: string): Promise<IngestionSource> {
-    const { data, error } = await this.client
+    const legacyFields =
+      'id,name,adapter_key,adapter_version,source_type,approved_origins,rate_limit_per_minute,concurrency_limit,terms_reviewed_at,robots_status,enabled';
+    type SourceRow = {
+      id: string;
+      name: string;
+      adapter_key: string;
+      adapter_version: string;
+      source_type: SourceType;
+      approved_origins: string[];
+      approved_fetch_origins?: string[] | null;
+      rate_limit_per_minute: number;
+      concurrency_limit: number;
+      terms_reviewed_at: string | null;
+      robots_status: RobotsStatus;
+      enabled: boolean;
+    };
+    const currentResult = await this.client
       .from('offer_sources')
       .select(
-        'id,name,adapter_key,adapter_version,source_type,approved_origins,rate_limit_per_minute,concurrency_limit,terms_reviewed_at,robots_status,enabled',
+        `${legacyFields},approved_fetch_origins`,
       )
       .eq('id', sourceId)
       .single();
-    if (error || !data) throw new IngestionError('PERSISTENCE_FAILED', safeSummary(error ?? 'Source not found'));
+    let sourceRow = currentResult.data as unknown as SourceRow | null;
+    let sourceError = currentResult.error;
+    if (sourceError && ['42703', 'PGRST204'].includes(sourceError.code)) {
+      const legacyResult = await this.client
+        .from('offer_sources')
+        .select(legacyFields)
+        .eq('id', sourceId)
+        .single();
+      sourceRow = legacyResult.data as unknown as SourceRow | null;
+      sourceError = legacyResult.error;
+    }
+    if (sourceError || !sourceRow) {
+      throw new IngestionError(
+        'PERSISTENCE_FAILED',
+        safeSummary(sourceError ?? 'Source not found'),
+      );
+    }
     return {
-      id: data.id,
-      name: data.name,
-      adapterKey: data.adapter_key,
-      adapterVersion: data.adapter_version,
-      sourceType: data.source_type,
-      approvedOrigins: data.approved_origins,
-      rateLimitPerMinute: data.rate_limit_per_minute,
-      concurrencyLimit: data.concurrency_limit,
-      termsReviewedAt: data.terms_reviewed_at,
-      robotsStatus: data.robots_status,
-      enabled: data.enabled,
+      id: sourceRow.id,
+      name: sourceRow.name,
+      adapterKey: sourceRow.adapter_key,
+      adapterVersion: sourceRow.adapter_version,
+      sourceType: sourceRow.source_type,
+      approvedOrigins: sourceRow.approved_origins,
+      approvedFetchOrigins: sourceRow.approved_fetch_origins ?? sourceRow.approved_origins,
+      rateLimitPerMinute: sourceRow.rate_limit_per_minute,
+      concurrencyLimit: sourceRow.concurrency_limit,
+      termsReviewedAt: sourceRow.terms_reviewed_at,
+      robotsStatus: sourceRow.robots_status,
+      enabled: sourceRow.enabled,
     } as IngestionSource;
   }
 

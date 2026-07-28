@@ -30,4 +30,27 @@ describe('ViLu public catalog source migrations', () => {
     expect(migration).toContain('concurrency_limit = 1');
     expect(migration).toContain('schedule_cron = NULL');
   });
+
+  it('separates the second source feed allowlist from its outbound product allowlist', async () => {
+    const migration = await readFile(
+      'supabase/migrations/20260728103000_separate_offer_source_origins.sql',
+      'utf8',
+    );
+
+    expect(migration).toContain('approved_fetch_origins');
+    expect(migration).toContain('SET approved_fetch_origins = approved_origins');
+    expect(migration).toContain('ALTER COLUMN approved_fetch_origins SET NOT NULL');
+    expect(migration).toContain('offer_sources_approved_fetch_origins_array');
+    expect(migration).toContain(
+      "CHECK (jsonb_typeof(approved_fetch_origins) = 'array')",
+    );
+    expect(migration).toContain(`'["https://raw.githubusercontent.com"]'::jsonb`);
+    expect(migration).toContain(`approved_origins = '["https://vilu.store"]'::jsonb`);
+    expect(migration).toContain(`id = '00000000-0000-4000-8000-000000000072'`);
+    expect(migration).toContain('schedule_cron = NULL');
+    expect(migration).toContain('rate_limit_per_minute = 1');
+    expect(migration).toContain('concurrency_limit = 1');
+    expect(migration).toContain('Second source origin separation failed');
+    expect(migration).toContain('First source origin policy changed unexpectedly');
+  });
 });
