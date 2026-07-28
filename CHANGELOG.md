@@ -2,6 +2,30 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.4.6.0] - 2026-07-28
+
+### Fixed
+
+- Separated ingestion feed origins from outbound product URL origins in Offer
+  Finder, so the bounded GitHub feed can publish the approved ViLu product URL
+  without weakening the network fetch boundary.
+- Added a backward-compatible source loader that works before and after the
+  production migration is applied.
+
+### Security
+
+- Kept fetch requests restricted to the exact approved feed origin while
+  independently validating customer-facing product links.
+- Preserved the first source policy, disabled scheduling for the second source,
+  and retained one-request/one-concurrency limits.
+
+### Tests
+
+- Added focused regression coverage for split origin policies and migration
+  invariants.
+- Rechecked 78 focused tests, all 260 unit tests, TypeScript, lint, and the
+  production build.
+
 ## [0.4.5.0] - 2026-07-27
 
 ### Added
