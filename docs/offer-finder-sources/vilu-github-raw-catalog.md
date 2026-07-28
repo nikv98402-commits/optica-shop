@@ -8,7 +8,8 @@ Reviewed: 2026-07-27.
 - Source UUID: `00000000-0000-4000-8000-000000000072`.
 - Adapter: `vilu_github_raw_catalog` version `1.0.0`.
 - Market: existing `RU` only.
-- Exact approved origin: `https://raw.githubusercontent.com`.
+- Exact approved fetch origin: `https://raw.githubusercontent.com`.
+- Exact approved outbound product origin: `https://vilu.store`.
 - Exact feed:
   `https://raw.githubusercontent.com/nikv98402-commits/optica-shop/main/public/offer-finder/aurora-crystal.json`.
 - Product destination: `https://vilu.store/products/aurora-crystal`.

@@ -4,6 +4,7 @@ import {
   IngestionError,
   IngestionRunner,
   RestrictedFetcher,
+  SupabaseIngestionStore,
   type IngestionSource,
   type IngestionStore,
   type QuarantineIncident,
@@ -204,9 +205,92 @@ describe('restricted fetcher security boundary', () => {
       'user-agent': 'ViLuOfferFinder/0.1 (+https://vilu.store/terms)',
     });
   });
+
+  it('does not allow an outbound-only origin to be fetched', async () => {
+    const splitBoundarySource = {
+      ...SOURCE,
+      approvedOrigins: ['https://shop.example.com'],
+      approvedFetchOrigins: ['https://feeds.example.com'],
+    };
+
+    await expect(
+      fetcher(vi.fn()).forSource(splitBoundarySource)(
+        'https://shop.example.com/products/aurora',
+      ),
+    ).rejects.toMatchObject({ code: 'DESTINATION_NOT_ALLOWED' });
+  });
 });
 
 describe('ingestion runner', () => {
+  it('keeps feed fetch origins separate from outbound product origins', async () => {
+    const store = new MemoryStore();
+    const transport = vi.fn().mockResolvedValue(response('{"offers":[]}'));
+    const splitBoundarySource = {
+      ...SOURCE,
+      approvedOrigins: ['https://shop.example.com'],
+      approvedFetchOrigins: ['https://feeds.example.com'],
+    };
+    const splitBoundaryAdapter: SourceAdapter = {
+      key: 'test',
+      version: '1.0.0',
+      collect: async (context) => {
+        await context.fetch('https://feeds.example.com/catalog.json');
+        return [
+          {
+            externalOfferId: 'offer-split-boundary',
+            sourceUrl: 'https://shop.example.com/products/aurora',
+            payload: { currency: 'RUB', price: 100 },
+            collectedAt: '2026-07-28T00:00:00.000Z',
+            contentType: 'application/json',
+          },
+        ];
+      },
+    };
+    const runner = new IngestionRunner(
+      new AdapterRegistry().register(splitBoundaryAdapter),
+      fetcher(transport),
+      store,
+    );
+
+    const result = await runner.run(splitBoundarySource, 'canary');
+
+    expect(result.status).toBe('succeeded');
+    expect(result.counters).toMatchObject({ fetched: 1, observed: 1, accepted: 1, quarantined: 0 });
+    expect([...store.observations.values()][0].protectedUrl).toBe(
+      'https://shop.example.com/products/aurora',
+    );
+  });
+
+  it('quarantines a fetch-only origin used as an outbound product URL', async () => {
+    const store = new MemoryStore();
+    const splitBoundarySource = {
+      ...SOURCE,
+      approvedOrigins: ['https://shop.example.com'],
+      approvedFetchOrigins: ['https://feeds.example.com'],
+    };
+    const runner = new IngestionRunner(
+      new AdapterRegistry().register(
+        adapter([
+          {
+            externalOfferId: 'offer-fetch-origin-leak',
+            sourceUrl: 'https://feeds.example.com/catalog.json',
+            payload: { currency: 'RUB', price: 100 },
+            collectedAt: '2026-07-28T00:00:00.000Z',
+            contentType: 'application/json',
+          },
+        ]),
+      ),
+      fetcher(vi.fn()),
+      store,
+    );
+
+    const result = await runner.run(splitBoundarySource, 'canary');
+
+    expect(result.status).toBe('degraded');
+    expect(result.counters).toMatchObject({ accepted: 0, quarantined: 1 });
+    expect(store.incidents[0]?.kind).toBe('DESTINATION_NOT_ALLOWED');
+  });
+
   it.each([
     [{ enabled: false }, 'SOURCE_DISABLED'],
     [{ termsReviewedAt: null }, 'TERMS_REVIEW_REQUIRED'],
@@ -321,5 +405,75 @@ describe('ingestion runner', () => {
       available: true,
     });
     expect(fixtureFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Supabase source origin compatibility', () => {
+  const sourceRow = {
+    id: SOURCE.id,
+    name: SOURCE.name,
+    adapter_key: SOURCE.adapterKey,
+    adapter_version: SOURCE.adapterVersion,
+    source_type: SOURCE.sourceType,
+    approved_origins: ['https://shop.example.com'],
+    approved_fetch_origins: ['https://feeds.example.com'],
+    rate_limit_per_minute: SOURCE.rateLimitPerMinute,
+    concurrency_limit: SOURCE.concurrencyLimit,
+    terms_reviewed_at: SOURCE.termsReviewedAt,
+    robots_status: SOURCE.robotsStatus,
+    enabled: SOURCE.enabled,
+  };
+
+  function query(result: unknown) {
+    return {
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue(result),
+        }),
+      }),
+    };
+  }
+
+  it('maps the dedicated fetch-origin column', async () => {
+    const client = { from: vi.fn().mockReturnValue(query({ data: sourceRow, error: null })) };
+    const store = new SupabaseIngestionStore(client as never);
+
+    await expect(store.loadSource(SOURCE.id)).resolves.toMatchObject({
+      approvedOrigins: ['https://shop.example.com'],
+      approvedFetchOrigins: ['https://feeds.example.com'],
+    });
+  });
+
+  it.each(['42703', 'PGRST204'])(
+    'falls back to approved_origins while the new column is unavailable (%s)',
+    async (code) => {
+      const current = query({ data: null, error: { code, message: 'column unavailable' } });
+      const legacyRow = { ...sourceRow, approved_fetch_origins: undefined };
+      const legacy = query({ data: legacyRow, error: null });
+      const client = {
+        from: vi.fn().mockReturnValueOnce(current).mockReturnValueOnce(legacy),
+      };
+      const store = new SupabaseIngestionStore(client as never);
+
+      await expect(store.loadSource(SOURCE.id)).resolves.toMatchObject({
+        approvedOrigins: ['https://shop.example.com'],
+        approvedFetchOrigins: ['https://shop.example.com'],
+      });
+      expect(client.from).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('does not hide unrelated persistence errors behind the legacy fallback', async () => {
+    const client = {
+      from: vi.fn().mockReturnValue(
+        query({ data: null, error: { code: '42501', message: 'permission denied' } }),
+      ),
+    };
+    const store = new SupabaseIngestionStore(client as never);
+
+    await expect(store.loadSource(SOURCE.id)).rejects.toMatchObject({
+      code: 'PERSISTENCE_FAILED',
+    });
+    expect(client.from).toHaveBeenCalledTimes(1);
   });
 });

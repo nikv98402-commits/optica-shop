@@ -8,9 +8,13 @@ in [Offer Finder normalization](offer-finder-normalization.md).
 ## Safety model
 
 - Adapters declare observations; they never receive database credentials or a Supabase client.
-- Every request passes through `RestrictedFetcher`: exact HTTPS origin allowlist, DNS/IP
-  validation, redirect revalidation, timeout, response-size/content-type bounds, source rate
-  and concurrency limits, bounded exponential retry with jitter, and an identifying user-agent.
+- Every request passes through `RestrictedFetcher`: the exact HTTPS
+  `approved_fetch_origins` allowlist, DNS/IP validation, redirect revalidation, timeout,
+  response-size/content-type bounds, source rate and concurrency limits, bounded exponential
+  retry with jitter, and an identifying user-agent.
+- Customer-facing product links are checked independently against `approved_origins`. Feed
+  hosts therefore never become approved outbound destinations merely because ingestion may
+  request them.
 - Cookies, application auth headers, database credentials, and user-provided destinations are
   never forwarded.
 - Authentication, CAPTCHA, paywall, robots restrictions, unknown terms status, and disabled
@@ -28,7 +32,9 @@ in [Offer Finder normalization](offer-finder-normalization.md).
    `robots_status` in `offer_sources`.
 2. Select the least invasive approved method: official API/feed, JSON-LD/embedded JSON,
    public HTML, or manual file.
-3. Add exact HTTPS origins to `approved_origins`; never use wildcards.
+3. Add exact feed/API hosts to `approved_fetch_origins` and exact customer-facing product
+   hosts to `approved_origins`; never use wildcards or copy a feed host into the outbound list
+   unless it is also the approved product destination.
 4. Add one adapter module with a stable `key` and semantic `version`. URLs must be constants
    or derived only from trusted source configuration, never user input.
 5. Add deterministic fixtures for normal, discounted, unavailable, variants, missing price,

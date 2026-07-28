@@ -14,12 +14,13 @@ VALUES ('00000000-0000-4000-8000-000000000572',
   'Operations merchant', 'operations-merchant', 'https://example.test');
 INSERT INTO public.offer_sources (
   id, merchant_id, name, adapter_key, adapter_version, source_type,
-  approved_origins, enabled, terms_reviewed_at, robots_status
+  approved_origins, approved_fetch_origins, enabled, terms_reviewed_at, robots_status
 ) VALUES (
   '00000000-0000-4000-8000-000000000573',
   '00000000-0000-4000-8000-000000000572',
   'Operations canary', 'operations_canary', '1.0.0', 'api',
-  '["https://example.test"]'::jsonb, true, now(), 'not_applicable'
+  '["https://example.test"]'::jsonb, '["https://example.test"]'::jsonb,
+  true, now(), 'not_applicable'
 );
 INSERT INTO public.offer_ingestion_runs (
   id, source_id, trigger, status, adapter_version, started_at, heartbeat_at

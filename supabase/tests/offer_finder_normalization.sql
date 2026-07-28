@@ -29,10 +29,12 @@ BEGIN
   INSERT INTO public.offer_merchants (id, market_id, name, slug)
   VALUES (v_merchant, v_market, 'Normalization fixture', 'normalization-fixture');
   INSERT INTO public.offer_sources (
-    id, merchant_id, name, adapter_key, adapter_version, source_type, approved_origins, enabled
+    id, merchant_id, name, adapter_key, adapter_version, source_type,
+    approved_origins, approved_fetch_origins, enabled
   ) VALUES (
     v_source, v_merchant, 'Normalization source', 'normalization-fixture', '1.0.0',
-    'manual_file', '["https://fixture.invalid"]'::jsonb, true
+    'manual_file', '["https://fixture.invalid"]'::jsonb,
+    '["https://fixture.invalid"]'::jsonb, true
   );
   INSERT INTO public.offer_ingestion_runs (
     id, source_id, trigger, status, adapter_version, started_at

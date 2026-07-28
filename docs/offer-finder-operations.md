@@ -14,8 +14,10 @@ Protected configuration:
 - variable `OFFER_FINDER_CANARY_SOURCE_ID` for manual operational compatibility;
   the scheduled source remains pinned in the workflow.
 
-The canary URL origin must be in the source `approved_origins`. Terms/robots,
-SSRF, response size/type, timeout and rate-limit guards remain mandatory.
+The canary feed URL origin must be in the source `approved_fetch_origins`.
+Customer-facing product links remain independently constrained by
+`approved_origins`. Terms/robots, SSRF, response size/type, timeout and
+rate-limit guards remain mandatory.
 The scheduled source must use adapter key `vilu_public_catalog`; manual dry-run
 checks may use `vilu_fixture_canary`. The scheduler does not dynamically load or
 execute arbitrary adapter modules.
