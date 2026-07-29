@@ -1,0 +1,72 @@
+pipeline:
+  version: "1"
+  min_year: 2015
+  min_words: 300
+  max_words: 200000
+  accepted_languages:
+    en: [en, english]
+    ru: [ru, russian, русский]
+  accepted_open_types:
+    - Open Science
+    - OpenScience
+  relevance:
+    accept_score: 3
+    review_score: 1
+  chunking:
+    max_chars: 2400
+    overlap_chars: 240
+  near_duplicate:
+    shingle_size: 5
+    permutations: 64
+    bands: 8
+    similarity_threshold: 0.88
+
+source:
+  kind: huggingface
+  repository: PleIAs/common_corpus
+  revision: ff9892ec787101ec881b2da279ed349085657aaf
+  split: train
+  required_fields:
+    - identifier
+    - collection
+    - open_type
+    - curator
+    - license
+    - date
+    - title
+    - creator
+    - language
+    - language_type
+    - word_count
+    - token_count
+    - text
+
+licenses:
+  accepted:
+    - CC0-1.0
+    - CC-BY-4.0
+    - CC-BY-SA-4.0
+    - PDM-1.0
+    - Public Domain
+  aliases:
+    cc0: CC0-1.0
+    cc0 1.0: CC0-1.0
+    creative commons zero: CC0-1.0
+    cc by 4.0: CC-BY-4.0
+    cc-by 4.0: CC-BY-4.0
+    creative commons attribution 4.0: CC-BY-4.0
+    cc by-sa 4.0: CC-BY-SA-4.0
+    cc-by-sa 4.0: CC-BY-SA-4.0
+    public domain: Public Domain
+    public domain mark 1.0: PDM-1.0
+
+selection:
+  exclusion_phrases:
+    en:
+      - veterinary ophthalmology
+      - animal model only
+      - ophthalmology equipment market
+    ru:
+      - ветеринарная офтальмология
+      - только модель на животных
+      - рынок офтальмологического оборудования
