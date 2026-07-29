@@ -1,0 +1,61 @@
+name: ViLu corpus bounded pilot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vilu-corpus-bounded-pilot
+  cancel-in-progress: false
+
+jobs:
+  test-and-build:
+    name: Test and build 1,000-record pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: tools/vilu-corpus
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: tools/vilu-corpus/uv.lock
+
+      - name: Install locked dependencies
+        run: uv sync --locked --extra dev
+
+      - name: Run corpus tests
+        run: uv run pytest
+
+      - name: Probe pinned source schema
+        run: uv run vilu-corpus probe
+
+      - name: Build bounded pilot
+        run: uv run vilu-corpus build --limit 1000 --output runs/pilot-1000
+
+      - name: Validate bounded pilot
+        run: uv run vilu-corpus validate --output runs/pilot-1000
+
+      - name: Print aggregate report
+        run: uv run vilu-corpus report --output runs/pilot-1000
+
+      - name: Upload protected corpus artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vilu-corpus-pilot-${{ github.run_id }}
+          path: tools/vilu-corpus/runs/pilot-1000/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9

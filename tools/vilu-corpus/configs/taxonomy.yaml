@@ -1,0 +1,96 @@
+topics:
+  myopia:
+    names: {en: Myopia, ru: Миопия}
+    include:
+      en: [myopia, myopic, nearsightedness, near-sightedness]
+      ru: [миопия, близорукость, близорукий]
+  hyperopia:
+    names: {en: Hyperopia, ru: Гиперметропия}
+    include:
+      en: [hyperopia, hypermetropia, farsightedness, far-sightedness]
+      ru: [гиперметропия, дальнозоркость]
+  astigmatism:
+    names: {en: Astigmatism, ru: Астигматизм}
+    include:
+      en: [astigmatism, astigmatic]
+      ru: [астигматизм, астигматический]
+  presbyopia:
+    names: {en: Presbyopia, ru: Пресбиопия}
+    include:
+      en: [presbyopia, age-related near vision]
+      ru: [пресбиопия, возрастная дальнозоркость]
+  amblyopia:
+    names: {en: Amblyopia, ru: Амблиопия}
+    include:
+      en: [amblyopia, lazy eye]
+      ru: [амблиопия, ленивый глаз]
+  glaucoma:
+    names: {en: Glaucoma, ru: Глаукома}
+    include:
+      en: [glaucoma, intraocular pressure]
+      ru: [глаукома, внутриглазное давление]
+  cataract:
+    names: {en: Cataract, ru: Катаракта}
+    include:
+      en: [cataract, lens opacity]
+      ru: [катаракта, помутнение хрусталика]
+  diabetic_retinopathy:
+    names: {en: Diabetic retinopathy, ru: Диабетическая ретинопатия}
+    include:
+      en: [diabetic retinopathy, diabetic macular edema]
+      ru: [диабетическая ретинопатия, диабетический макулярный отек]
+  dry_eye:
+    names: {en: Dry eye, ru: Сухой глаз}
+    include:
+      en: [dry eye, tear film, keratoconjunctivitis sicca]
+      ru: [сухой глаз, слезная пленка, слёзная плёнка]
+  digital_eye_strain:
+    names: {en: Digital eye strain, ru: Цифровая зрительная нагрузка}
+    include:
+      en: [digital eye strain, computer vision syndrome, screen time]
+      ru: [цифровая зрительная нагрузка, компьютерный зрительный синдром, экранное время]
+  refractive_errors:
+    names: {en: Refractive errors, ru: Аномалии рефракции}
+    include:
+      en: [refractive error, refraction, refractive correction]
+      ru: [аномалия рефракции, рефракция, коррекция рефракции]
+  visual_acuity:
+    names: {en: Visual acuity, ru: Острота зрения}
+    include:
+      en: [visual acuity, vision test, snellen]
+      ru: [острота зрения, проверка зрения, таблица сивцева]
+  red_eye:
+    names: {en: Red-eye symptoms, ru: Покраснение глаз}
+    include:
+      en: [red eye, ocular redness, conjunctival injection]
+      ru: [красный глаз, покраснение глаз, гиперемия конъюнктивы]
+  flashes_floaters:
+    names: {en: Flashes and floaters, ru: Вспышки и мушки}
+    include:
+      en: [flashes and floaters, photopsia, vitreous floaters]
+      ru: [вспышки и мушки, фотопсия, плавающие помутнения]
+  eye_pain:
+    names: {en: Eye pain, ru: Боль в глазах}
+    include:
+      en: [eye pain, ocular pain]
+      ru: [боль в глазах, глазная боль]
+  sudden_vision_loss:
+    names: {en: Sudden vision loss, ru: Внезапная потеря зрения}
+    include:
+      en: [sudden vision loss, acute vision loss]
+      ru: [внезапная потеря зрения, острая потеря зрения]
+  contact_lens_safety:
+    names: {en: Contact lens safety, ru: Безопасность контактных линз}
+    include:
+      en: [contact lens safety, contact lens hygiene, contact lens infection]
+      ru: [безопасность контактных линз, гигиена контактных линз, инфекция контактных линз]
+  spectacle_adherence:
+    names: {en: Spectacle use and adherence, ru: Ношение очков}
+    include:
+      en: [spectacle adherence, eyeglass compliance, spectacle wear]
+      ru: [ношение очков, приверженность ношению очков]
+  screening_referral:
+    names: {en: Screening and referral, ru: Скрининг и направление}
+    include:
+      en: [vision screening, eye screening, ophthalmology referral]
+      ru: [скрининг зрения, проверка зрения, направление к офтальмологу]
