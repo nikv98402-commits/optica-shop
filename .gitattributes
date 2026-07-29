@@ -1,0 +1,3 @@
+.github/workflows/vilu-corpus-pilot.yml text eol=lf
+tools/vilu-corpus/uv.lock text eol=lf
+tools/vilu-corpus/uv.lock.sha256 text eol=lf
