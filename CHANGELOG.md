@@ -2,6 +2,20 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.1.0] - 2026-07-29
+
+### Fixed
+
+- Restored the complete deterministic `uv.lock` for the ViLu ophthalmology
+  corpus pipeline after the merged lockfile was found to be truncated.
+- Added strict UTF-8 and SHA-256 lockfile verification before the manual corpus
+  workflow installs dependencies.
+
+### Tests
+
+- Rechecked lockfile integrity, the negative tamper path, all 26 corpus tests,
+  all 260 frontend unit tests, TypeScript, lint, and the production build.
+
 ## [0.5.0.0] - 2026-07-29
 
 ### Added
