@@ -2,6 +2,35 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.0.0] - 2026-07-29
+
+### Added
+
+- Added a reproducible ophthalmology corpus pipeline in `tools/vilu-corpus`
+  for the first bounded pilot of Epic #91.
+- Added fail-closed source schemas, RU/EN and Open Science selection rules,
+  strict license review, taxonomy scoring, exact and MinHash/LSH
+  deduplication, deterministic chunking, manifests, validation, and run
+  reports.
+- Added a manual-only GitHub Actions pilot that processes at most 1,000 source
+  records and stores protected build artifacts for seven days.
+
+### Security
+
+- Pinned the Hugging Face source to an exact hexadecimal commit SHA and kept
+  raw or cleaned document text out of logs, review queues, Git, the frontend,
+  and production Supabase.
+- Kept unknown licenses and malformed or ambiguous records in review or reject
+  queues instead of admitting them to the accepted corpus.
+
+### Tests
+
+- Added unit and integration coverage for schema validation, selection,
+  licensing, cleaning, deterministic deduplication, bounded chunking,
+  manifests, and output validation.
+- Rechecked 26 corpus tests with 86% coverage, all 260 frontend unit tests,
+  TypeScript, lint, and the production build.
+
 ## [0.4.6.0] - 2026-07-28
 
 ### Fixed
