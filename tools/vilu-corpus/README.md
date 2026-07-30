@@ -11,7 +11,8 @@ train a model, call Supabase, or alter the ViLu frontend.
 - The upstream `PleIAs/common_corpus` revision is pinned to an exact SHA.
 - Only the `Open Science` collection is eligible.
 - Missing source fields fail the run.
-- Unknown licenses, missing dates and ambiguous relevance go to `review.csv`.
+- Unknown licenses, missing identifiers, missing dates and ambiguous relevance
+  remain inside the bounded candidate set and go to `review.csv`.
 - Excluded, stale, unsupported-language and irrelevant records go to
   `rejected.jsonl`.
 - Accepted records are deduplicated by source identifier, normalized-text
@@ -46,15 +47,19 @@ uv run vilu-corpus build --limit 1000 --scan-limit 100000 --output runs/pilot-10
 
 `--scan-limit` is the strict maximum number of raw source records read.
 `--limit` is the maximum number of candidates retained after deterministic
-language, open-science, license, and basic-quality filtering.
+hard eligibility filtering. Review-only conditions such as an unknown license
+or missing date do not silently remove a record from the audit trail.
 
 Validate output hashes, licenses, deduplication and chunk references:
 
 ```powershell
-uv run vilu-corpus validate --output runs/pilot-1000 --min-accepted 100
+uv run vilu-corpus validate --output runs/pilot-1000 --min-candidates 1000 --min-accepted 100
 ```
 
-`--min-accepted` makes acceptance fail when too few documents qualify.
+`--min-candidates` and `--min-accepted` make acceptance fail when source
+coverage is insufficient. Before returning a threshold failure, validation
+writes a metadata-only `validation-report.json` with aggregate prefilter and
+downstream reason counts.
 
 Print aggregate metadata (never document text):
 
@@ -73,10 +78,14 @@ Each run contains:
 - `duplicates.parquet`: exact and near-duplicate audit trail;
 - `licenses.csv` and `taxonomy_coverage.csv`: aggregate coverage;
 - `stats.json`, `manifest.json`, and `README.md`: deterministic run evidence.
+- `validation-report.json`: post-build aggregate validation diagnostics; it
+  never contains document text and is written even when acceptance thresholds
+  fail.
 
 Do not upload these files to public Pages or commit them to Git. The manual
 GitHub Actions workflow uploads one bounded run as a short-retention repository
-artifact.
+artifact even when threshold validation fails, so the metadata-only diagnosis
+and protected review/rejected evidence are not lost.
 
 ## Configuration
 

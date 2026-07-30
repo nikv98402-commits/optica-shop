@@ -12,6 +12,7 @@ public/test-uploads/
 tools/vilu-corpus/.venv/
 tools/vilu-corpus/.pytest_cache/
 tools/vilu-corpus/.coverage
+tools/vilu-corpus/.gstack-investigate/
 tools/vilu-corpus/runs/
 tools/vilu-corpus/artifacts/
 tools/vilu-corpus/**/__pycache__/

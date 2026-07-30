@@ -29,9 +29,12 @@ def validate_run(
     accepted_licenses: set[str],
     *,
     min_accepted: int = 0,
+    min_candidates: int = 0,
 ) -> dict[str, Any]:
     if min_accepted < 0:
         raise ValueError("min_accepted must be zero or greater")
+    if min_candidates < 0:
+        raise ValueError("min_candidates must be zero or greater")
     missing = sorted(name for name in REQUIRED_OUTPUTS if not (output_dir / name).is_file())
     if missing:
         raise ValueError(f"run is missing outputs: {', '.join(missing)}")
@@ -66,13 +69,59 @@ def validate_run(
         license_rows = list(csv.DictReader(handle))
     if any(row["license"] not in accepted_licenses for row in license_rows):
         raise ValueError("license report contains an unapproved accepted license")
-    if len(document_ids) < min_accepted:
-        raise ValueError(
-            f"accepted_count {len(document_ids)} is below required minimum {min_accepted}"
+    stats = json.loads((output_dir / "stats.json").read_text(encoding="utf-8"))
+    candidate_count = int(manifest["selection"]["candidate_count"])
+    failures = []
+    if candidate_count < min_candidates:
+        failures.append(
+            {
+                "code": "candidate_count_below_minimum",
+                "actual": candidate_count,
+                "required": min_candidates,
+            }
         )
-    return {
-        "valid": True,
+    if len(document_ids) < min_accepted:
+        failures.append(
+            {
+                "code": "accepted_count_below_minimum",
+                "actual": len(document_ids),
+                "required": min_accepted,
+            }
+        )
+    report = {
+        "valid": not failures,
         "accepted_documents": len(document_ids),
+        "candidate_documents": candidate_count,
         "chunks": len(chunks),
         "verified_hashes": len(manifest["files"]),
+        "required_minimums": {
+            "accepted": min_accepted,
+            "candidates": min_candidates,
+        },
+        "failures": failures,
+        "diagnostics": {
+            "raw_read_count": stats["raw_read_count"],
+            "prefilter_skipped_count": stats["prefilter_skipped_count"],
+            "prefilter_reasons": stats["prefilter_reasons"],
+            "source_exhausted": stats["source_exhausted"],
+            "downstream_reasons": stats["downstream_reasons"],
+        },
     }
+    _write_validation_report(output_dir / "validation-report.json", report)
+    if failures:
+        summary = "; ".join(
+            f"{failure['code']}: {failure['actual']} < {failure['required']}"
+            for failure in failures
+        )
+        raise ValueError(f"acceptance thresholds failed: {summary}")
+    return report
+
+
+def _write_validation_report(path: Path, report: dict[str, Any]) -> None:
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    temporary.replace(path)
