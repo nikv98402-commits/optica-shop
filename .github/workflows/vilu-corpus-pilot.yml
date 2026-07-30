@@ -53,10 +53,17 @@ jobs:
         run: uv run vilu-corpus probe
 
       - name: Build bounded pilot
-        run: uv run vilu-corpus build --limit 1000 --output runs/pilot-1000
+        run: >-
+          uv run vilu-corpus build
+          --limit 1000
+          --scan-limit 100000
+          --output runs/pilot-1000
 
       - name: Validate bounded pilot
-        run: uv run vilu-corpus validate --output runs/pilot-1000
+        run: >-
+          uv run vilu-corpus validate
+          --output runs/pilot-1000
+          --min-accepted 100
 
       - name: Print aggregate report
         run: uv run vilu-corpus report --output runs/pilot-1000

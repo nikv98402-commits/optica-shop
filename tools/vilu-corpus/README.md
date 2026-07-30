@@ -41,14 +41,20 @@ uv run vilu-corpus probe
 Build a bounded run:
 
 ```powershell
-uv run vilu-corpus build --limit 1000 --output runs/pilot-1000
+uv run vilu-corpus build --limit 1000 --scan-limit 100000 --output runs/pilot-1000
 ```
+
+`--scan-limit` is the strict maximum number of raw source records read.
+`--limit` is the maximum number of candidates retained after deterministic
+language, open-science, license, and basic-quality filtering.
 
 Validate output hashes, licenses, deduplication and chunk references:
 
 ```powershell
-uv run vilu-corpus validate --output runs/pilot-1000
+uv run vilu-corpus validate --output runs/pilot-1000 --min-accepted 100
 ```
+
+`--min-accepted` makes acceptance fail when too few documents qualify.
 
 Print aggregate metadata (never document text):
 

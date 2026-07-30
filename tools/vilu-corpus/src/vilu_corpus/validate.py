@@ -24,7 +24,14 @@ REQUIRED_OUTPUTS = {
 }
 
 
-def validate_run(output_dir: Path, accepted_licenses: set[str]) -> dict[str, Any]:
+def validate_run(
+    output_dir: Path,
+    accepted_licenses: set[str],
+    *,
+    min_accepted: int = 0,
+) -> dict[str, Any]:
+    if min_accepted < 0:
+        raise ValueError("min_accepted must be zero or greater")
     missing = sorted(name for name in REQUIRED_OUTPUTS if not (output_dir / name).is_file())
     if missing:
         raise ValueError(f"run is missing outputs: {', '.join(missing)}")
@@ -59,6 +66,10 @@ def validate_run(output_dir: Path, accepted_licenses: set[str]) -> dict[str, Any
         license_rows = list(csv.DictReader(handle))
     if any(row["license"] not in accepted_licenses for row in license_rows):
         raise ValueError("license report contains an unapproved accepted license")
+    if len(document_ids) < min_accepted:
+        raise ValueError(
+            f"accepted_count {len(document_ids)} is below required minimum {min_accepted}"
+        )
     return {
         "valid": True,
         "accepted_documents": len(document_ids),

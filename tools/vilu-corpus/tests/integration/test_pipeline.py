@@ -93,6 +93,7 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
         "config": config,
         "taxonomy": taxonomy,
         "limit": 7,
+        "scan_limit": 7,
         "config_hash": canonical_hash(config),
         "taxonomy_hash": canonical_hash(taxonomy),
         "config_dir": tmp_path,
@@ -102,10 +103,12 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
 
     assert result == {
         "output": str(first),
-        "input_count": 7,
+        "raw_read_count": 7,
+        "input_count": 4,
+        "prefilter_skipped_count": 3,
         "accepted_count": 2,
-        "review_count": 2,
-        "rejected_count": 2,
+        "review_count": 0,
+        "rejected_count": 1,
         "duplicate_count": 1,
         "manifest_files": 9,
     }
@@ -113,7 +116,11 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
     second_manifest = json.loads((second / "manifest.json").read_text(encoding="utf-8"))
     assert first_manifest == second_manifest
 
-    validation = validate_run(first, {"CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "PDM-1.0", "Public Domain"})
+    validation = validate_run(
+        first,
+        {"CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "PDM-1.0", "Public Domain"},
+        min_accepted=2,
+    )
     assert validation["valid"] is True
     assert validation["accepted_documents"] == 2
 
@@ -123,9 +130,20 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
     assert "Synthetic chemistry evidence" not in rejected_text
 
 
-def test_limit_bounds_input_records(tmp_path: Path) -> None:
+def test_limit_applies_after_deterministic_prefilter_with_strict_scan_bound(
+    tmp_path: Path,
+) -> None:
     fixture = tmp_path / "records.jsonl"
-    write_fixture(fixture)
+    rows = [
+        record("wrong-language", language="German"),
+        record("closed", open_type="Restricted"),
+        record("unknown-license", license="Unknown custom terms"),
+        record("accepted-after-prefilter"),
+        {},  # Would fail schema validation if the strict raw scan bound were exceeded.
+    ]
+    with fixture.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
     loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
     taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
     config = deepcopy(loaded.data)
@@ -138,13 +156,31 @@ def test_limit_bounds_input_records(tmp_path: Path) -> None:
         config,
         taxonomy,
         limit=1,
+        scan_limit=4,
         output_dir=tmp_path / "bounded",
         config_hash=canonical_hash(config),
         taxonomy_hash=canonical_hash(taxonomy),
         config_dir=tmp_path,
     )
+    assert result["raw_read_count"] == 4
     assert result["input_count"] == 1
+    assert result["prefilter_skipped_count"] == 3
     assert result["accepted_count"] == 1
+    manifest = json.loads(
+        (tmp_path / "bounded" / "manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["selection"] == {
+        "raw_read_limit": 4,
+        "raw_read_count": 4,
+        "candidate_limit": 1,
+        "candidate_count": 1,
+        "prefilter_skipped_count": 3,
+        "prefilter_reasons": {
+            "language_not_allowed": 1,
+            "license_unknown": 1,
+            "not_open_science": 1,
+        },
+    }
 
 
 def test_validation_detects_artifact_tampering(tmp_path: Path) -> None:
@@ -163,6 +199,7 @@ def test_validation_detects_artifact_tampering(tmp_path: Path) -> None:
         config,
         taxonomy,
         limit=1,
+        scan_limit=1,
         output_dir=output,
         config_hash=canonical_hash(config),
         taxonomy_hash=canonical_hash(taxonomy),
@@ -172,3 +209,53 @@ def test_validation_detects_artifact_tampering(tmp_path: Path) -> None:
         handle.write(" ")
     with pytest.raises(ValueError, match="hash mismatch for stats.json"):
         validate_run(output, {"CC-BY-4.0"})
+
+
+@pytest.mark.parametrize(
+    ("rows", "minimum", "expected"),
+    [
+        ([record("empty", title="Unrelated", text="Synthetic chemistry. " * 310)], 1, 0),
+        ([record("one")], 2, 1),
+        ([record("one"), record("two", text="Hyperopia eye examination. " * 310)], 2, 2),
+    ],
+    ids=["empty", "insufficient", "successful"],
+)
+def test_acceptance_minimum_for_empty_insufficient_and_successful_samples(
+    tmp_path: Path,
+    rows: list[dict[str, object]],
+    minimum: int,
+    expected: int,
+) -> None:
+    fixture = tmp_path / f"{expected}.jsonl"
+    with fixture.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["source"] = {
+        "kind": "fixture",
+        "path": str(fixture),
+        "required_fields": REQUIRED_FIELDS,
+    }
+    output = tmp_path / f"acceptance-{expected}"
+    build_run(
+        config,
+        taxonomy,
+        limit=len(rows),
+        scan_limit=len(rows),
+        output_dir=output,
+        config_hash=canonical_hash(config),
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=tmp_path,
+    )
+    accepted_licenses = {"CC-BY-4.0"}
+    if expected < minimum:
+        with pytest.raises(
+            ValueError,
+            match=rf"accepted_count {expected} is below required minimum {minimum}",
+        ):
+            validate_run(output, accepted_licenses, min_accepted=minimum)
+    else:
+        result = validate_run(output, accepted_licenses, min_accepted=minimum)
+        assert result["accepted_documents"] == expected
