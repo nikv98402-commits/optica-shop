@@ -2,6 +2,27 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.3.0] - 2026-07-30
+
+### Fixed
+
+- Made failed ophthalmology corpus pilots explain why candidates were rejected
+  downstream without exposing document text, so acceptance failures can be
+  diagnosed before another authorized run.
+- Kept review-only license, identifier, and date conditions inside the bounded
+  candidate audit trail while preserving strict language, open-science,
+  relevance, and raw-record limits.
+- Preserved aggregate reports and protected workflow artifacts when validation
+  thresholds fail, including candidate coverage and source-exhaustion state.
+
+### Tests
+
+- Added a checksum-pinned synthetic representative fixture and regression
+  coverage for downstream reasons, candidate thresholds, source exhaustion,
+  missing identifiers, report loading, and cross-platform line endings.
+- Rechecked all 33 corpus tests, Python compilation, workflow YAML, all 260
+  frontend tests, TypeScript, lint, and the production build.
+
 ## [0.5.2.0] - 2026-07-30
 
 ### Fixed

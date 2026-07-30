@@ -39,6 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     validate = subparsers.add_parser("validate", help="Validate hashes, licenses and referential integrity")
     validate.add_argument("--output", type=Path, required=True)
     validate.add_argument("--min-accepted", type=_non_negative_int, default=0)
+    validate.add_argument("--min-candidates", type=_non_negative_int, default=0)
     report = subparsers.add_parser("report", help="Print aggregate run metadata only")
     report.add_argument("--output", type=Path, required=True)
     return parser
@@ -67,6 +68,7 @@ def main(argv: list[str] | None = None) -> None:
                 args.output.resolve(),
                 set(str(item) for item in config.licenses["accepted"]),
                 min_accepted=args.min_accepted,
+                min_candidates=args.min_candidates,
             )
         else:
             result = load_report(args.output.resolve())
@@ -94,6 +96,7 @@ def build_run(
     decisions: list[Decision] = []
     raw_read_count = 0
     prefilter_reasons: dict[str, int] = {}
+    reached_candidate_limit = False
     for mapping in islice(iter_source(source), scan_limit):
         raw_read_count += 1
         candidate = Candidate.from_mapping(mapping, required_fields)
@@ -105,6 +108,7 @@ def build_run(
             continue
         decisions.append(decision)
         if len(decisions) == limit:
+            reached_candidate_limit = True
             break
     if raw_read_count == 0:
         raise ValueError("source returned no records")
@@ -127,6 +131,7 @@ def build_run(
         review=review,
         rejected=rejected,
         duplicates=dedupe_result.duplicates,
+        pipeline_version=str(config["pipeline"]["version"]),
         config_hash=config_hash,
         taxonomy_hash=taxonomy_hash,
         source=source,
@@ -134,6 +139,7 @@ def build_run(
         raw_read_count=raw_read_count,
         scan_limit=scan_limit,
         candidate_limit=limit,
+        source_exhausted=not reached_candidate_limit and raw_read_count < scan_limit,
         prefilter_reasons=prefilter_reasons,
         chunk_config=config["pipeline"]["chunking"],
     )
@@ -141,6 +147,7 @@ def build_run(
         "output": str(output_dir),
         "raw_read_count": raw_read_count,
         "input_count": input_count,
+        "source_exhausted": not reached_candidate_limit and raw_read_count < scan_limit,
         "prefilter_skipped_count": raw_read_count - input_count,
         "accepted_count": len(dedupe_result.documents),
         "review_count": len(review),
@@ -175,12 +182,8 @@ def _non_negative_int(value: str) -> int:
 
 _PREFILTER_BLOCKERS = {
     "before_min_year",
-    "date_missing_or_invalid",
     "excluded_phrase",
-    "identifier_missing",
     "language_not_allowed",
-    "license_missing",
-    "license_unknown",
     "not_open_science",
     "text_missing",
     "word_count_out_of_range",

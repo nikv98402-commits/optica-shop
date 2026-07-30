@@ -53,6 +53,7 @@ jobs:
         run: uv run vilu-corpus probe
 
       - name: Build bounded pilot
+        id: build
         run: >-
           uv run vilu-corpus build
           --limit 1000
@@ -60,15 +61,19 @@ jobs:
           --output runs/pilot-1000
 
       - name: Validate bounded pilot
+        id: validate
         run: >-
           uv run vilu-corpus validate
           --output runs/pilot-1000
+          --min-candidates 1000
           --min-accepted 100
 
       - name: Print aggregate report
+        if: ${{ always() && steps.build.outcome == 'success' }}
         run: uv run vilu-corpus report --output runs/pilot-1000
 
       - name: Upload protected corpus artifact
+        if: ${{ always() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: vilu-corpus-pilot-${{ github.run_id }}

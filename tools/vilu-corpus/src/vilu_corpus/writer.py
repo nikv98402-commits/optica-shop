@@ -20,6 +20,7 @@ def write_outputs(
     review: list[Decision],
     rejected: list[Decision],
     duplicates: list[Duplicate],
+    pipeline_version: str,
     config_hash: str,
     taxonomy_hash: str,
     source: dict[str, Any],
@@ -27,6 +28,7 @@ def write_outputs(
     raw_read_count: int,
     scan_limit: int,
     candidate_limit: int,
+    source_exhausted: bool,
     prefilter_reasons: dict[str, int],
     chunk_config: dict[str, int],
 ) -> dict[str, Any]:
@@ -67,9 +69,14 @@ def write_outputs(
         "input_count": input_count,
         "prefilter_skipped_count": raw_read_count - input_count,
         "prefilter_reasons": dict(sorted(prefilter_reasons.items())),
+        "source_exhausted": source_exhausted,
         "accepted_count": len(ordered_documents),
         "review_count": len(review),
         "rejected_count": len(rejected),
+        "downstream_reasons": {
+            "review": _reason_counts(review),
+            "rejected": _reason_counts(rejected),
+        },
         "duplicate_count": len(duplicates),
         "chunk_count": len(chunks),
         "languages": _counts(item.language for item in ordered_documents),
@@ -90,7 +97,7 @@ def write_outputs(
         "stats.json",
     ]
     manifest = {
-        "pipeline_version": "1",
+        "pipeline_version": pipeline_version,
         "config_sha256": config_hash,
         "taxonomy_sha256": taxonomy_hash,
         "source": {
@@ -105,6 +112,7 @@ def write_outputs(
             "raw_read_count": raw_read_count,
             "candidate_limit": candidate_limit,
             "candidate_count": input_count,
+            "source_exhausted": source_exhausted,
             "prefilter_skipped_count": raw_read_count - input_count,
             "prefilter_reasons": dict(sorted(prefilter_reasons.items())),
         },
@@ -172,6 +180,7 @@ def write_run_readme(output_dir: Path, stats: dict[str, Any], manifest: dict[str
         f"- Raw records read: {stats['raw_read_count']}\n"
         f"- Input records: {stats['input_count']}\n"
         f"- Prefiltered before pilot: {stats['prefilter_skipped_count']}\n"
+        f"- Source exhausted before candidate limit: {stats['source_exhausted']}\n"
         f"- Accepted: {stats['accepted_count']}\n"
         f"- Review: {stats['review_count']}\n"
         f"- Rejected: {stats['rejected_count']}\n"
@@ -239,6 +248,10 @@ def _counts(values: Any) -> dict[str, int]:
     for value in values:
         result[str(value)] = result.get(str(value), 0) + 1
     return dict(sorted(result.items()))
+
+
+def _reason_counts(decisions: list[Decision]) -> dict[str, int]:
+    return _counts(reason for decision in decisions for reason in decision.reasons)
 
 
 def _write_json(path: Path, value: Any) -> None:

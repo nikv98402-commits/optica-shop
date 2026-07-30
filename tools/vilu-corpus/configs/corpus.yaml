@@ -1,5 +1,5 @@
 pipeline:
-  version: "1"
+  version: "2"
   min_year: 2015
   min_words: 300
   max_words: 200000
