@@ -2,6 +2,24 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.2.0] - 2026-07-30
+
+### Fixed
+
+- Changed the bounded ophthalmology corpus pilot to select eligible candidates
+  after deterministic language, open-science, license, and basic-quality
+  filtering while retaining a strict raw-record scan limit.
+- Added an acceptance threshold that stops the pilot when too few documents
+  qualify, and recorded raw, candidate, and prefilter counts in the manifest
+  for reproducible review.
+
+### Tests
+
+- Added regression coverage for strict scan bounds, deterministic manifests,
+  and empty, insufficient, and successful acceptance samples.
+- Rechecked all 29 corpus tests, Python compilation, workflow YAML, all 260
+  frontend tests, TypeScript, lint, and the production build.
+
 ## [0.5.1.0] - 2026-07-29
 
 ### Fixed

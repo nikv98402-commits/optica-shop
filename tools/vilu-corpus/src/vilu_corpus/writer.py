@@ -24,6 +24,10 @@ def write_outputs(
     taxonomy_hash: str,
     source: dict[str, Any],
     input_count: int,
+    raw_read_count: int,
+    scan_limit: int,
+    candidate_limit: int,
+    prefilter_reasons: dict[str, int],
     chunk_config: dict[str, int],
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -59,7 +63,10 @@ def write_outputs(
     _write_taxonomy_coverage(output_dir / "taxonomy_coverage.csv", ordered_documents)
 
     stats = {
+        "raw_read_count": raw_read_count,
         "input_count": input_count,
+        "prefilter_skipped_count": raw_read_count - input_count,
+        "prefilter_reasons": dict(sorted(prefilter_reasons.items())),
         "accepted_count": len(ordered_documents),
         "review_count": len(review),
         "rejected_count": len(rejected),
@@ -93,6 +100,14 @@ def write_outputs(
             "split": source.get("split"),
         },
         "input_count": input_count,
+        "selection": {
+            "raw_read_limit": scan_limit,
+            "raw_read_count": raw_read_count,
+            "candidate_limit": candidate_limit,
+            "candidate_count": input_count,
+            "prefilter_skipped_count": raw_read_count - input_count,
+            "prefilter_reasons": dict(sorted(prefilter_reasons.items())),
+        },
         "files": {name: file_sha256(output_dir / name) for name in hashed_files},
     }
     _write_json(output_dir / "manifest.json", manifest)
@@ -154,7 +169,9 @@ def write_run_readme(output_dir: Path, stats: dict[str, Any], manifest: dict[str
         "# ViLu corpus run\n\n"
         "This directory is a protected build artifact. It must not be committed or published "
         "with the frontend.\n\n"
+        f"- Raw records read: {stats['raw_read_count']}\n"
         f"- Input records: {stats['input_count']}\n"
+        f"- Prefiltered before pilot: {stats['prefilter_skipped_count']}\n"
         f"- Accepted: {stats['accepted_count']}\n"
         f"- Review: {stats['review_count']}\n"
         f"- Rejected: {stats['rejected_count']}\n"
