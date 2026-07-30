@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,6 @@ from vilu_corpus.cli import build_parser, build_run
 from vilu_corpus.config import canonical_hash, load_config, load_taxonomy
 from vilu_corpus.report import load_report
 from vilu_corpus.validate import validate_run
-from vilu_corpus.writer import file_sha256
 
 MODULE_ROOT = Path(__file__).resolve().parents[2]
 REQUIRED_FIELDS = [
@@ -28,6 +28,12 @@ REQUIRED_FIELDS = [
     "token_count",
     "text",
 ]
+
+
+def canonical_text_sha256(path: Path) -> str:
+    """Hash a pinned text fixture after Git's required LF normalization."""
+    normalized = path.read_bytes().replace(b"\r\n", b"\n")
+    return sha256(normalized).hexdigest()
 
 
 def record(identifier: str, **changes: object) -> dict[str, object]:
@@ -289,8 +295,8 @@ def test_pinned_representative_sample_preserves_review_and_downstream_diagnostic
         / "fixtures"
         / "common-corpus-ff9892ec-representative.txt"
     )
-    assert file_sha256(fixture) == (
-        "d72ac75823bc21aa76c81d5de45d61ad83731d724720bce1c258cb9de6e90407"
+    assert canonical_text_sha256(fixture) == (
+        "994069e2cda222eb016eaad6290e884e322d3da2cdd7dd123535d0564f6eb427"
     )
     loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
     taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
