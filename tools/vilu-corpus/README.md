@@ -9,6 +9,11 @@ train a model, call Supabase, or alter the ViLu frontend.
 ## Safety boundary
 
 - The upstream `PleIAs/common_corpus` revision is pinned to an exact SHA.
+- The pinned shard glob is explicit because the upstream dataset card exposes
+  only one of the 10,000 parquet shards through its default configuration.
+- Metadata-only parquet predicates retain RU/EN Open Science rows before
+  document bodies enter the bounded scanner. The same rules are checked again
+  locally and remain part of the hashed configuration.
 - Only the `Open Science` collection is eligible.
 - Missing source fields fail the run.
 - Unknown licenses, missing identifiers, missing dates and ambiguous relevance
@@ -46,7 +51,9 @@ Build a bounded run:
 uv run vilu-corpus build --limit 1000 --scan-limit 100000 --output runs/pilot-1000
 ```
 
-`--scan-limit` is the strict maximum number of raw source records read.
+`--scan-limit` is the strict maximum number of source records delivered to the
+pipeline after the pinned metadata-only parquet predicates. Predicate pushdown
+does not weaken the local eligibility, relevance or license checks.
 `--limit` is the maximum number of candidates retained after deterministic
 hard eligibility and ophthalmology relevance filtering. Review-only conditions
 such as an unknown license, missing date or ambiguous relevance do not silently
