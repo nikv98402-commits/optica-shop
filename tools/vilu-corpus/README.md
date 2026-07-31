@@ -93,5 +93,14 @@ and protected review/rejected evidence are not lost.
   policy.
 - `configs/taxonomy.yaml` owns RU/EN ophthalmology topics and terms.
 
+Taxonomy matching is fail-closed:
+
+- add approved clinical aliases to a topic's `include` list;
+- add ambiguous generic terms such as `refraction` or `screen time` to
+  `requires_context`, so they score only when the document also contains a
+  language-specific ophthalmic `context_terms` match;
+- documents with ophthalmic context but no approved topic remain rejected and
+  are counted as `ophthalmic_context_without_topic` in aggregate diagnostics.
+
 Taxonomy changes do not require code changes and are included in the manifest
 hash.

@@ -49,7 +49,18 @@ def evaluate(candidate: Candidate, config: dict[str, Any], taxonomy: dict[str, A
     accept_score = int(pipeline["relevance"]["accept_score"])
     review_score = int(pipeline["relevance"]["review_score"])
     if relevance.score < review_score:
-        return _decision(Status.REJECTED, ["not_relevant"], candidate)
+        relevance_reasons = ["not_relevant"]
+        if relevance.context_matches:
+            relevance_reasons.append("ophthalmic_context_without_topic")
+        return _decision(
+            Status.REJECTED,
+            relevance_reasons,
+            candidate,
+            {
+                "relevance_score": relevance.score,
+                "relevance_context_matches": relevance.context_matches,
+            },
+        )
     if relevance.score < accept_score:
         review_reasons.append("relevance_ambiguous")
 
