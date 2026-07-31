@@ -414,3 +414,66 @@ def test_exhausted_source_and_missing_identifier_remain_diagnosable(
     aggregate = load_report(output)
     assert aggregate["validation"]["valid"] is False
     assert aggregate["validation"]["diagnostics"]["source_exhausted"] is True
+
+
+def test_out_of_taxonomy_ophthalmic_context_is_aggregated_without_acceptance(
+    tmp_path: Path,
+) -> None:
+    fixture = tmp_path / "relevance-diagnostics.jsonl"
+    rows = [
+        record(
+            "approved-alias",
+            title="Ocular hypertension monitoring",
+            text="Ocular hypertension monitoring in an ophthalmic cohort. " * 70,
+        ),
+        record(
+            "ophthalmic-outside-taxonomy",
+            title="Retinal microvascular geometry",
+            text="Retinal imaging geometry and ocular anatomy methods. " * 70,
+        ),
+        record(
+            "unrelated",
+            title="Computer vision benchmark",
+            text="Image classification architecture and benchmark results. " * 70,
+        ),
+    ]
+    with fixture.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["source"] = {
+        "kind": "fixture",
+        "path": str(fixture),
+        "required_fields": REQUIRED_FIELDS,
+    }
+    output = tmp_path / "relevance-diagnostics"
+
+    result = build_run(
+        config,
+        taxonomy,
+        limit=3,
+        scan_limit=3,
+        output_dir=output,
+        config_hash=canonical_hash(config),
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=tmp_path,
+    )
+
+    assert result["accepted_count"] == 1
+    assert result["rejected_count"] == 2
+    stats = json.loads((output / "stats.json").read_text(encoding="utf-8"))
+    assert stats["downstream_reasons"]["rejected"] == {
+        "not_relevant": 2,
+        "ophthalmic_context_without_topic": 1,
+    }
+    rejected = [
+        json.loads(line)
+        for line in (output / "rejected.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    outside = next(
+        item for item in rejected if item["identifier"] == "ophthalmic-outside-taxonomy"
+    )
+    assert outside["relevance_score"] == 0
+    assert outside["relevance_context_matches"] == ["ocular", "retinal"]

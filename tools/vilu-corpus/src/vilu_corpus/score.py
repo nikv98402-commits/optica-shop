@@ -10,6 +10,7 @@ class Relevance:
     score: int
     topics: list[str]
     matches: dict[str, list[str]]
+    context_matches: list[str]
 
 
 def score_relevance(title: str, text: str, language: str, taxonomy: dict[str, Any]) -> Relevance:
@@ -19,9 +20,23 @@ def score_relevance(title: str, text: str, language: str, taxonomy: dict[str, An
     topics: list[str] = []
     matches: dict[str, list[str]] = {}
     score = 0
+    context_terms = [
+        str(term).casefold()
+        for term in taxonomy.get("context_terms", {}).get(language_key, [])
+    ]
+    context_matches = [term for term in context_terms if _contains(haystack, term)]
     for topic, definition in sorted(taxonomy["topics"].items()):
         terms = [str(term).casefold() for term in definition.get("include", {}).get(language_key, [])]
-        found = [term for term in terms if _contains(haystack, term)]
+        requires_context = {
+            str(term).casefold()
+            for term in definition.get("requires_context", {}).get(language_key, [])
+        }
+        found = [
+            term
+            for term in terms
+            if _contains(haystack, term)
+            and (term not in requires_context or context_matches)
+        ]
         if not found:
             continue
         topics.append(topic)
@@ -29,7 +44,12 @@ def score_relevance(title: str, text: str, language: str, taxonomy: dict[str, An
         score += min(len(found), 2)
         if any(_contains(title_folded, term) for term in found):
             score += 2
-    return Relevance(score=score, topics=topics, matches=matches)
+    return Relevance(
+        score=score,
+        topics=topics,
+        matches=matches,
+        context_matches=context_matches,
+    )
 
 
 def has_exclusion(text: str, language: str, selection: dict[str, Any]) -> str | None:
