@@ -2,6 +2,23 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.5.0] - 2026-07-31
+
+### Fixed
+
+- Applied the bounded corpus candidate limit only after deterministic
+  ophthalmology relevance filtering, so irrelevant records no longer prevent
+  later eligible records from entering an acceptance pilot.
+- Preserved metadata-only rejection diagnostics and aggregate reason counts for
+  irrelevant records without weakening language, licensing, open-science or
+  raw scan limits.
+
+### Tests
+
+- Added regression coverage for an irrelevant record preceding an eligible
+  ophthalmology record, and rechecked all 40 corpus tests plus Python
+  compilation.
+
 ## [0.5.4.0] - 2026-07-31
 
 ### Fixed

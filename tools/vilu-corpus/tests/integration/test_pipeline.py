@@ -112,9 +112,9 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
     assert result == {
         "output": str(first),
         "raw_read_count": 7,
-        "input_count": 6,
+        "input_count": 5,
         "source_exhausted": False,
-        "prefilter_skipped_count": 1,
+        "prefilter_skipped_count": 2,
         "accepted_count": 2,
         "review_count": 2,
         "rejected_count": 1,
@@ -192,6 +192,61 @@ def test_limit_applies_after_deterministic_prefilter_with_strict_scan_bound(
             "not_open_science": 1,
         },
     }
+
+
+def test_irrelevant_record_does_not_consume_bounded_candidate_limit(
+    tmp_path: Path,
+) -> None:
+    fixture = tmp_path / "relevance-before-candidate.jsonl"
+    rows = [
+        record(
+            "general-science-first",
+            title="General chemistry methods",
+            text="General chemistry laboratory methods and measurements. " * 70,
+        ),
+        record(
+            "ophthalmology-second",
+            title="Myopia screening",
+            text="Myopia evidence and vision screening in an ophthalmic cohort. " * 70,
+        ),
+    ]
+    with fixture.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["source"] = {
+        "kind": "fixture",
+        "path": str(fixture),
+        "required_fields": REQUIRED_FIELDS,
+    }
+    output = tmp_path / "bounded-relevance"
+
+    result = build_run(
+        config,
+        taxonomy,
+        limit=1,
+        scan_limit=2,
+        output_dir=output,
+        config_hash=canonical_hash(config),
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=tmp_path,
+    )
+
+    assert result["raw_read_count"] == 2
+    assert result["input_count"] == 1
+    assert result["prefilter_skipped_count"] == 1
+    assert result["accepted_count"] == 1
+    assert result["rejected_count"] == 1
+    stats = json.loads((output / "stats.json").read_text(encoding="utf-8"))
+    assert stats["prefilter_reasons"] == {"not_relevant": 1}
+    rejected = [
+        json.loads(line)
+        for line in (output / "rejected.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert rejected[0]["identifier"] == "general-science-first"
+    assert rejected[0]["reasons"] == ["not_relevant"]
 
 
 def test_validation_detects_artifact_tampering(tmp_path: Path) -> None:
@@ -321,9 +376,9 @@ def test_pinned_representative_sample_preserves_review_and_downstream_diagnostic
     assert result == {
         "output": str(output),
         "raw_read_count": 8,
-        "input_count": 6,
+        "input_count": 5,
         "source_exhausted": False,
-        "prefilter_skipped_count": 2,
+        "prefilter_skipped_count": 3,
         "accepted_count": 2,
         "review_count": 3,
         "rejected_count": 1,
@@ -333,6 +388,7 @@ def test_pinned_representative_sample_preserves_review_and_downstream_diagnostic
     stats = json.loads((output / "stats.json").read_text(encoding="utf-8"))
     assert stats["prefilter_reasons"] == {
         "language_not_allowed": 1,
+        "not_relevant": 1,
         "not_open_science": 1,
     }
     assert stats["downstream_reasons"] == {

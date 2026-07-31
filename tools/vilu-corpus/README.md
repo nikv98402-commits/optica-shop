@@ -13,8 +13,9 @@ train a model, call Supabase, or alter the ViLu frontend.
 - Missing source fields fail the run.
 - Unknown licenses, missing identifiers, missing dates and ambiguous relevance
   remain inside the bounded candidate set and go to `review.csv`.
-- Excluded, stale, unsupported-language and irrelevant records go to
-  `rejected.jsonl`.
+- Irrelevant records do not consume the bounded candidate limit, but remain in
+  the metadata-only `rejected.jsonl` audit trail. Excluded, stale and
+  unsupported-language records are counted in aggregate prefilter diagnostics.
 - Accepted records are deduplicated by source identifier, normalized-text
   SHA-256 and deterministic MinHash/LSH candidate search.
 - Raw and cleaned text exist only inside protected run artifacts. Run
@@ -47,8 +48,10 @@ uv run vilu-corpus build --limit 1000 --scan-limit 100000 --output runs/pilot-10
 
 `--scan-limit` is the strict maximum number of raw source records read.
 `--limit` is the maximum number of candidates retained after deterministic
-hard eligibility filtering. Review-only conditions such as an unknown license
-or missing date do not silently remove a record from the audit trail.
+hard eligibility and ophthalmology relevance filtering. Review-only conditions
+such as an unknown license, missing date or ambiguous relevance do not silently
+remove a record from the audit trail. Definitively irrelevant records are
+audited but do not occupy candidate slots.
 
 Validate output hashes, licenses, deduplication and chunk references:
 

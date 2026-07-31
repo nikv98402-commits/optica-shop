@@ -94,6 +94,7 @@ def build_run(
     source = _resolved_source(config["source"], config_dir)
     required_fields = list(source["required_fields"])
     decisions: list[Decision] = []
+    selection_rejected: list[Decision] = []
     raw_read_count = 0
     prefilter_reasons: dict[str, int] = {}
     reached_candidate_limit = False
@@ -106,6 +107,11 @@ def build_run(
             for reason in blockers:
                 prefilter_reasons[reason] = prefilter_reasons.get(reason, 0) + 1
             continue
+        if decision.status is Status.REJECTED:
+            selection_rejected.append(decision)
+            for reason in decision.reasons:
+                prefilter_reasons[reason] = prefilter_reasons.get(reason, 0) + 1
+            continue
         decisions.append(decision)
         if len(decisions) == limit:
             reached_candidate_limit = True
@@ -116,7 +122,7 @@ def build_run(
     input_count = len(decisions)
     accepted = [item.document for item in decisions if item.status is Status.ACCEPTED and item.document]
     review = [item for item in decisions if item.status is Status.REVIEW]
-    rejected = [item for item in decisions if item.status is Status.REJECTED]
+    rejected = selection_rejected
     near = config["pipeline"]["near_duplicate"]
     dedupe_result = deduplicate(
         accepted,
