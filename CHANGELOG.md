@@ -2,6 +2,26 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.6.0] - 2026-07-31
+
+### Fixed
+
+- Enumerated all parquet shards in the pinned Common Corpus revision and
+  applied Open Science plus Russian/English metadata predicates before the
+  bounded scanner, so licensed ophthalmology candidates are not hidden by the
+  dataset's single-shard default configuration.
+- Kept local language, license, open-science and relevance checks fail-closed,
+  and recorded shard/filter provenance in probe and manifest outputs without
+  exposing document text.
+
+### Tests
+
+- Added fail-closed filter and shard validation, exact mocked Hugging Face
+  loader-contract coverage, metadata-only probe checks and deterministic
+  manifest provenance coverage.
+- Rechecked all 51 corpus tests, Python compilation, TypeScript, lint, all 260
+  frontend tests, checkout tests and the production build.
+
 ## [0.5.5.0] - 2026-07-31
 
 ### Fixed
