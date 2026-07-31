@@ -2,6 +2,25 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.4.0] - 2026-07-31
+
+### Fixed
+
+- Improved deterministic ophthalmology relevance recall with approved clinical
+  aliases and explicit eye-care context, while preserving strict language,
+  open-science, licensing, and bounded-selection gates.
+- Kept generic terms such as refraction and screen time context-gated to avoid
+  admitting unrelated documents, and added aggregate diagnostics for
+  ophthalmic records that do not map to an approved taxonomy topic.
+
+### Tests
+
+- Added unit and integration coverage for accepted clinical aliases, unrelated
+  computer-vision text, weak context-dependent terms, ambiguous body-only
+  matches, and safe downstream rejection diagnostics.
+- Rechecked all 39 corpus tests, Python compilation, all 260 frontend tests,
+  TypeScript, lint, and the production build.
+
 ## [0.5.3.1] - 2026-07-30
 
 ### Fixed
