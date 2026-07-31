@@ -2,6 +2,19 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.3.1] - 2026-07-30
+
+### Fixed
+
+- Made the checksum-pinned representative corpus fixture validate Git's
+  canonical LF bytes, eliminating mixed-line-ending drift between Windows
+  worktrees and Linux CI runners.
+
+### Tests
+
+- Rechecked the pinned representative regression, all corpus tests, Python
+  compilation, TypeScript, lint, unit tests, and the production build.
+
 ## [0.5.3.0] - 2026-07-30
 
 ### Fixed
