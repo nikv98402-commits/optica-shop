@@ -93,6 +93,8 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
     config["source"] = {
         "kind": "fixture",
         "path": str(fixture),
+        "data_files": {"train": "common_corpus_*/*.parquet"},
+        "filters": [["language", "in", ["English", "Russian"]]],
         "required_fields": REQUIRED_FIELDS,
     }
     first = tmp_path / "first"
@@ -124,6 +126,12 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
     first_manifest = json.loads((first / "manifest.json").read_text(encoding="utf-8"))
     second_manifest = json.loads((second / "manifest.json").read_text(encoding="utf-8"))
     assert first_manifest["pipeline_version"] == "2"
+    assert first_manifest["source"]["data_files"] == {
+        "train": "common_corpus_*/*.parquet"
+    }
+    assert first_manifest["source"]["filters"] == [
+        ["language", "in", ["English", "Russian"]]
+    ]
     assert first_manifest == second_manifest
 
     validation = validate_run(
