@@ -105,6 +105,8 @@ def write_outputs(
             "repository": source.get("repository"),
             "revision": source.get("revision"),
             "split": source.get("split"),
+            "data_files": source.get("data_files"),
+            "filters": source.get("filters"),
         },
         "input_count": input_count,
         "selection": {

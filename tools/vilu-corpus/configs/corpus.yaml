@@ -26,6 +26,11 @@ source:
   repository: PleIAs/common_corpus
   revision: ff9892ec787101ec881b2da279ed349085657aaf
   split: train
+  data_files:
+    train: "common_corpus_*/*.parquet"
+  filters:
+    - [open_type, in, [Open Science, OpenScience]]
+    - [language, in, [English, Russian]]
   required_fields:
     - identifier
     - collection
