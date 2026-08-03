@@ -11,9 +11,10 @@ train a model, call Supabase, or alter the ViLu frontend.
 - The upstream `PleIAs/common_corpus` revision is pinned to an exact SHA.
 - The pinned shard glob is explicit because the upstream dataset card exposes
   only one of the 10,000 parquet shards through its default configuration.
-- Metadata-only parquet predicates retain RU/EN Open Science rows before
-  document bodies enter the bounded scanner. The same rules are checked again
-  locally and remain part of the hashed configuration.
+- Metadata-only parquet predicates retain RU/EN Open Science rows with an
+  exact accepted-license allowlist before document bodies enter the bounded
+  scanner. The same rules are checked again locally and remain part of the
+  hashed configuration.
 - Only the `Open Science` collection is eligible.
 - Missing source fields fail the run.
 - Unknown licenses, missing identifiers, missing dates and ambiguous relevance
