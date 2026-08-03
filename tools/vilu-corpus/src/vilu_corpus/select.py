@@ -6,10 +6,16 @@ from typing import Any
 from .clean import clean_text, content_hash, document_id
 from .licenses import LicenseState, normalize_license
 from .models import Candidate, Decision, ProcessedDocument, Status
-from .score import has_exclusion, score_relevance
+from .score import RelevancePolicy, has_exclusion, score_relevance
 
 
-def evaluate(candidate: Candidate, config: dict[str, Any], taxonomy: dict[str, Any]) -> Decision:
+def evaluate(
+    candidate: Candidate,
+    config: dict[str, Any],
+    taxonomy: dict[str, Any],
+    *,
+    relevance_policy: RelevancePolicy | None = None,
+) -> Decision:
     pipeline = config["pipeline"]
     reasons: list[str] = []
     review_reasons: list[str] = []
@@ -45,7 +51,13 @@ def evaluate(candidate: Candidate, config: dict[str, Any], taxonomy: dict[str, A
     if exclusion:
         return _decision(Status.REJECTED, ["excluded_phrase"], candidate, {"phrase": exclusion})
 
-    relevance = score_relevance(candidate.title, cleaned, language, taxonomy)
+    relevance = score_relevance(
+        candidate.title,
+        cleaned,
+        language,
+        taxonomy,
+        policy=relevance_policy,
+    )
     accept_score = int(pipeline["relevance"]["accept_score"])
     review_score = int(pipeline["relevance"]["review_score"])
     if relevance.score < review_score:
