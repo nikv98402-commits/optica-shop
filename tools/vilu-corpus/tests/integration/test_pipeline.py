@@ -837,6 +837,55 @@ def test_reachability_projection_covers_scan_and_runtime_limits() -> None:
     )
 
 
+def test_build_enforces_runtime_budget_before_forecast_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["pipeline"]["bounded_selection"].update(
+        {
+            "forecast_after": 500,
+            "min_accepted": 1,
+            "runtime_budget_seconds": 1,
+        }
+    )
+
+    def filtered_rows(source: dict[str, object], **kwargs: object):
+        del source, kwargs
+        yield record(
+            "slow-unrelated",
+            title="Catalysis methods",
+            text="Synthetic chemistry evidence and laboratory methods. " * 70,
+        )
+
+    clock = iter((0.0, 2.0, 2.1))
+    monkeypatch.setattr(cli_module, "iter_source", filtered_rows)
+    monkeypatch.setattr(cli_module.time, "monotonic", lambda: next(clock))
+    output = tmp_path / "runtime-before-forecast"
+
+    with pytest.raises(cli_module.ReachabilityError):
+        build_run(
+            config,
+            taxonomy,
+            limit=10,
+            scan_limit=1000,
+            output_dir=output,
+            config_hash=loaded.sha256,
+            taxonomy_hash=canonical_hash(taxonomy),
+            config_dir=loaded.path.parent,
+            progress_stream=io.StringIO(),
+        )
+
+    checkpoint = json.loads((output / "checkpoint.json").read_text(encoding="utf-8"))
+    assert checkpoint["status"] == "failed"
+    assert checkpoint["raw_read_count"] == 1
+    assert checkpoint["reachability"]["reason_codes"] == [
+        "targets_unreachable_within_runtime_budget"
+    ]
+
+
 def test_bounded_selection_policy_uses_defaults_and_validates_overrides() -> None:
     config = {"pipeline": {}}
 

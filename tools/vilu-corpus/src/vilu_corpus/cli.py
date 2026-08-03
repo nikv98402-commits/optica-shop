@@ -221,9 +221,20 @@ def build_run(
             )
             if is_huggingface:
                 forecast_after = int(bounded["forecast_after"])
+                accepted_count = sum(
+                    item.status is Status.ACCEPTED for item in decisions
+                )
+                runtime_budget_expired = (
+                    elapsed_seconds >= float(bounded["runtime_budget_seconds"])
+                    and not (
+                        len(decisions) >= limit
+                        and accepted_count >= int(bounded["min_accepted"])
+                    )
+                )
                 should_forecast = raw_read_count >= forecast_after and (
                     reachability is None or should_report or should_checkpoint
                 )
+                should_forecast = should_forecast or runtime_budget_expired
                 if should_forecast:
                     # Full-text evaluation has already happened, so REVIEW is a
                     # valid bounded candidate and ACCEPTED is an exact count rather
@@ -231,9 +242,7 @@ def build_run(
                     reachability = _reachability_projection(
                         raw_read_count=raw_read_count,
                         candidate_count=len(decisions),
-                        accepted_proxy_count=sum(
-                            item.status is Status.ACCEPTED for item in decisions
-                        ),
+                        accepted_proxy_count=accepted_count,
                         candidate_target=limit,
                         accepted_target=int(bounded["min_accepted"]),
                         scan_limit=scan_limit,
