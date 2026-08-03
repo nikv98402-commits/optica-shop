@@ -17,7 +17,13 @@ _SUPPORTED_FILTER_OPERATORS = {
 }
 
 
-def iter_source(source: dict[str, Any]) -> Iterator[dict[str, Any]]:
+def iter_source(
+    source: dict[str, Any],
+    *,
+    columns: list[str] | None = None,
+    additional_filters: list[list[Any]] | None = None,
+    batch_size: int | None = None,
+) -> Iterator[dict[str, Any]]:
     kind = source.get("kind")
     if kind == "fixture":
         path = Path(str(source["path"])).resolve()
@@ -27,7 +33,10 @@ def iter_source(source: dict[str, Any]) -> Iterator[dict[str, Any]]:
                     value = json.loads(line)
                     if not isinstance(value, dict):
                         raise ValueError("fixture records must be JSON objects")
-                    yield value
+                    if columns is not None:
+                        yield {key: value[key] for key in columns if key in value}
+                    else:
+                        yield value
         return
     if kind != "huggingface":
         raise ValueError(f"unsupported source kind: {kind}")
@@ -35,9 +44,22 @@ def iter_source(source: dict[str, Any]) -> Iterator[dict[str, Any]]:
         from datasets import load_dataset
     except ImportError as error:
         raise RuntimeError("install the corpus dependencies before reading Hugging Face") from error
+    kwargs = _hugging_face_load_kwargs(source)
+    required_fields = set(source["required_fields"])
+    if columns is not None:
+        if not columns or not set(columns) <= required_fields:
+            raise ValueError("Hugging Face source columns must be a non-empty required-field subset")
+        kwargs["columns"] = list(columns)
+    if additional_filters is not None:
+        extra = _normalize_filters(additional_filters, required_fields=required_fields)
+        kwargs["filters"] = [*kwargs.get("filters", []), *extra]
+    if batch_size is not None:
+        if batch_size <= 0:
+            raise ValueError("Hugging Face source batch_size must be greater than zero")
+        kwargs["batch_size"] = batch_size
     dataset: Iterable[dict[str, Any]] = load_dataset(
         str(source["repository"]),
-        **_hugging_face_load_kwargs(source),
+        **kwargs,
     )
     yield from dataset
 

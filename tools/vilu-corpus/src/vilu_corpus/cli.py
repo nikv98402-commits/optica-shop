@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from datetime import UTC, datetime
@@ -22,6 +23,14 @@ from .writer import write_outputs
 MODULE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = MODULE_ROOT / "configs" / "corpus.yaml"
 DEFAULT_TAXONOMY = MODULE_ROOT / "configs" / "taxonomy.yaml"
+
+
+class ReachabilityError(ValueError):
+    """Bounded selection cannot meet its declared acceptance contract."""
+
+    def __init__(self, projection: dict[str, Any]) -> None:
+        self.projection = projection
+        super().__init__(", ".join(projection["reason_codes"]))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -119,6 +128,8 @@ def build_run(
     raw_read_count = 0
     prefilter_reasons: dict[str, int] = {}
     reached_candidate_limit = False
+    reachability: dict[str, Any] | None = None
+    phase = "selection"
     started_at = time.monotonic()
     output_dir.mkdir(parents=True, exist_ok=True)
     _write_checkpoint(
@@ -133,6 +144,7 @@ def build_run(
             rejected_count=0,
             prefilter_reasons=prefilter_reasons,
             elapsed_seconds=0.0,
+            phase=phase,
         ),
     )
 
@@ -150,13 +162,29 @@ def build_run(
                     rejected_count=len(selection_rejected),
                     prefilter_reasons=prefilter_reasons,
                     elapsed_seconds=time.monotonic() - started_at,
+                    phase=phase,
+                    reachability=reachability,
                 ),
                 "error_type": type(error).__name__,
             },
         )
 
     try:
-        for mapping in islice(iter_source(source), scan_limit):
+        bounded = config["pipeline"].get("bounded_selection", {})
+        is_huggingface = source["kind"] == "huggingface"
+        source_options: dict[str, Any] = {}
+        if is_huggingface:
+            # Cheap license/language/open-science/date/size predicates are pushed
+            # into the Parquet scan by the pinned source configuration. Relevance
+            # still needs the real document text; rejecting from title-only
+            # metadata would create false negatives.
+            phase = "filtered_relevance_scan"
+            source_options = {
+                "columns": required_fields,
+                "batch_size": int(bounded["metadata_batch_size"]),
+            }
+
+        for mapping in islice(iter_source(source, **source_options), scan_limit):
             raw_read_count += 1
             candidate = Candidate.from_mapping(mapping, required_fields)
             decision = evaluate(
@@ -177,37 +205,54 @@ def build_run(
                 decisions.append(decision)
                 if len(decisions) == limit:
                     reached_candidate_limit = True
+
             elapsed_seconds = time.monotonic() - started_at
-            if raw_read_count % progress_every == 0 or reached_candidate_limit:
-                _print_progress(
-                    progress_stream,
-                    _checkpoint_payload(
-                        status="running",
-                        raw_read_count=raw_read_count,
-                        scan_limit=scan_limit,
-                        candidate_count=len(decisions),
-                        candidate_limit=limit,
-                        decisions=decisions,
-                        rejected_count=len(selection_rejected),
-                        prefilter_reasons=prefilter_reasons,
-                        elapsed_seconds=elapsed_seconds,
-                    ),
+            should_report = raw_read_count % progress_every == 0 or reached_candidate_limit
+            should_checkpoint = (
+                raw_read_count % checkpoint_every == 0 or reached_candidate_limit
+            )
+            if is_huggingface:
+                forecast_after = int(bounded["forecast_after"])
+                should_forecast = raw_read_count >= forecast_after and (
+                    reachability is None or should_report
                 )
-            if raw_read_count % checkpoint_every == 0 or reached_candidate_limit:
-                _write_checkpoint(
-                    output_dir,
-                    _checkpoint_payload(
-                        status="running",
+                if should_forecast:
+                    # Full-text evaluation has already happened, so REVIEW is a
+                    # valid bounded candidate and ACCEPTED is an exact count rather
+                    # than a title-only proxy.
+                    reachability = _reachability_projection(
                         raw_read_count=raw_read_count,
-                        scan_limit=scan_limit,
                         candidate_count=len(decisions),
-                        candidate_limit=limit,
-                        decisions=decisions,
-                        rejected_count=len(selection_rejected),
-                        prefilter_reasons=prefilter_reasons,
+                        accepted_proxy_count=sum(
+                            item.status is Status.ACCEPTED for item in decisions
+                        ),
+                        candidate_target=limit,
+                        accepted_target=int(bounded["min_accepted"]),
+                        scan_limit=scan_limit,
                         elapsed_seconds=elapsed_seconds,
-                    ),
-                )
+                        runtime_budget_seconds=float(bounded["runtime_budget_seconds"]),
+                        confidence_z=float(bounded["confidence_z"]),
+                    )
+
+            payload = _checkpoint_payload(
+                status="running",
+                raw_read_count=raw_read_count,
+                scan_limit=scan_limit,
+                candidate_count=len(decisions),
+                candidate_limit=limit,
+                decisions=decisions,
+                rejected_count=len(selection_rejected),
+                prefilter_reasons=prefilter_reasons,
+                elapsed_seconds=elapsed_seconds,
+                phase=phase,
+                reachability=reachability,
+            )
+            if should_report:
+                _print_progress(progress_stream, payload)
+            if should_checkpoint:
+                _write_checkpoint(output_dir, payload)
+            if reachability and reachability["reason_codes"]:
+                raise ReachabilityError(reachability)
             if reached_candidate_limit:
                 break
     except BaseException as error:
@@ -274,6 +319,8 @@ def build_run(
         rejected_count=len(selection_rejected),
         prefilter_reasons=prefilter_reasons,
         elapsed_seconds=time.monotonic() - started_at,
+        phase="complete",
+        reachability=reachability,
     )
     final_checkpoint["final_counts"] = {
         key: result[key]
@@ -300,13 +347,16 @@ def _checkpoint_payload(
     rejected_count: int,
     prefilter_reasons: dict[str, int],
     elapsed_seconds: float,
+    phase: str = "selection",
+    reachability: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     accepted_count = sum(item.status is Status.ACCEPTED for item in decisions)
     review_count = sum(item.status is Status.REVIEW for item in decisions)
     records_per_second = raw_read_count / elapsed_seconds if elapsed_seconds > 0 else 0.0
-    return {
+    payload = {
         "schema_version": 1,
         "status": status,
+        "phase": phase,
         "updated_at": datetime.now(UTC).isoformat(),
         "elapsed_seconds": round(elapsed_seconds, 3),
         "records_per_second": round(records_per_second, 3),
@@ -321,6 +371,95 @@ def _checkpoint_payload(
         "rejected_count": rejected_count,
         "prefilter_reasons": dict(sorted(prefilter_reasons.items())),
     }
+    if reachability is not None:
+        payload["reachability"] = reachability
+    return payload
+
+
+def _reachability_projection(
+    *,
+    raw_read_count: int,
+    candidate_count: int,
+    accepted_proxy_count: int,
+    candidate_target: int,
+    accepted_target: int,
+    scan_limit: int,
+    elapsed_seconds: float,
+    runtime_budget_seconds: float,
+    confidence_z: float,
+) -> dict[str, Any]:
+    candidate_upper = _wilson_upper(candidate_count, raw_read_count, confidence_z)
+    accepted_upper = _wilson_upper(accepted_proxy_count, raw_read_count, confidence_z)
+    candidate_required = (
+        raw_read_count
+        if candidate_count >= candidate_target
+        else _required_samples(candidate_target, candidate_upper, raw_read_count)
+    )
+    accepted_required = (
+        raw_read_count
+        if accepted_proxy_count >= accepted_target
+        else _required_samples(accepted_target, accepted_upper, raw_read_count)
+    )
+    required_values = [value for value in (candidate_required, accepted_required) if value is not None]
+    required_raw = max(required_values, default=raw_read_count)
+    records_per_second = raw_read_count / elapsed_seconds if elapsed_seconds > 0 else 0.0
+    targets_reached = (
+        candidate_count >= candidate_target and accepted_proxy_count >= accepted_target
+    )
+    projected_seconds = (
+        elapsed_seconds
+        if targets_reached
+        else required_raw / records_per_second
+        if records_per_second > 0
+        else None
+    )
+    candidate_reachable = candidate_required is not None and candidate_required <= scan_limit
+    accepted_reachable = accepted_required is not None and accepted_required <= scan_limit
+    runtime_reachable = targets_reached or (
+        projected_seconds is not None and projected_seconds <= runtime_budget_seconds
+    )
+    reason_codes: list[str] = []
+    if not candidate_reachable:
+        reason_codes.append("candidate_target_unreachable_within_scan_limit")
+    if not accepted_reachable:
+        reason_codes.append("accepted_target_unreachable_within_scan_limit")
+    if not runtime_reachable:
+        reason_codes.append("targets_unreachable_within_runtime_budget")
+    return {
+        "sample_size": raw_read_count,
+        "candidate_count": candidate_count,
+        "accepted_proxy_count": accepted_proxy_count,
+        "candidate_upper_yield": round(candidate_upper, 8),
+        "accepted_upper_yield": round(accepted_upper, 8),
+        "candidate_required_raw_optimistic": candidate_required,
+        "accepted_required_raw_optimistic": accepted_required,
+        "projected_total_seconds": round(projected_seconds, 3) if projected_seconds is not None else None,
+        "candidate_reachable_by_scan": candidate_reachable,
+        "accepted_reachable_by_scan": accepted_reachable,
+        "reachable_by_runtime": runtime_reachable,
+        "reason_codes": reason_codes,
+    }
+
+
+def _wilson_upper(successes: int, samples: int, z: float) -> float:
+    if samples <= 0:
+        return 0.0
+    proportion = successes / samples
+    z_squared = z * z
+    denominator = 1 + z_squared / samples
+    centre = proportion + z_squared / (2 * samples)
+    margin = z * math.sqrt(
+        proportion * (1 - proportion) / samples + z_squared / (4 * samples * samples)
+    )
+    return min(1.0, (centre + margin) / denominator)
+
+
+def _required_samples(target: int, upper_yield: float, observed: int) -> int | None:
+    if target <= 0:
+        return observed
+    if upper_yield <= 0:
+        return None
+    return max(observed, math.ceil(target / upper_yield))
 
 
 def _write_checkpoint(output_dir: Path, payload: dict[str, Any]) -> None:
