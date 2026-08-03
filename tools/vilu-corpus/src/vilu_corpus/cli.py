@@ -24,6 +24,14 @@ MODULE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = MODULE_ROOT / "configs" / "corpus.yaml"
 DEFAULT_TAXONOMY = MODULE_ROOT / "configs" / "taxonomy.yaml"
 
+_BOUNDED_SELECTION_DEFAULTS = {
+    "metadata_batch_size": 128,
+    "forecast_after": 500,
+    "min_accepted": 100,
+    "runtime_budget_seconds": 4200.0,
+    "confidence_z": 2.576,
+}
+
 
 class ReachabilityError(ValueError):
     """Bounded selection cannot meet its declared acceptance contract."""
@@ -170,7 +178,7 @@ def build_run(
         )
 
     try:
-        bounded = config["pipeline"].get("bounded_selection", {})
+        bounded = _bounded_selection_policy(config)
         is_huggingface = source["kind"] == "huggingface"
         source_options: dict[str, Any] = {}
         if is_huggingface:
@@ -214,7 +222,7 @@ def build_run(
             if is_huggingface:
                 forecast_after = int(bounded["forecast_after"])
                 should_forecast = raw_read_count >= forecast_after and (
-                    reachability is None or should_report
+                    reachability is None or should_report or should_checkpoint
                 )
                 if should_forecast:
                     # Full-text evaluation has already happened, so REVIEW is a
@@ -255,6 +263,23 @@ def build_run(
                 raise ReachabilityError(reachability)
             if reached_candidate_limit:
                 break
+
+        if is_huggingface and raw_read_count >= int(bounded["forecast_after"]):
+            reachability = _reachability_projection(
+                raw_read_count=raw_read_count,
+                candidate_count=len(decisions),
+                accepted_proxy_count=sum(
+                    item.status is Status.ACCEPTED for item in decisions
+                ),
+                candidate_target=limit,
+                accepted_target=int(bounded["min_accepted"]),
+                scan_limit=scan_limit,
+                elapsed_seconds=time.monotonic() - started_at,
+                runtime_budget_seconds=float(bounded["runtime_budget_seconds"]),
+                confidence_z=float(bounded["confidence_z"]),
+            )
+            if reachability["reason_codes"]:
+                raise ReachabilityError(reachability)
     except BaseException as error:
         write_failure_checkpoint(error)
         raise
@@ -276,6 +301,8 @@ def build_run(
             bands=int(near["bands"]),
             similarity_threshold=float(near["similarity_threshold"]),
         )
+        source_exhausted = not reached_candidate_limit and raw_read_count < scan_limit
+        scan_limit_reached = not reached_candidate_limit and raw_read_count >= scan_limit
         manifest = write_outputs(
             output_dir,
             documents=dedupe_result.documents,
@@ -290,7 +317,8 @@ def build_run(
             raw_read_count=raw_read_count,
             scan_limit=scan_limit,
             candidate_limit=limit,
-            source_exhausted=not reached_candidate_limit and raw_read_count < scan_limit,
+            source_exhausted=source_exhausted,
+            scan_limit_reached=scan_limit_reached,
             prefilter_reasons=prefilter_reasons,
             chunk_config=config["pipeline"]["chunking"],
         )
@@ -301,7 +329,8 @@ def build_run(
         "output": str(output_dir),
         "raw_read_count": raw_read_count,
         "input_count": input_count,
-        "source_exhausted": not reached_candidate_limit and raw_read_count < scan_limit,
+        "source_exhausted": source_exhausted,
+        "scan_limit_reached": scan_limit_reached,
         "prefilter_skipped_count": raw_read_count - input_count,
         "accepted_count": len(dedupe_result.documents),
         "review_count": len(review),
@@ -413,11 +442,10 @@ def _reachability_projection(
         if records_per_second > 0
         else None
     )
-    candidate_reachable = candidate_required is not None and candidate_required <= scan_limit
-    accepted_reachable = accepted_required is not None and accepted_required <= scan_limit
-    runtime_reachable = targets_reached or (
-        projected_seconds is not None and projected_seconds <= runtime_budget_seconds
-    )
+    remaining_records = max(0, scan_limit - raw_read_count)
+    candidate_reachable = candidate_count + remaining_records >= candidate_target
+    accepted_reachable = accepted_proxy_count + remaining_records >= accepted_target
+    runtime_reachable = targets_reached or elapsed_seconds < runtime_budget_seconds
     reason_codes: list[str] = []
     if not candidate_reachable:
         reason_codes.append("candidate_target_unreachable_within_scan_limit")
@@ -425,10 +453,22 @@ def _reachability_projection(
         reason_codes.append("accepted_target_unreachable_within_scan_limit")
     if not runtime_reachable:
         reason_codes.append("targets_unreachable_within_runtime_budget")
+    warning_codes: list[str] = []
+    if candidate_required is None or candidate_required > scan_limit:
+        warning_codes.append("candidate_target_statistically_unlikely_within_scan_limit")
+    if accepted_required is None or accepted_required > scan_limit:
+        warning_codes.append("accepted_target_statistically_unlikely_within_scan_limit")
+    if (
+        not targets_reached
+        and projected_seconds is not None
+        and projected_seconds > runtime_budget_seconds
+    ):
+        warning_codes.append("targets_statistically_unlikely_within_runtime_budget")
     return {
         "sample_size": raw_read_count,
         "candidate_count": candidate_count,
         "accepted_proxy_count": accepted_proxy_count,
+        "remaining_records": remaining_records,
         "candidate_upper_yield": round(candidate_upper, 8),
         "accepted_upper_yield": round(accepted_upper, 8),
         "candidate_required_raw_optimistic": candidate_required,
@@ -438,7 +478,31 @@ def _reachability_projection(
         "accepted_reachable_by_scan": accepted_reachable,
         "reachable_by_runtime": runtime_reachable,
         "reason_codes": reason_codes,
+        "warning_codes": warning_codes,
     }
+
+
+def _bounded_selection_policy(config: dict[str, Any]) -> dict[str, int | float]:
+    raw = config["pipeline"].get("bounded_selection", {})
+    if not isinstance(raw, dict):
+        raise ValueError("pipeline.bounded_selection must be a mapping")
+    policy: dict[str, int | float] = {**_BOUNDED_SELECTION_DEFAULTS, **raw}
+    integer_fields = ("metadata_batch_size", "forecast_after", "min_accepted")
+    for field in integer_fields:
+        value = policy[field]
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"pipeline.bounded_selection.{field} must be an integer")
+    if int(policy["metadata_batch_size"]) <= 0:
+        raise ValueError("pipeline.bounded_selection.metadata_batch_size must be greater than zero")
+    if int(policy["forecast_after"]) <= 0:
+        raise ValueError("pipeline.bounded_selection.forecast_after must be greater than zero")
+    if int(policy["min_accepted"]) < 0:
+        raise ValueError("pipeline.bounded_selection.min_accepted must be zero or greater")
+    for field in ("runtime_budget_seconds", "confidence_z"):
+        value = policy[field]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            raise ValueError(f"pipeline.bounded_selection.{field} must be greater than zero")
+    return policy
 
 
 def _wilson_upper(successes: int, samples: int, z: float) -> float:
