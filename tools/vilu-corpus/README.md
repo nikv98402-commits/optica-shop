@@ -49,7 +49,7 @@ uv run vilu-corpus probe
 Build a bounded run:
 
 ```powershell
-uv run vilu-corpus build --limit 1000 --scan-limit 100000 --output runs/pilot-1000
+uv run vilu-corpus build --limit 1000 --scan-limit 100000 --progress-every 1000 --checkpoint-every 5000 --output runs/pilot-1000
 ```
 
 `--scan-limit` is the strict maximum number of source records delivered to the
@@ -60,6 +60,14 @@ hard eligibility and ophthalmology relevance filtering. Review-only conditions
 such as an unknown license, missing date or ambiguous relevance do not silently
 remove a record from the audit trail. Definitively irrelevant records are
 audited but do not occupy candidate slots.
+
+`--progress-every` prints aggregate progress after the configured number of
+source records; its default is 1,000. `--checkpoint-every` atomically refreshes
+the metadata-only `checkpoint.json` after the configured number of source
+records; its default is 5,000. The checkpoint contains counts, rates, elapsed
+time, aggregate rejection reasons and the failure type, but never document
+text or exception messages. It is finalized on success and on handled failure
+paths so a stalled or failed bounded run can be diagnosed safely.
 
 Validate output hashes, licenses, deduplication and chunk references:
 
@@ -88,15 +96,19 @@ Each run contains:
 - `rejected.jsonl`: metadata-only rejected records;
 - `duplicates.parquet`: exact and near-duplicate audit trail;
 - `licenses.csv` and `taxonomy_coverage.csv`: aggregate coverage;
-- `stats.json`, `manifest.json`, and `README.md`: deterministic run evidence.
+- `stats.json`, `manifest.json`, and `README.md`: deterministic run evidence;
 - `validation-report.json`: post-build aggregate validation diagnostics; it
   never contains document text and is written even when acceptance thresholds
   fail.
+- `checkpoint.json`: metadata-only selection progress and terminal status; it
+  is stored separately from the protected reproducible corpus artifact.
 
 Do not upload these files to public Pages or commit them to Git. The manual
-GitHub Actions workflow uploads one bounded run as a short-retention repository
-artifact even when threshold validation fails, so the metadata-only diagnosis
-and protected review/rejected evidence are not lost.
+GitHub Actions workflow always attempts to upload `checkpoint.json` as a
+separate seven-day diagnostic artifact. When the build completes, it uploads
+the bounded run without `checkpoint.json` as a protected seven-day repository
+artifact; that protected artifact is retained when later acceptance validation
+fails, so aggregate diagnostics and review/rejected evidence are not lost.
 
 ## Configuration
 
@@ -112,6 +124,10 @@ Taxonomy matching is fail-closed:
   language-specific ophthalmic `context_terms` match;
 - documents with ophthalmic context but no approved topic remain rejected and
   are counted as `ophthalmic_context_without_topic` in aggregate diagnostics.
+
+The configured RU/EN taxonomy is compiled once per run and matched in one pass
+per document. This changes selection cost, not relevance, boundary, context or
+title-bonus semantics.
 
 Taxonomy changes do not require code changes and are included in the manifest
 hash.

@@ -218,6 +218,7 @@ Codex должен использовать его как проектный к�
 - `docs/knowledge-assistant/source-review.md` — безопасное добавление и повторная проверка источников.
 - `docs/deployment/knowledge-assistant.md` — preview rollout, секреты, индексирование и rollback.
 - `docs/testing/knowledge-assistant.md` — локальная проверка, privacy и RU/EN mobile QA.
+- `tools/vilu-corpus/README.md` — изолированный corpus pipeline, bounded pilot, безопасная диагностика и ограничения артефактов.
 - `CHANGELOG.md` — история релизных изменений.
 - `.env.example` — безопасный шаблон опциональных переменных окружения.
 

@@ -39,6 +39,19 @@ npm run smoke
 
 Known lint state: the project may show existing Fast Refresh warnings in context and knowledge-base files. Do not introduce new warnings.
 
+### Corpus pipeline changes
+
+For changes under `tools/vilu-corpus`, run the isolated Python checks as well:
+
+```bash
+cd tools/vilu-corpus
+uv sync --locked --extra dev
+uv run pytest
+```
+
+Do not run the manual bounded pilot, publish corpus artifacts, create embeddings,
+or write to production Supabase unless the task explicitly authorizes it.
+
 ## Product Safety Rules
 
 - Photos for try-on must stay in the browser.
