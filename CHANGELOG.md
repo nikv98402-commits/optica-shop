@@ -2,6 +2,25 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.6.1] - 2026-08-03
+
+### Fixed
+
+- Applied the exact accepted-license allowlist to the pinned Common Corpus
+  loader before bounded selection, preventing ambiguous license families from
+  consuming the 1,000-candidate pilot quota while keeping downstream checks
+  fail-closed.
+
+### Tests
+
+- Added regression coverage for the upstream loader contract, rejected
+  ambiguous license families, and alignment between the upstream filter and
+  the canonical accepted-license configuration.
+- Rechecked all 52 corpus tests and Python compilation, TypeScript, lint, all
+  260 frontend tests, checkout contracts, and the production build.
+- Confirmed the four existing, unrelated Knowledge Assistant E2E expectation
+  failures separately; this release does not change that UI or backend.
+
 ## [0.5.6.0] - 2026-07-31
 
 ### Fixed
