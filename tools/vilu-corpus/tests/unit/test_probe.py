@@ -51,8 +51,40 @@ def test_pinned_source_enumerates_all_shards_and_pushes_safe_filters() -> None:
     assert kwargs["filters"] == [
         ("open_type", "in", ["Open Science", "OpenScience"]),
         ("language", "in", ["English", "Russian"]),
+        (
+            "license",
+            "in",
+            [
+                "CC0-1.0",
+                "CC-BY-4.0",
+                "CC-BY-SA-4.0",
+                "PDM-1.0",
+                "Public Domain",
+            ],
+        ),
     ]
     assert kwargs["streaming"] is True
+
+
+def test_pinned_source_filter_excludes_ambiguous_license_families() -> None:
+    config = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    source = config.source
+    license_filter = next(
+        raw_filter for raw_filter in source["filters"] if raw_filter[0] == "license"
+    )
+
+    assert license_filter[1] == "in"
+    assert set(license_filter[2]) == {
+        "CC0-1.0",
+        "CC-BY-4.0",
+        "CC-BY-SA-4.0",
+        "PDM-1.0",
+        "Public Domain",
+    }
+    assert set(license_filter[2]) == set(config.licenses["accepted"])
+    assert set(license_filter[2]).isdisjoint(
+        {"CC-By", "CC-By-SA", "Various open science"}
+    )
 
 
 def test_hugging_face_filters_fail_closed_on_unknown_fields() -> None:
