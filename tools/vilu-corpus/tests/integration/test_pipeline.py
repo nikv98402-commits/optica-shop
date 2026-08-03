@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 from copy import deepcopy
 from hashlib import sha256
@@ -7,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from vilu_corpus import cli as cli_module
 from vilu_corpus.cli import build_parser, build_run
 from vilu_corpus.config import canonical_hash, load_config, load_taxonomy
 from vilu_corpus.report import load_report
@@ -418,6 +420,153 @@ def test_acceptance_failure_preserves_safe_report_and_workflow_artifact() -> Non
     assert workflow.count(
         "if: ${{ always() && steps.build.outcome == 'success' }}"
     ) == 2
+    assert "timeout-minutes: 75" in workflow
+    assert "vilu-corpus-checkpoint-${{ github.run_id }}" in workflow
+    assert "tools/vilu-corpus/runs/pilot-1000/checkpoint.json" in workflow
+    assert "!tools/vilu-corpus/runs/pilot-1000/checkpoint.json" in workflow
+
+
+def test_build_emits_progress_and_metadata_only_checkpoint(tmp_path: Path) -> None:
+    fixture = tmp_path / "progress.jsonl"
+    rows = [record(f"progress-{index}") for index in range(3)]
+    with fixture.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row) + "\n")
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["source"] = {
+        "kind": "fixture",
+        "path": str(fixture),
+        "required_fields": REQUIRED_FIELDS,
+    }
+    output = tmp_path / "progress-output"
+    progress = io.StringIO()
+
+    result = build_run(
+        config,
+        taxonomy,
+        limit=3,
+        scan_limit=3,
+        output_dir=output,
+        config_hash=canonical_hash(config),
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=tmp_path,
+        progress_every=2,
+        checkpoint_every=2,
+        progress_stream=progress,
+    )
+
+    checkpoint_text = (output / "checkpoint.json").read_text(encoding="utf-8")
+    checkpoint = json.loads(checkpoint_text)
+    assert result["accepted_count"] == 1
+    assert checkpoint["status"] == "complete"
+    assert checkpoint["raw_read_count"] == 3
+    assert checkpoint["candidate_count"] == 3
+    assert checkpoint["final_counts"]["accepted_count"] == 1
+    assert "Myopia clinical evidence supports" not in checkpoint_text
+    assert '"raw_read_count":2' in progress.getvalue()
+    assert '"status":"complete"' in progress.getvalue()
+
+
+def test_build_preserves_checkpoint_when_source_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rows = [record("before-failure"), record("also-before-failure")]
+
+    def failing_source(source: dict[str, object]):
+        del source
+        yield from rows
+        raise RuntimeError("SECRET upstream response")
+
+    monkeypatch.setattr(cli_module, "iter_source", failing_source)
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    output = tmp_path / "failed-output"
+
+    with pytest.raises(RuntimeError, match="SECRET upstream response"):
+        build_run(
+            loaded.data,
+            taxonomy,
+            limit=3,
+            scan_limit=3,
+            output_dir=output,
+            config_hash=loaded.sha256,
+            taxonomy_hash=canonical_hash(taxonomy),
+            config_dir=loaded.path.parent,
+            progress_every=1,
+            checkpoint_every=1,
+            progress_stream=io.StringIO(),
+        )
+
+    checkpoint_text = (output / "checkpoint.json").read_text(encoding="utf-8")
+    checkpoint = json.loads(checkpoint_text)
+    assert checkpoint["status"] == "failed"
+    assert checkpoint["error_type"] == "RuntimeError"
+    assert checkpoint["raw_read_count"] == 2
+    assert "SECRET upstream response" not in checkpoint_text
+    assert "Myopia clinical evidence supports" not in checkpoint_text
+
+
+def test_build_marks_checkpoint_failed_when_source_is_empty(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli_module, "iter_source", lambda source: iter(()))
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    output = tmp_path / "empty-output"
+
+    with pytest.raises(ValueError, match="source returned no records"):
+        build_run(
+            loaded.data,
+            taxonomy,
+            limit=1,
+            scan_limit=1,
+            output_dir=output,
+            config_hash=loaded.sha256,
+            taxonomy_hash=canonical_hash(taxonomy),
+            config_dir=loaded.path.parent,
+        )
+
+    checkpoint = json.loads((output / "checkpoint.json").read_text(encoding="utf-8"))
+    assert checkpoint["status"] == "failed"
+    assert checkpoint["error_type"] == "ValueError"
+    assert checkpoint["raw_read_count"] == 0
+
+
+def test_build_marks_checkpoint_failed_when_output_write_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    output = tmp_path / "write-failure-output"
+
+    def failing_write_outputs(*args: object, **kwargs: object) -> dict[str, object]:
+        del args, kwargs
+        raise RuntimeError("SECRET document payload")
+
+    monkeypatch.setattr(cli_module, "write_outputs", failing_write_outputs)
+
+    with pytest.raises(RuntimeError, match="SECRET document payload"):
+        build_run(
+            loaded.data,
+            taxonomy,
+            limit=1,
+            scan_limit=1,
+            output_dir=output,
+            config_hash=loaded.sha256,
+            taxonomy_hash=canonical_hash(taxonomy),
+            config_dir=loaded.path.parent,
+        )
+
+    checkpoint_text = (output / "checkpoint.json").read_text(encoding="utf-8")
+    checkpoint = json.loads(checkpoint_text)
+    assert checkpoint["status"] == "failed"
+    assert checkpoint["error_type"] == "RuntimeError"
+    assert "SECRET document payload" not in checkpoint_text
 
 
 def test_validate_cli_accepts_candidate_threshold() -> None:

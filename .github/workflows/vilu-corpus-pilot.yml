@@ -54,11 +54,22 @@ jobs:
 
       - name: Build bounded pilot
         id: build
+        timeout-minutes: 75
         run: >-
           uv run vilu-corpus build
           --limit 1000
           --scan-limit 100000
           --output runs/pilot-1000
+
+      - name: Upload bounded selection checkpoint
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vilu-corpus-checkpoint-${{ github.run_id }}
+          path: tools/vilu-corpus/runs/pilot-1000/checkpoint.json
+          if-no-files-found: warn
+          retention-days: 7
+          compression-level: 9
 
       - name: Validate bounded pilot
         id: validate
@@ -77,7 +88,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vilu-corpus-pilot-${{ github.run_id }}
-          path: tools/vilu-corpus/runs/pilot-1000/
+          path: |
+            tools/vilu-corpus/runs/pilot-1000/
+            !tools/vilu-corpus/runs/pilot-1000/checkpoint.json
           if-no-files-found: error
           retention-days: 7
           compression-level: 9
