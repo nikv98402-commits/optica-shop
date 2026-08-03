@@ -2,6 +2,33 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.5.7.0] - 2026-08-03
+
+### Changed
+
+- Made the bounded ViLu corpus pilot report steady progress and preserve a
+  metadata-only diagnostic checkpoint, so stalled or failed runs can be
+  diagnosed without exposing document text.
+- Replaced repeated relevance-term scans with a compiled single-pass matcher,
+  reducing representative 1,000-document scoring time by more than 50x while
+  preserving Russian and English boundary, context, and title-bonus behavior.
+- Added a 75-minute workflow timeout and an always-uploaded diagnostic artifact
+  that remains separate from the protected, reproducible corpus outputs.
+
+### Fixed
+
+- Marked empty-source, source-read, deduplication, and output-write failures as
+  failed checkpoints instead of leaving acceptance runs falsely marked as
+  running.
+
+### Tests
+
+- Added regression coverage for successful progress checkpoints, empty inputs,
+  source failures, downstream output failures, safe diagnostic metadata, and
+  workflow artifact boundaries.
+- Rechecked 56 corpus tests, Python compilation, TypeScript, lint, all 260
+  frontend tests, and the production build without running a corpus pilot.
+
 ## [0.5.6.1] - 2026-08-03
 
 ### Fixed
