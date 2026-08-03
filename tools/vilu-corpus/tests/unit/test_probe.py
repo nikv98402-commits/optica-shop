@@ -62,7 +62,6 @@ def test_pinned_source_enumerates_all_shards_and_pushes_safe_filters() -> None:
                 "Public Domain",
             ],
         ),
-        ("date", ">=", 2015),
         ("word_count", ">=", 300),
         ("word_count", "<=", 200000),
     ]
@@ -212,6 +211,28 @@ def test_hugging_face_loader_receives_exact_bounded_selection(
             },
         )
     ]
+
+
+def test_pinned_loader_preserves_undated_records_for_downstream_review(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+    undated_record = {"identifier": "undated-safe-id", "date": None}
+
+    def load_dataset(repository: str, **kwargs: object) -> list[dict[str, object]]:
+        calls.append((repository, kwargs))
+        return [undated_record]
+
+    monkeypatch.setitem(
+        sys.modules,
+        "datasets",
+        SimpleNamespace(load_dataset=load_dataset),
+    )
+    source = load_config(MODULE_ROOT / "configs" / "corpus.yaml").source
+
+    assert list(iter_source(source, columns=["identifier", "date"])) == [undated_record]
+    pushed_filters = calls[0][1]["filters"]
+    assert all(raw_filter[0] != "date" for raw_filter in pushed_filters)
 
 
 def test_hugging_face_loader_projects_columns_and_adds_hydration_filter(

@@ -38,7 +38,6 @@ source:
     - [open_type, in, [Open Science, OpenScience]]
     - [language, in, [English, Russian]]
     - [license, in, [CC0-1.0, CC-BY-4.0, CC-BY-SA-4.0, PDM-1.0, Public Domain]]
-    - [date, ">=", 2015]
     - [word_count, ">=", 300]
     - [word_count, "<=", 200000]
   required_fields:
