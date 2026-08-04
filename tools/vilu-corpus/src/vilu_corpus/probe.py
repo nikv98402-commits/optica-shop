@@ -61,11 +61,12 @@ def iter_source(
         str(source["repository"]),
         **kwargs,
     )
-    batch_iterator = getattr(dataset, "iter", None)
-    if batch_size is not None and callable(batch_iterator):
-        for batch in batch_iterator(batch_size=batch_size):
-            yield from _rows_from_columnar_batch(batch)
-        return
+    # ``batch_size`` is a Parquet reader option and is intentionally passed to
+    # ``load_dataset`` above. Do not additionally call
+    # ``IterableDataset.iter(batch_size=...)`` here: that API buffers matching
+    # rows until a complete user-facing batch is available. On a large,
+    # selectively filtered corpus, the buffer can hide all progress for many
+    # minutes before yielding the first row.
     yield from dataset
 
 
@@ -105,26 +106,6 @@ def _append_filters(
     if current and isinstance(current[0], list):
         return [[*branch, *additional] for branch in current]  # type: ignore[list-item]
     return [*current, *additional]  # type: ignore[list-item]
-
-
-def _rows_from_columnar_batch(batch: object) -> Iterator[dict[str, Any]]:
-    if not isinstance(batch, dict):
-        raise TypeError("Dataset batch iterator must yield a mapping of columns")
-    if not batch:
-        return
-
-    columns = list(batch.items())
-    lengths: set[int] = set()
-    for name, values in columns:
-        if isinstance(values, (str, bytes)) or not hasattr(values, "__len__"):
-            raise TypeError(f"Dataset batch column {name!r} is not indexable")
-        lengths.add(len(values))
-    if len(lengths) != 1:
-        raise ValueError("Dataset batch columns have inconsistent lengths")
-
-    row_count = lengths.pop()
-    for index in range(row_count):
-        yield {name: values[index] for name, values in columns}
 
 
 def _normalize_filters(

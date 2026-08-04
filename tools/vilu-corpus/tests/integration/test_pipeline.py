@@ -584,6 +584,39 @@ def test_hugging_face_build_uses_one_filtered_full_text_scan(
     ).read_text(encoding="utf-8")
 
 
+def test_hugging_face_build_checkpoints_source_phase_before_first_row(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    output = tmp_path / "source-phase"
+
+    def source_after_checkpoint(source: dict[str, object], **kwargs: object):
+        del source, kwargs
+        checkpoint = json.loads((output / "checkpoint.json").read_text(encoding="utf-8"))
+        assert checkpoint["status"] == "running"
+        assert checkpoint["phase"] == "filtered_relevance_scan"
+        assert checkpoint["raw_read_count"] == 0
+        yield record("first-source-row")
+
+    monkeypatch.setattr(cli_module, "iter_source", source_after_checkpoint)
+
+    result = build_run(
+        loaded.data,
+        taxonomy,
+        limit=1,
+        scan_limit=1,
+        output_dir=output,
+        config_hash=loaded.sha256,
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=loaded.path.parent,
+        progress_stream=io.StringIO(),
+    )
+
+    assert result["raw_read_count"] == 1
+
+
 def test_hugging_face_relevance_uses_body_not_only_title(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
