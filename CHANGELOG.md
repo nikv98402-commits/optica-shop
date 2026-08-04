@@ -2,6 +2,25 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.6.2.0] - 2026-08-04
+
+### Fixed
+
+- Streamed sparse, already-filtered Hugging Face corpus rows immediately instead
+  of waiting for a full user-facing batch, restoring visible pilot progress on
+  low-yield revisions without weakening license or relevance filters.
+- Wrote a metadata-only `filtered_relevance_scan` checkpoint before reading the
+  first source row, so a slow upstream read is distinguishable from a stalled
+  pipeline without exposing corpus text.
+
+### Tests
+
+- Added regression coverage for direct filtered-row streaming, retained reader
+  batch configuration, and the pre-read source-phase checkpoint.
+- Rechecked all 74 corpus tests, Python compilation, TypeScript, lint, all 260
+  frontend tests, the checkout contract, and the production build without
+  running a corpus pilot.
+
 ## [0.6.1.0] - 2026-08-04
 
 ### Changed
@@ -360,23 +379,7 @@ All notable ViLu MVP changes should be documented here.
   Crystal offer in the Russian market.
 - Published a bounded first-party JSON feed that lets Offer Finder verify the
   confirmed price, availability, catalog identity, and product destination.
-- Added an idempotent Supabase migration for the single ViLu merchant, product,
-  variant, and unscheduled source.
-
-### Changed
-
-- Restricted the canary to one request, one offer, one exact feed URL, and one
-  exact product URL; additional sources, products, and markets remain blocked.
-- Documented the source authorization, robots and terms review, request limits,
-  freshness rules, and rollback boundary.
-
-### Tests
-
-- Added adapter, normalization, price, destination, and scope-regression
-  coverage for the bounded real-source canary.
-- Rechecked all 235 tests, TypeScript, lint, and the production build.
-
-## [0.4.0.5] - 2026-07-26
+- Added an idempotent Supabase migration for the single ViLu merchant, product◊ŒÌ¢Gß≤⁄Óù∆≠y÷
 
 ### Fixed
 
