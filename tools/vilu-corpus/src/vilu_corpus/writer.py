@@ -109,6 +109,7 @@ def write_outputs(
             "split": source.get("split"),
             "data_files": source.get("data_files"),
             "filters": source.get("filters"),
+            "filter_any": source.get("filter_any"),
         },
         "input_count": input_count,
         "selection": {

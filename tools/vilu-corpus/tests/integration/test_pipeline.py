@@ -98,6 +98,7 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
         "path": str(fixture),
         "data_files": {"train": "common_corpus_*/*.parquet"},
         "filters": [["language", "in", ["English", "Russian"]]],
+        "filter_any": [["date", ">=", 2015], ["date", "in", [None]]],
         "required_fields": REQUIRED_FIELDS,
     }
     first = tmp_path / "first"
@@ -135,6 +136,10 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
     }
     assert first_manifest["source"]["filters"] == [
         ["language", "in", ["English", "Russian"]]
+    ]
+    assert first_manifest["source"]["filter_any"] == [
+        ["date", ">=", 2015],
+        ["date", "in", [None]],
     ]
     assert first_manifest == second_manifest
 
@@ -471,6 +476,53 @@ def test_build_emits_progress_and_metadata_only_checkpoint(tmp_path: Path) -> No
     assert "Myopia clinical evidence supports" not in checkpoint_text
     assert '"raw_read_count":2' in progress.getvalue()
     assert '"status":"complete"' in progress.getvalue()
+
+
+def test_build_persists_checkpoint_at_every_progress_interval(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = tmp_path / "progress-checkpoint.jsonl"
+    rows = [record(f"checkpoint-{index}") for index in range(3)]
+    with fixture.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row) + "\n")
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["source"] = {
+        "kind": "fixture",
+        "path": str(fixture),
+        "required_fields": REQUIRED_FIELDS,
+    }
+    output = tmp_path / "progress-checkpoint-output"
+    persisted: list[dict[str, object]] = []
+    write_checkpoint = cli_module._write_checkpoint
+
+    def capture_checkpoint(output_dir: Path, payload: dict[str, object]) -> None:
+        persisted.append(deepcopy(payload))
+        write_checkpoint(output_dir, payload)
+
+    monkeypatch.setattr(cli_module, "_write_checkpoint", capture_checkpoint)
+
+    build_run(
+        config,
+        taxonomy,
+        limit=3,
+        scan_limit=3,
+        output_dir=output,
+        config_hash=canonical_hash(config),
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=tmp_path,
+        progress_every=2,
+        checkpoint_every=5,
+        progress_stream=io.StringIO(),
+    )
+
+    assert any(
+        item["status"] == "running" and item["raw_read_count"] == 2
+        for item in persisted
+    )
 
 
 def test_hugging_face_build_uses_one_filtered_full_text_scan(

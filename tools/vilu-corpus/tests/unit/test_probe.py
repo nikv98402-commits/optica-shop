@@ -48,7 +48,7 @@ def test_pinned_source_enumerates_all_shards_and_pushes_safe_filters() -> None:
 
     assert kwargs["revision"] == "ff9892ec787101ec881b2da279ed349085657aaf"
     assert kwargs["data_files"] == {"train": "common_corpus_*/*.parquet"}
-    assert kwargs["filters"] == [
+    base_filters = [
         ("open_type", "in", ["Open Science", "OpenScience"]),
         ("language", "in", ["English", "Russian"]),
         (
@@ -64,6 +64,10 @@ def test_pinned_source_enumerates_all_shards_and_pushes_safe_filters() -> None:
         ),
         ("word_count", ">=", 300),
         ("word_count", "<=", 200000),
+    ]
+    assert kwargs["filters"] == [
+        [*base_filters, ("date", ">=", 2015)],
+        [*base_filters, ("date", "in", [None])],
     ]
     assert kwargs["streaming"] is True
 
@@ -232,7 +236,88 @@ def test_pinned_loader_preserves_undated_records_for_downstream_review(
 
     assert list(iter_source(source, columns=["identifier", "date"])) == [undated_record]
     pushed_filters = calls[0][1]["filters"]
-    assert all(raw_filter[0] != "date" for raw_filter in pushed_filters)
+    assert any(("date", "in", [None]) in branch for branch in pushed_filters)
+    assert any(("date", ">=", 2015) in branch for branch in pushed_filters)
+
+
+def test_hugging_face_batch_size_uses_dataset_batch_iterator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[object] = []
+
+    class BatchedDataset:
+        def __iter__(self):
+            calls.append("row-iterator")
+            raise AssertionError("row iterator must not be used for bounded batches")
+
+        def iter(self, batch_size: int):
+            calls.append(("batch-iterator", batch_size))
+            yield {
+                "identifier": ["first", "second"],
+                "title": ["Myopia", "Astigmatism"],
+            }
+
+    monkeypatch.setitem(
+        sys.modules,
+        "datasets",
+        SimpleNamespace(load_dataset=lambda *args, **kwargs: BatchedDataset()),
+    )
+    source = {
+        "kind": "huggingface",
+        "repository": "owner/dataset",
+        "revision": "a" * 40,
+        "required_fields": ["identifier", "title"],
+    }
+
+    assert list(iter_source(source, batch_size=2)) == [
+        {"identifier": "first", "title": "Myopia"},
+        {"identifier": "second", "title": "Astigmatism"},
+    ]
+    assert calls == [("batch-iterator", 2)]
+
+
+def test_hugging_face_additional_filters_apply_to_every_or_branch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    def load_dataset(repository: str, **kwargs: object) -> list[dict[str, str]]:
+        del repository
+        calls.append(kwargs)
+        return [{"identifier": "safe-id"}]
+
+    monkeypatch.setitem(
+        sys.modules,
+        "datasets",
+        SimpleNamespace(load_dataset=load_dataset),
+    )
+    source = {
+        "kind": "huggingface",
+        "repository": "owner/dataset",
+        "revision": "a" * 40,
+        "filters": [["language", "==", "English"]],
+        "filter_any": [["date", ">=", 2015], ["date", "in", [None]]],
+        "required_fields": ["identifier", "language", "date"],
+    }
+
+    assert list(
+        iter_source(
+            source,
+            additional_filters=[["identifier", "in", ["safe-id"]]],
+        )
+    ) == [{"identifier": "safe-id"}]
+    assert calls[0]["filters"] == [
+        [
+            ("language", "==", "English"),
+            ("date", ">=", 2015),
+            ("identifier", "in", ["safe-id"]),
+        ],
+        [
+            ("language", "==", "English"),
+            ("date", "in", [None]),
+            ("identifier", "in", ["safe-id"]),
+        ],
+    ]
 
 
 def test_hugging_face_loader_projects_columns_and_adds_hydration_filter(
@@ -296,10 +381,16 @@ def test_probe_reports_selection_metadata_without_document_text(tmp_path: Path) 
             "path": str(fixture),
             "data_files": {"train": "common_corpus_*/*.parquet"},
             "filters": [["language", "==", "English"]],
+            "filter_any": [["date", ">=", 2015], ["date", "in", [None]]],
             "required_fields": ["identifier", "text"],
         }
     )
 
     assert result["data_files"] == {"train": "common_corpus_*/*.parquet"}
-    assert result["filter_fields"] == ["language"]
+    assert result["filters"] == [["language", "==", "English"]]
+    assert result["filter_any"] == [
+        ["date", ">=", 2015],
+        ["date", "in", [None]],
+    ]
+    assert result["filter_fields"] == ["date", "language"]
     assert "SECRET FULL TEXT" not in json.dumps(result)
