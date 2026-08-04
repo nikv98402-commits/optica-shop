@@ -2,6 +2,25 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.6.2.0] - 2026-08-04
+
+### Fixed
+
+- Streamed sparse, already-filtered Hugging Face corpus rows immediately instead
+  of waiting for a full user-facing batch, restoring visible pilot progress on
+  low-yield revisions without weakening license or relevance filters.
+- Wrote a metadata-only `filtered_relevance_scan` checkpoint before reading the
+  first source row, so a slow upstream read is distinguishable from a stalled
+  pipeline without exposing corpus text.
+
+### Tests
+
+- Added regression coverage for direct filtered-row streaming, retained reader
+  batch configuration, and the pre-read source-phase checkpoint.
+- Rechecked all 74 corpus tests, Python compilation, TypeScript, lint, all 260
+  frontend tests, the checkout contract, and the production build without
+  running a corpus pilot.
+
 ## [0.6.1.0] - 2026-08-04
 
 ### Changed
