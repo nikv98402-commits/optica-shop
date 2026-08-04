@@ -240,7 +240,7 @@ def test_pinned_loader_preserves_undated_records_for_downstream_review(
     assert any(("date", ">=", 2015) in branch for branch in pushed_filters)
 
 
-def test_hugging_face_batch_size_uses_dataset_batch_iterator(
+def test_hugging_face_batch_size_configures_reader_without_buffering_rows(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls: list[object] = []
@@ -248,19 +248,24 @@ def test_hugging_face_batch_size_uses_dataset_batch_iterator(
     class BatchedDataset:
         def __iter__(self):
             calls.append("row-iterator")
-            raise AssertionError("row iterator must not be used for bounded batches")
+            yield {"identifier": "first", "title": "Myopia"}
+            yield {"identifier": "second", "title": "Astigmatism"}
 
         def iter(self, batch_size: int):
-            calls.append(("batch-iterator", batch_size))
-            yield {
-                "identifier": ["first", "second"],
-                "title": ["Myopia", "Astigmatism"],
-            }
+            del batch_size
+            raise AssertionError("filtered rows must not be hidden behind a full batch")
+
+    loader_calls: list[dict[str, object]] = []
+
+    def load_dataset(*args: object, **kwargs: object) -> BatchedDataset:
+        del args
+        loader_calls.append(kwargs)
+        return BatchedDataset()
 
     monkeypatch.setitem(
         sys.modules,
         "datasets",
-        SimpleNamespace(load_dataset=lambda *args, **kwargs: BatchedDataset()),
+        SimpleNamespace(load_dataset=load_dataset),
     )
     source = {
         "kind": "huggingface",
@@ -273,7 +278,8 @@ def test_hugging_face_batch_size_uses_dataset_batch_iterator(
         {"identifier": "first", "title": "Myopia"},
         {"identifier": "second", "title": "Astigmatism"},
     ]
-    assert calls == [("batch-iterator", 2)]
+    assert loader_calls[0]["batch_size"] == 2
+    assert calls == ["row-iterator"]
 
 
 def test_hugging_face_additional_filters_apply_to_every_or_branch(

@@ -191,6 +191,21 @@ def build_run(
                 "columns": required_fields,
                 "batch_size": int(bounded["metadata_batch_size"]),
             }
+            _write_checkpoint(
+                output_dir,
+                _checkpoint_payload(
+                    status="running",
+                    raw_read_count=raw_read_count,
+                    scan_limit=scan_limit,
+                    candidate_count=len(decisions),
+                    candidate_limit=limit,
+                    decisions=decisions,
+                    rejected_count=len(selection_rejected),
+                    prefilter_reasons=prefilter_reasons,
+                    elapsed_seconds=0.0,
+                    phase=phase,
+                ),
+            )
 
         for mapping in islice(iter_source(source, **source_options), scan_limit):
             raw_read_count += 1
