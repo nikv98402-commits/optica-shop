@@ -104,6 +104,8 @@ def validate_run(
             "prefilter_skipped_count": stats["prefilter_skipped_count"],
             "prefilter_reasons": stats["prefilter_reasons"],
             "source_exhausted": stats["source_exhausted"],
+            # Older protected artifacts predate this explicit diagnostic.
+            "scan_limit_reached": stats.get("scan_limit_reached", False),
             "downstream_reasons": stats["downstream_reasons"],
         },
     }

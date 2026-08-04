@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import time
 from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
@@ -118,6 +119,7 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
         "raw_read_count": 7,
         "input_count": 5,
         "source_exhausted": False,
+        "scan_limit_reached": True,
         "prefilter_skipped_count": 2,
         "accepted_count": 2,
         "review_count": 2,
@@ -127,7 +129,7 @@ def test_bounded_pipeline_is_deterministic_and_valid(tmp_path: Path) -> None:
     }
     first_manifest = json.loads((first / "manifest.json").read_text(encoding="utf-8"))
     second_manifest = json.loads((second / "manifest.json").read_text(encoding="utf-8"))
-    assert first_manifest["pipeline_version"] == "2"
+    assert first_manifest["pipeline_version"] == "3"
     assert first_manifest["source"]["data_files"] == {
         "train": "common_corpus_*/*.parquet"
     }
@@ -195,6 +197,7 @@ def test_limit_applies_after_deterministic_prefilter_with_strict_scan_bound(
         "candidate_limit": 1,
         "candidate_count": 1,
         "source_exhausted": False,
+        "scan_limit_reached": False,
         "prefilter_skipped_count": 3,
         "prefilter_reasons": {
             "before_min_year": 1,
@@ -388,6 +391,7 @@ def test_pinned_representative_sample_preserves_review_and_downstream_diagnostic
         "raw_read_count": 8,
         "input_count": 5,
         "source_exhausted": False,
+        "scan_limit_reached": True,
         "prefilter_skipped_count": 3,
         "accepted_count": 2,
         "review_count": 3,
@@ -469,15 +473,501 @@ def test_build_emits_progress_and_metadata_only_checkpoint(tmp_path: Path) -> No
     assert '"status":"complete"' in progress.getvalue()
 
 
+def test_hugging_face_build_uses_one_filtered_full_text_scan(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    calls: list[dict[str, object]] = []
+    unrelated = record(
+        "unrelated",
+        title="Catalysis methods",
+        text="SECRET IRRELEVANT FULL TEXT " * 5000,
+    )
+    relevant = record("relevant", title="Myopia and eye screening")
+
+    def fake_source(
+        source: dict[str, object],
+        *,
+        columns: list[str] | None = None,
+        additional_filters: list[list[object]] | None = None,
+        batch_size: int | None = None,
+    ):
+        del source
+        calls.append(
+            {
+                "columns": columns,
+                "additional_filters": additional_filters,
+                "batch_size": batch_size,
+            }
+        )
+        assert columns and "text" in columns
+        assert additional_filters is None
+        yield unrelated
+        yield relevant
+
+    monkeypatch.setattr(cli_module, "iter_source", fake_source)
+    output = tmp_path / "single-pass"
+    result = build_run(
+        config,
+        taxonomy,
+        limit=1,
+        scan_limit=2,
+        output_dir=output,
+        config_hash=loaded.sha256,
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=loaded.path.parent,
+        progress_stream=io.StringIO(),
+    )
+
+    assert result["accepted_count"] == 1
+    assert result["raw_read_count"] == 2
+    assert len(calls) == 1
+    assert "text" in calls[0]["columns"]
+    assert calls[0]["additional_filters"] is None
+    assert "SECRET IRRELEVANT FULL TEXT" not in (
+        output / "checkpoint.json"
+    ).read_text(encoding="utf-8")
+
+
+def test_hugging_face_relevance_uses_body_not_only_title(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    body_only = record(
+        "body-only",
+        title="Longitudinal cohort report",
+        text=(
+            "Myopia clinical evidence supports vision screening and refractive "
+            "correction. "
+        )
+        * 55,
+    )
+
+    def fake_source(source: dict[str, object], **kwargs: object):
+        del source
+        assert "text" in kwargs["columns"]
+        yield body_only
+
+    monkeypatch.setattr(cli_module, "iter_source", fake_source)
+    result = build_run(
+        config,
+        taxonomy,
+        limit=1,
+        scan_limit=1,
+        output_dir=tmp_path / "body-relevance",
+        config_hash=loaded.sha256,
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=loaded.path.parent,
+        progress_stream=io.StringIO(),
+    )
+
+    assert result["accepted_count"] == 1
+    assert result["raw_read_count"] == 1
+
+
+def test_hugging_face_scan_backfills_after_rejected_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    rows = [
+        record(
+            "unrelated-a",
+            title="Catalysis methods",
+            text="Synthetic chemistry evidence and laboratory methods. " * 70,
+        ),
+        record(
+            "unrelated-b",
+            title="Mechanical systems",
+            text="Engineering systems and manufacturing methods. " * 70,
+        ),
+        record("relevant-a"),
+        record(
+            "relevant-b",
+            title="Refractive error screening",
+            text=(
+                "Astigmatism eye examination evidence supports ophthalmic screening "
+                "and spectacle correction. "
+            )
+            * 55,
+        ),
+    ]
+
+    def fake_source(source: dict[str, object], **kwargs: object):
+        del source, kwargs
+        yield from rows
+
+    monkeypatch.setattr(cli_module, "iter_source", fake_source)
+    result = build_run(
+        config,
+        taxonomy,
+        limit=2,
+        scan_limit=4,
+        output_dir=tmp_path / "backfill",
+        config_hash=loaded.sha256,
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=loaded.path.parent,
+        progress_stream=io.StringIO(),
+    )
+
+    assert result["accepted_count"] == 2
+    assert result["rejected_count"] == 2
+    assert result["raw_read_count"] == 4
+    assert result["source_exhausted"] is False
+
+
+def test_reachability_counts_review_as_candidate_but_not_accepted(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["pipeline"]["bounded_selection"]["forecast_after"] = 2
+    config["pipeline"]["bounded_selection"]["min_accepted"] = 1
+    rows = [
+        record("review", license="Unverified custom license"),
+        record("accepted"),
+    ]
+
+    def fake_source(source: dict[str, object], **kwargs: object):
+        del source, kwargs
+        yield from rows
+
+    monkeypatch.setattr(cli_module, "iter_source", fake_source)
+    output = tmp_path / "review-reachability"
+    result = build_run(
+        config,
+        taxonomy,
+        limit=2,
+        scan_limit=2,
+        output_dir=output,
+        config_hash=loaded.sha256,
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=loaded.path.parent,
+        progress_stream=io.StringIO(),
+    )
+
+    checkpoint = json.loads((output / "checkpoint.json").read_text(encoding="utf-8"))
+    assert result["accepted_count"] == 1
+    assert result["review_count"] == 1
+    assert checkpoint["reachability"]["candidate_reachable_by_scan"] is True
+    assert checkpoint["reachability"]["accepted_reachable_by_scan"] is True
+
+
+def test_filtered_full_text_scan_has_linear_bounded_throughput(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["pipeline"]["bounded_selection"]["forecast_after"] = 2000
+    unrelated = [
+        record(
+            f"unrelated-{index}",
+            title="Catalysis methods",
+            text="Synthetic chemistry evidence and laboratory methods. " * 70,
+        )
+        for index in range(1000)
+    ]
+    relevant = record("relevant", title="Myopia and eye screening")
+
+    def fake_source(
+        source: dict[str, object],
+        *,
+        columns: list[str] | None = None,
+        additional_filters: list[list[object]] | None = None,
+        batch_size: int | None = None,
+    ):
+        del source, batch_size
+        assert columns and "text" in columns
+        assert additional_filters is None
+        yield from [*unrelated, relevant]
+
+    monkeypatch.setattr(cli_module, "iter_source", fake_source)
+    started_at = time.perf_counter()
+    result = build_run(
+        config,
+        taxonomy,
+        limit=1,
+        scan_limit=1001,
+        output_dir=tmp_path / "performance-contract",
+        config_hash=loaded.sha256,
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=loaded.path.parent,
+        progress_stream=io.StringIO(),
+    )
+    elapsed_seconds = time.perf_counter() - started_at
+
+    assert result["accepted_count"] == 1
+    assert result["raw_read_count"] == 1001
+    assert 1001 / elapsed_seconds >= 100
+
+
+def test_low_yield_fails_at_hard_scan_bound_with_reachability_diagnosis(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["pipeline"]["bounded_selection"]["forecast_after"] = 10
+    config["pipeline"]["bounded_selection"]["min_accepted"] = 0
+    rows = [
+        record(
+            f"unrelated-{index}",
+            title="Catalysis methods",
+            text="Synthetic chemistry evidence and laboratory methods. " * 70,
+        )
+        for index in range(20)
+    ]
+
+    def filtered_rows(
+        source: dict[str, object],
+        *,
+        columns: list[str] | None = None,
+        additional_filters: list[list[object]] | None = None,
+        batch_size: int | None = None,
+    ):
+        del source, additional_filters, batch_size
+        assert columns and "text" in columns
+        for row in rows:
+            yield row
+
+    monkeypatch.setattr(cli_module, "iter_source", filtered_rows)
+    output = tmp_path / "unreachable"
+
+    with pytest.raises(
+        cli_module.ReachabilityError,
+        match="candidate_target_unreachable_within_scan_limit",
+    ):
+        build_run(
+            config,
+            taxonomy,
+            limit=10,
+            scan_limit=20,
+            output_dir=output,
+            config_hash=loaded.sha256,
+            taxonomy_hash=canonical_hash(taxonomy),
+            config_dir=loaded.path.parent,
+            progress_every=1000,
+            checkpoint_every=5,
+            progress_stream=io.StringIO(),
+        )
+
+    checkpoint = json.loads((output / "checkpoint.json").read_text(encoding="utf-8"))
+    assert checkpoint["status"] == "failed"
+    assert checkpoint["error_type"] == "ReachabilityError"
+    assert checkpoint["reachability"]["candidate_reachable_by_scan"] is False
+    assert checkpoint["reachability"]["sample_size"] == 15
+
+
+def test_statistical_low_yield_warning_does_not_abort_late_success(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["pipeline"]["bounded_selection"]["forecast_after"] = 10
+    config["pipeline"]["bounded_selection"]["confidence_z"] = 0.1
+    config["pipeline"]["bounded_selection"]["min_accepted"] = 1
+    rows = [
+        record(
+            f"unrelated-{index}",
+            title="Catalysis methods",
+            text="Synthetic chemistry evidence and laboratory methods. " * 70,
+        )
+        for index in range(10)
+    ] + [record("late-relevant")]
+
+    def filtered_rows(source: dict[str, object], **kwargs: object):
+        del source, kwargs
+        yield from rows
+
+    monkeypatch.setattr(cli_module, "iter_source", filtered_rows)
+    output = tmp_path / "late-yield"
+
+    result = build_run(
+        config,
+        taxonomy,
+        limit=1,
+        scan_limit=11,
+        output_dir=output,
+        config_hash=loaded.sha256,
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=loaded.path.parent,
+        progress_every=10,
+        checkpoint_every=10,
+        progress_stream=io.StringIO(),
+    )
+
+    assert result["accepted_count"] == 1
+    assert result["raw_read_count"] == 11
+
+
+def test_statistical_low_yield_remains_diagnostic_after_multiple_forecasts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["pipeline"]["bounded_selection"].update(
+        {
+            "forecast_after": 100,
+            "min_accepted": 1,
+        }
+    )
+    rows = [
+        record(
+            f"unrelated-{index}",
+            title="Catalysis methods",
+            text="Synthetic chemistry evidence and laboratory methods. " * 70,
+        )
+        for index in range(200)
+    ] + [record("late-relevant")]
+
+    def filtered_rows(source: dict[str, object], **kwargs: object):
+        del source, kwargs
+        yield from rows
+
+    monkeypatch.setattr(cli_module, "iter_source", filtered_rows)
+    output = tmp_path / "statistical-diagnostic"
+
+    result = build_run(
+        config,
+        taxonomy,
+        limit=1,
+        scan_limit=201,
+        output_dir=output,
+        config_hash=loaded.sha256,
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=loaded.path.parent,
+        progress_every=100,
+        checkpoint_every=100,
+        progress_stream=io.StringIO(),
+    )
+
+    assert result["accepted_count"] == 1
+    assert result["raw_read_count"] == 201
+
+
+def test_reachability_projection_covers_scan_and_runtime_limits() -> None:
+    projection = cli_module._reachability_projection(
+        raw_read_count=7000,
+        candidate_count=47,
+        accepted_proxy_count=6,
+        candidate_target=1000,
+        accepted_target=100,
+        scan_limit=100000,
+        elapsed_seconds=4511.978,
+        runtime_budget_seconds=4200,
+        confidence_z=2.576,
+    )
+
+    assert projection["candidate_reachable_by_scan"] is True
+    assert projection["reachable_by_runtime"] is False
+    assert projection["projected_total_seconds"] > 4200
+    assert projection["reason_codes"] == ["targets_unreachable_within_runtime_budget"]
+    assert (
+        "candidate_target_statistically_unlikely_within_scan_limit"
+        in projection["warning_codes"]
+    )
+
+
+def test_build_enforces_runtime_budget_before_forecast_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["pipeline"]["bounded_selection"].update(
+        {
+            "forecast_after": 500,
+            "min_accepted": 1,
+            "runtime_budget_seconds": 1,
+        }
+    )
+
+    def filtered_rows(source: dict[str, object], **kwargs: object):
+        del source, kwargs
+        yield record(
+            "slow-unrelated",
+            title="Catalysis methods",
+            text="Synthetic chemistry evidence and laboratory methods. " * 70,
+        )
+
+    clock = iter((0.0, 2.0, 2.1))
+    monkeypatch.setattr(cli_module, "iter_source", filtered_rows)
+    monkeypatch.setattr(cli_module.time, "monotonic", lambda: next(clock))
+    output = tmp_path / "runtime-before-forecast"
+
+    with pytest.raises(cli_module.ReachabilityError):
+        build_run(
+            config,
+            taxonomy,
+            limit=10,
+            scan_limit=1000,
+            output_dir=output,
+            config_hash=loaded.sha256,
+            taxonomy_hash=canonical_hash(taxonomy),
+            config_dir=loaded.path.parent,
+            progress_stream=io.StringIO(),
+        )
+
+    checkpoint = json.loads((output / "checkpoint.json").read_text(encoding="utf-8"))
+    assert checkpoint["status"] == "failed"
+    assert checkpoint["raw_read_count"] == 1
+    assert checkpoint["reachability"]["reason_codes"] == [
+        "targets_unreachable_within_runtime_budget"
+    ]
+
+
+def test_bounded_selection_policy_uses_defaults_and_validates_overrides() -> None:
+    config = {"pipeline": {}}
+
+    assert cli_module._bounded_selection_policy(config) == {
+        "metadata_batch_size": 128,
+        "forecast_after": 500,
+        "min_accepted": 100,
+        "runtime_budget_seconds": 4200.0,
+        "confidence_z": 2.576,
+    }
+
+    config["pipeline"]["bounded_selection"] = {"metadata_batch_size": 0}
+    with pytest.raises(ValueError, match="metadata_batch_size must be greater than zero"):
+        cli_module._bounded_selection_policy(config)
+
+    config["pipeline"]["bounded_selection"] = "invalid"
+    with pytest.raises(ValueError, match="must be a mapping"):
+        cli_module._bounded_selection_policy(config)
+
+
 def test_build_preserves_checkpoint_when_source_fails(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     rows = [record("before-failure"), record("also-before-failure")]
 
-    def failing_source(source: dict[str, object]):
+    def failing_source(source: dict[str, object], **kwargs: object):
         del source
-        yield from rows
+        columns = kwargs.get("columns")
+        for row in rows:
+            if isinstance(columns, list):
+                yield {key: value for key, value in row.items() if key in columns}
+            else:
+                yield row
         raise RuntimeError("SECRET upstream response")
 
     monkeypatch.setattr(cli_module, "iter_source", failing_source)
@@ -513,7 +1003,7 @@ def test_build_marks_checkpoint_failed_when_source_is_empty(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(cli_module, "iter_source", lambda source: iter(()))
+    monkeypatch.setattr(cli_module, "iter_source", lambda source, **kwargs: iter(()))
     loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
     taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
     output = tmp_path / "empty-output"
@@ -548,6 +1038,17 @@ def test_build_marks_checkpoint_failed_when_output_write_fails(
         del args, kwargs
         raise RuntimeError("SECRET document payload")
 
+    source_row = record("write-failure")
+
+    def bounded_source(source: dict[str, object], **kwargs: object):
+        del source
+        columns = kwargs.get("columns")
+        if isinstance(columns, list):
+            yield {key: value for key, value in source_row.items() if key in columns}
+        else:
+            yield source_row
+
+    monkeypatch.setattr(cli_module, "iter_source", bounded_source)
     monkeypatch.setattr(cli_module, "write_outputs", failing_write_outputs)
 
     with pytest.raises(RuntimeError, match="SECRET document payload"):
@@ -627,6 +1128,51 @@ def test_exhausted_source_and_missing_identifier_remain_diagnosable(
     aggregate = load_report(output)
     assert aggregate["validation"]["valid"] is False
     assert aggregate["validation"]["diagnostics"]["source_exhausted"] is True
+    assert aggregate["validation"]["diagnostics"]["scan_limit_reached"] is False
+
+
+def test_scan_limit_boundary_is_not_reported_as_source_exhaustion(
+    tmp_path: Path,
+) -> None:
+    fixture = tmp_path / "scan-limit-records.jsonl"
+    with fixture.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(record("accepted-at-boundary")) + "\n")
+        handle.write(
+            json.dumps(
+                record(
+                    "rejected-at-boundary",
+                    title="Catalysis methods",
+                    text="Synthetic chemistry evidence and laboratory methods. " * 70,
+                )
+            )
+            + "\n"
+        )
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["source"] = {
+        "kind": "fixture",
+        "path": str(fixture),
+        "required_fields": REQUIRED_FIELDS,
+    }
+    output = tmp_path / "scan-limit-boundary"
+
+    result = build_run(
+        config,
+        taxonomy,
+        limit=2,
+        scan_limit=2,
+        output_dir=output,
+        config_hash=canonical_hash(config),
+        taxonomy_hash=canonical_hash(taxonomy),
+        config_dir=tmp_path,
+    )
+
+    assert result["source_exhausted"] is False
+    assert result["scan_limit_reached"] is True
+    stats = json.loads((output / "stats.json").read_text(encoding="utf-8"))
+    assert stats["source_exhausted"] is False
+    assert stats["scan_limit_reached"] is True
 
 
 def test_out_of_taxonomy_ophthalmic_context_is_aggregated_without_acceptance(

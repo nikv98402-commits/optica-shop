@@ -116,6 +116,29 @@ fails, so aggregate diagnostics and review/rejected evidence are not lost.
   policy.
 - `configs/taxonomy.yaml` owns RU/EN ophthalmology topics and terms.
 
+### Bounded selection policy
+
+`pipeline.bounded_selection` controls the bounded Hugging Face scan:
+
+- `metadata_batch_size` sets the requested source batch size;
+- `forecast_after` delays reachability diagnostics until enough records have
+  been scanned;
+- `min_accepted` defines the accepted-document target used by the acceptance
+  contract;
+- `runtime_budget_seconds` is the exact wall-clock limit for unfinished
+  selection;
+- `confidence_z` controls statistical yield projections used for diagnostics
+  only.
+
+Language, open-science, exact-license and configured word-count predicates are
+pushed upstream and then rechecked locally. Checkpoints expose a `reachability`
+block that separates exact terminal `reason_codes` from statistical
+`warning_codes`. Only an impossible remaining-record count, an exhausted
+runtime budget or the final hard scan bound can stop selection; yield forecasts
+never terminate the deterministic stream because valid licensed documents may
+occur in a later cluster. Run statistics distinguish source exhaustion from
+`scan_limit_reached`.
+
 Taxonomy matching is fail-closed:
 
 - add approved clinical aliases to a topic's `include` list;

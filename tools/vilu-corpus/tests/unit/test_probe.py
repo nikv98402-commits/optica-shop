@@ -62,6 +62,8 @@ def test_pinned_source_enumerates_all_shards_and_pushes_safe_filters() -> None:
                 "Public Domain",
             ],
         ),
+        ("word_count", ">=", 300),
+        ("word_count", "<=", 200000),
     ]
     assert kwargs["streaming"] is True
 
@@ -206,6 +208,76 @@ def test_hugging_face_loader_receives_exact_bounded_selection(
                 "streaming": True,
                 "data_files": {"train": "common_corpus_*/*.parquet"},
                 "filters": [("language", "in", ["English", "Russian"])],
+            },
+        )
+    ]
+
+
+def test_pinned_loader_preserves_undated_records_for_downstream_review(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+    undated_record = {"identifier": "undated-safe-id", "date": None}
+
+    def load_dataset(repository: str, **kwargs: object) -> list[dict[str, object]]:
+        calls.append((repository, kwargs))
+        return [undated_record]
+
+    monkeypatch.setitem(
+        sys.modules,
+        "datasets",
+        SimpleNamespace(load_dataset=load_dataset),
+    )
+    source = load_config(MODULE_ROOT / "configs" / "corpus.yaml").source
+
+    assert list(iter_source(source, columns=["identifier", "date"])) == [undated_record]
+    pushed_filters = calls[0][1]["filters"]
+    assert all(raw_filter[0] != "date" for raw_filter in pushed_filters)
+
+
+def test_hugging_face_loader_projects_columns_and_adds_hydration_filter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    def load_dataset(repository: str, **kwargs: object) -> list[dict[str, str]]:
+        calls.append((repository, kwargs))
+        return [{"identifier": "safe-id", "title": "Myopia"}]
+
+    monkeypatch.setitem(
+        sys.modules,
+        "datasets",
+        SimpleNamespace(load_dataset=load_dataset),
+    )
+    source = {
+        "kind": "huggingface",
+        "repository": "owner/dataset",
+        "revision": "a" * 40,
+        "filters": [["date", ">=", 2015]],
+        "required_fields": ["identifier", "title", "text", "date"],
+    }
+
+    assert list(
+        iter_source(
+            source,
+            columns=["identifier", "title", "date"],
+            additional_filters=[["identifier", "in", ["safe-id"]]],
+            batch_size=128,
+        )
+    ) == [{"identifier": "safe-id", "title": "Myopia"}]
+    assert calls == [
+        (
+            "owner/dataset",
+            {
+                "split": "train",
+                "revision": "a" * 40,
+                "streaming": True,
+                "filters": [
+                    ("date", ">=", 2015),
+                    ("identifier", "in", ["safe-id"]),
+                ],
+                "columns": ["identifier", "title", "date"],
+                "batch_size": 128,
             },
         )
     ]

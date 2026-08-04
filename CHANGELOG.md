@@ -2,6 +2,38 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.6.0.0] - 2026-08-04
+
+### Changed
+
+- Reworked bounded Common Corpus selection to push safe metadata predicates
+  into the pinned Parquet scan, project only required columns, and process
+  records in bounded batches while preserving deterministic ordering.
+- Kept the full ophthalmology relevance check as a compiled single-pass matcher
+  and added continuous runtime, scan-limit, progress, and metadata-only
+  checkpoint diagnostics for long acceptance runs.
+- Added accepted-yield and candidate-yield forecasts as diagnostic warnings;
+  only exact scan and runtime bounds can terminate selection, so a late cluster
+  of valid licensed documents remains eligible.
+- Preserved undated otherwise-valid records for manual review instead of
+  rejecting them before downstream policy checks.
+
+### Fixed
+
+- Prevented low-yield statistical forecasts from aborting a deterministic scan
+  that can still reach its acceptance target within the configured exact bounds.
+- Hardened reachability reporting so failures retain aggregate reason codes and
+  safe checkpoint metadata without publishing document text.
+
+### Tests
+
+- Added regression coverage for strict license and language filtering, pushed
+  Parquet predicates, batched scanning, low-yield diagnostics, late-cluster
+  success, exact scan/runtime exhaustion, progress checkpoints, deterministic
+  output, and protected artifact boundaries.
+- Rechecked 70 corpus tests, Python compilation, TypeScript, lint, all 260
+  frontend tests, and the production build without running a corpus pilot.
+
 ## [0.5.7.0] - 2026-08-03
 
 ### Changed

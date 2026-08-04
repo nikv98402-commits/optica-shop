@@ -1,5 +1,5 @@
 pipeline:
-  version: "2"
+  version: "3"
   min_year: 2015
   min_words: 300
   max_words: 200000
@@ -12,6 +12,12 @@ pipeline:
   relevance:
     accept_score: 3
     review_score: 1
+  bounded_selection:
+    metadata_batch_size: 128
+    forecast_after: 500
+    min_accepted: 100
+    runtime_budget_seconds: 4200
+    confidence_z: 2.576
   chunking:
     max_chars: 2400
     overlap_chars: 240
@@ -32,6 +38,8 @@ source:
     - [open_type, in, [Open Science, OpenScience]]
     - [language, in, [English, Russian]]
     - [license, in, [CC0-1.0, CC-BY-4.0, CC-BY-SA-4.0, PDM-1.0, Public Domain]]
+    - [word_count, ">=", 300]
+    - [word_count, "<=", 200000]
   required_fields:
     - identifier
     - collection

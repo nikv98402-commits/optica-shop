@@ -29,6 +29,7 @@ def write_outputs(
     scan_limit: int,
     candidate_limit: int,
     source_exhausted: bool,
+    scan_limit_reached: bool,
     prefilter_reasons: dict[str, int],
     chunk_config: dict[str, int],
 ) -> dict[str, Any]:
@@ -70,6 +71,7 @@ def write_outputs(
         "prefilter_skipped_count": raw_read_count - input_count,
         "prefilter_reasons": dict(sorted(prefilter_reasons.items())),
         "source_exhausted": source_exhausted,
+        "scan_limit_reached": scan_limit_reached,
         "accepted_count": len(ordered_documents),
         "review_count": len(review),
         "rejected_count": len(rejected),
@@ -115,6 +117,7 @@ def write_outputs(
             "candidate_limit": candidate_limit,
             "candidate_count": input_count,
             "source_exhausted": source_exhausted,
+            "scan_limit_reached": scan_limit_reached,
             "prefilter_skipped_count": raw_read_count - input_count,
             "prefilter_reasons": dict(sorted(prefilter_reasons.items())),
         },
@@ -183,6 +186,7 @@ def write_run_readme(output_dir: Path, stats: dict[str, Any], manifest: dict[str
         f"- Input records: {stats['input_count']}\n"
         f"- Prefiltered before pilot: {stats['prefilter_skipped_count']}\n"
         f"- Source exhausted before candidate limit: {stats['source_exhausted']}\n"
+        f"- Scan limit reached before candidate limit: {stats['scan_limit_reached']}\n"
         f"- Accepted: {stats['accepted_count']}\n"
         f"- Review: {stats['review_count']}\n"
         f"- Rejected: {stats['rejected_count']}\n"
