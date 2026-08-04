@@ -27,9 +27,22 @@ DEFAULT_TAXONOMY = MODULE_ROOT / "configs" / "taxonomy.yaml"
 _BOUNDED_SELECTION_DEFAULTS = {
     "metadata_batch_size": 128,
     "forecast_after": 500,
+    "forecast_failure_confirmations": 2,
     "min_accepted": 100,
     "runtime_budget_seconds": 4200.0,
     "confidence_z": 2.576,
+}
+
+_STATISTICAL_WARNING_TO_REASON = {
+    "candidate_target_statistically_unlikely_within_scan_limit": (
+        "candidate_target_statistically_unreachable_within_scan_limit"
+    ),
+    "accepted_target_statistically_unlikely_within_scan_limit": (
+        "accepted_target_statistically_unreachable_within_scan_limit"
+    ),
+    "targets_statistically_unlikely_within_runtime_budget": (
+        "targets_statistically_unreachable_within_runtime_budget"
+    ),
 }
 
 
@@ -137,6 +150,7 @@ def build_run(
     prefilter_reasons: dict[str, int] = {}
     reached_candidate_limit = False
     reachability: dict[str, Any] | None = None
+    statistical_failure_streak = 0
     phase = "selection"
     started_at = time.monotonic()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -182,7 +196,7 @@ def build_run(
         is_huggingface = source["kind"] == "huggingface"
         source_options: dict[str, Any] = {}
         if is_huggingface:
-            # Cheap license/language/open-science/date/size predicates are pushed
+            # Cheap license/language/open-science/size predicates are pushed
             # into the Parquet scan by the pinned source configuration. Relevance
             # still needs the real document text; rejecting from title-only
             # metadata would create false negatives.
@@ -250,6 +264,28 @@ def build_run(
                         runtime_budget_seconds=float(bounded["runtime_budget_seconds"]),
                         confidence_z=float(bounded["confidence_z"]),
                     )
+                    statistical_warnings = [
+                        code
+                        for code in reachability["warning_codes"]
+                        if code in _STATISTICAL_WARNING_TO_REASON
+                    ]
+                    if statistical_warnings and not reachability["reason_codes"]:
+                        statistical_failure_streak += 1
+                    else:
+                        statistical_failure_streak = 0
+                    reachability["statistical_failure_streak"] = (
+                        statistical_failure_streak
+                    )
+                    reachability["statistical_failure_confirmations"] = int(
+                        bounded["forecast_failure_confirmations"]
+                    )
+                    if statistical_failure_streak >= int(
+                        bounded["forecast_failure_confirmations"]
+                    ):
+                        reachability["reason_codes"].extend(
+                            _STATISTICAL_WARNING_TO_REASON[code]
+                            for code in statistical_warnings
+                        )
 
             payload = _checkpoint_payload(
                 status="running",
@@ -496,7 +532,12 @@ def _bounded_selection_policy(config: dict[str, Any]) -> dict[str, int | float]:
     if not isinstance(raw, dict):
         raise ValueError("pipeline.bounded_selection must be a mapping")
     policy: dict[str, int | float] = {**_BOUNDED_SELECTION_DEFAULTS, **raw}
-    integer_fields = ("metadata_batch_size", "forecast_after", "min_accepted")
+    integer_fields = (
+        "metadata_batch_size",
+        "forecast_after",
+        "forecast_failure_confirmations",
+        "min_accepted",
+    )
     for field in integer_fields:
         value = policy[field]
         if isinstance(value, bool) or not isinstance(value, int):
@@ -505,6 +546,10 @@ def _bounded_selection_policy(config: dict[str, Any]) -> dict[str, int | float]:
         raise ValueError("pipeline.bounded_selection.metadata_batch_size must be greater than zero")
     if int(policy["forecast_after"]) <= 0:
         raise ValueError("pipeline.bounded_selection.forecast_after must be greater than zero")
+    if int(policy["forecast_failure_confirmations"]) <= 0:
+        raise ValueError(
+            "pipeline.bounded_selection.forecast_failure_confirmations must be greater than zero"
+        )
     if int(policy["min_accepted"]) < 0:
         raise ValueError("pipeline.bounded_selection.min_accepted must be zero or greater")
     for field in ("runtime_budget_seconds", "confidence_z"):

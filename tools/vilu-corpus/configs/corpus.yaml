@@ -15,6 +15,7 @@ pipeline:
   bounded_selection:
     metadata_batch_size: 128
     forecast_after: 500
+    forecast_failure_confirmations: 2
     min_accepted: 100
     runtime_budget_seconds: 4200
     confidence_z: 2.576

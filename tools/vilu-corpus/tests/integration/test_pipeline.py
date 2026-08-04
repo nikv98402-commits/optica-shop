@@ -779,6 +779,7 @@ def test_statistical_low_yield_warning_does_not_abort_late_success(
     taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
     config = deepcopy(loaded.data)
     config["pipeline"]["bounded_selection"]["forecast_after"] = 10
+    config["pipeline"]["bounded_selection"]["confidence_z"] = 0.1
     config["pipeline"]["bounded_selection"]["min_accepted"] = 1
     rows = [
         record(
@@ -812,6 +813,63 @@ def test_statistical_low_yield_warning_does_not_abort_late_success(
 
     assert result["accepted_count"] == 1
     assert result["raw_read_count"] == 11
+
+
+def test_statistical_low_yield_fails_after_consecutive_forecasts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded = load_config(MODULE_ROOT / "configs" / "corpus.yaml")
+    taxonomy = load_taxonomy(MODULE_ROOT / "configs" / "taxonomy.yaml")
+    config = deepcopy(loaded.data)
+    config["pipeline"]["bounded_selection"].update(
+        {
+            "forecast_after": 100,
+            "forecast_failure_confirmations": 2,
+            "min_accepted": 0,
+        }
+    )
+    rows = [
+        record(
+            f"unrelated-{index}",
+            title="Catalysis methods",
+            text="Synthetic chemistry evidence and laboratory methods. " * 70,
+        )
+        for index in range(300)
+    ]
+
+    def filtered_rows(source: dict[str, object], **kwargs: object):
+        del source, kwargs
+        yield from rows
+
+    monkeypatch.setattr(cli_module, "iter_source", filtered_rows)
+    output = tmp_path / "statistically-unreachable"
+
+    with pytest.raises(
+        cli_module.ReachabilityError,
+        match="candidate_target_statistically_unreachable_within_scan_limit",
+    ):
+        build_run(
+            config,
+            taxonomy,
+            limit=100,
+            scan_limit=1000,
+            output_dir=output,
+            config_hash=loaded.sha256,
+            taxonomy_hash=canonical_hash(taxonomy),
+            config_dir=loaded.path.parent,
+            progress_every=100,
+            checkpoint_every=100,
+            progress_stream=io.StringIO(),
+        )
+
+    checkpoint = json.loads((output / "checkpoint.json").read_text(encoding="utf-8"))
+    assert checkpoint["status"] == "failed"
+    assert checkpoint["raw_read_count"] == 200
+    assert checkpoint["reachability"]["statistical_failure_streak"] == 2
+    assert checkpoint["reachability"]["reason_codes"] == [
+        "candidate_target_statistically_unreachable_within_scan_limit"
+    ]
 
 
 def test_reachability_projection_covers_scan_and_runtime_limits() -> None:
@@ -892,6 +950,7 @@ def test_bounded_selection_policy_uses_defaults_and_validates_overrides() -> Non
     assert cli_module._bounded_selection_policy(config) == {
         "metadata_batch_size": 128,
         "forecast_after": 500,
+        "forecast_failure_confirmations": 2,
         "min_accepted": 100,
         "runtime_budget_seconds": 4200.0,
         "confidence_z": 2.576,
@@ -899,6 +958,13 @@ def test_bounded_selection_policy_uses_defaults_and_validates_overrides() -> Non
 
     config["pipeline"]["bounded_selection"] = {"metadata_batch_size": 0}
     with pytest.raises(ValueError, match="metadata_batch_size must be greater than zero"):
+        cli_module._bounded_selection_policy(config)
+
+    config["pipeline"]["bounded_selection"] = {"forecast_failure_confirmations": 0}
+    with pytest.raises(
+        ValueError,
+        match="forecast_failure_confirmations must be greater than zero",
+    ):
         cli_module._bounded_selection_policy(config)
 
     config["pipeline"]["bounded_selection"] = "invalid"
