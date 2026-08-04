@@ -2,6 +2,30 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.6.1.0] - 2026-08-04
+
+### Changed
+
+- Accelerated bounded Common Corpus reads with columnar batches while
+  preserving deterministic row order and the strict scan limit.
+- Pushed the safe `(date >= 2015 OR date is unknown)` predicate into the
+  pinned source scan, retaining undated records for downstream review.
+- Persisted a metadata-only checkpoint at every progress interval so long
+  acceptance runs always leave current, non-sensitive diagnostics.
+
+### Fixed
+
+- Recorded the complete base and alternative source filters in probe output
+  and protected manifest provenance, keeping acceptance artifacts
+  self-describing and reproducible.
+
+### Tests
+
+- Added regression coverage for batched source iteration, composed DNF
+  filters, progress checkpoint cadence, and full filter provenance.
+- Rechecked all 73 corpus tests, Python compilation, TypeScript, lint, all 260
+  frontend tests, and the production build without running a corpus pilot.
+
 ## [0.6.0.0] - 2026-08-04
 
 ### Changed
