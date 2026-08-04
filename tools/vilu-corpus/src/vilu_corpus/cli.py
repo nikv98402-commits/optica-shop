@@ -270,7 +270,7 @@ def build_run(
             )
             if should_report:
                 _print_progress(progress_stream, payload)
-            if should_checkpoint:
+            if should_checkpoint or should_report:
                 _write_checkpoint(output_dir, payload)
             if reachability and reachability["reason_codes"]:
                 raise ReachabilityError(reachability)
