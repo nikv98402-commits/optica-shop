@@ -2,6 +2,34 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.6.3.0] - 2026-08-08
+
+### Changed
+
+- Switched the bounded ophthalmology acceptance pipeline to the exact pinned
+  `common-pile/pubmed` biomedical source, while keeping Common Corpus available
+  only for a later, separately bounded enrichment pass.
+- Normalized the PubMed source schema into the existing corpus contract without
+  inventing token counts or weakening language, open-science, relevance, date,
+  size, or exact-license checks.
+- Made the acceptance workflow use the explicit corpus configuration and write
+  progress and metadata-only checkpoints every 500 scanned records.
+
+### Fixed
+
+- Rejected schema drift, invalid metadata, unsupported adapters and canonical
+  upstream filters on adapted sources before they can silently change the
+  bounded corpus selection.
+
+### Tests
+
+- Added regression coverage for the pinned source and revision, raw-to-canonical
+  adaptation, exact PubMed license variants, author normalization, projection,
+  batch handling, schema drift and fail-closed filter behavior.
+- Rechecked 81 corpus tests, Python compilation, workflow YAML, TypeScript,
+  lint, all 260 frontend tests and the production build without running a
+  corpus pilot.
+
 ## [0.6.2.0] - 2026-08-04
 
 ### Fixed
