@@ -51,7 +51,12 @@ def test_pinned_primary_source_is_biomedical_and_exactly_reproducible() -> None:
     assert source["adapter"] == "common_pile_pubmed"
     assert source["supports_batch_size"] is False
     assert kwargs["revision"] == "648b8cfc93953ca0663a9c96a8d842a91b98fb64"
-    assert "data_files" not in kwargs
+    assert kwargs["data_files"] == {
+        "train": [
+            f"data/{index:05d}_pubmedcentral.jsonl.gz"
+            for index in range(16, -1, -1)
+        ]
+    }
     assert "filters" not in kwargs
     assert kwargs["streaming"] is True
 
