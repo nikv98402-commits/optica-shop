@@ -21,6 +21,10 @@ for (const locale of ['ru', 'en'] as const) {
     await expect(page.getByRole('heading', {
       name: locale === 'ru' ? 'Ваш подбор для салона' : 'Your in-store shortlist',
     })).toBeVisible();
+    const primaryCta = page.getByTestId('checkout-primary-cta');
+    await primaryCta.scrollIntoViewIfNeeded();
+    await expect(primaryCta).toBeVisible();
+    await expect(primaryCta).toContainText(locale === 'ru' ? 'Перейти к тестовой оплате' : 'Continue to');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     expect(overflow).toBe(false);
   });
