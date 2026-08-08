@@ -46,17 +46,27 @@ def iter_source(
         raise RuntimeError("install the corpus dependencies before reading Hugging Face") from error
     kwargs = _hugging_face_load_kwargs(source)
     required_fields = set(source["required_fields"])
+    adapter = str(source.get("adapter") or "").strip()
     if columns is not None:
         if not columns or not set(columns) <= required_fields:
             raise ValueError("Hugging Face source columns must be a non-empty required-field subset")
-        kwargs["columns"] = list(columns)
+        # Adapted sources expose a raw schema that differs from the canonical
+        # Candidate contract. Projecting canonical column names upstream would
+        # fail before the adapter gets a chance to normalize the row.
+        if not adapter:
+            kwargs["columns"] = list(columns)
     if additional_filters is not None:
+        if adapter:
+            raise ValueError(
+                "adapted Hugging Face sources do not support canonical upstream filters"
+            )
         extra = _normalize_filters(additional_filters, required_fields=required_fields)
         kwargs["filters"] = _append_filters(kwargs.get("filters", []), extra)
     if batch_size is not None:
         if batch_size <= 0:
             raise ValueError("Hugging Face source batch_size must be greater than zero")
-        kwargs["batch_size"] = batch_size
+        if bool(source.get("supports_batch_size", True)):
+            kwargs["batch_size"] = batch_size
     dataset: Iterable[dict[str, Any]] = load_dataset(
         str(source["repository"]),
         **kwargs,
@@ -67,7 +77,65 @@ def iter_source(
     # rows until a complete user-facing batch is available. On a large,
     # selectively filtered corpus, the buffer can hide all progress for many
     # minutes before yielding the first row.
-    yield from dataset
+    for value in dataset:
+        mapping = _adapt_source_row(adapter, value, source)
+        if columns is not None:
+            yield {key: mapping[key] for key in columns if key in mapping}
+        else:
+            yield mapping
+
+
+def _adapt_source_row(
+    adapter: str,
+    value: dict[str, Any],
+    source: dict[str, Any],
+) -> dict[str, Any]:
+    if not adapter:
+        return value
+    if adapter != "common_pile_pubmed":
+        raise ValueError(f"unsupported source adapter: {adapter}")
+    raw_required = set(source.get("raw_required_fields", []))
+    missing = sorted(raw_required - set(value))
+    if missing:
+        raise ValueError(f"raw source schema missing fields: {', '.join(missing)}")
+    metadata = value.get("metadata")
+    if not isinstance(metadata, dict):
+        raise ValueError("raw source metadata must be a mapping")
+    text = str(value.get("text") or "")
+    return {
+        "identifier": str(value.get("id") or "").strip(),
+        "collection": str(value.get("source") or "PubMed Central").strip(),
+        "open_type": "Open Science",
+        "curator": "common-pile/pubmed",
+        "license": str(metadata.get("license") or "").strip(),
+        "date": value.get("created"),
+        "title": str(metadata.get("title") or "").strip(),
+        "creator": _pubmed_authors(metadata.get("authors")),
+        "language": "English",
+        "language_type": "Written",
+        "word_count": len(text.split()),
+        # The upstream record does not publish a tokenizer-specific count.
+        # Preserve that distinction instead of inventing an estimate.
+        "token_count": 0,
+        "text": text,
+    }
+
+
+def _pubmed_authors(value: Any) -> str:
+    if not isinstance(value, list):
+        return ""
+    names: list[str] = []
+    for author in value:
+        if isinstance(author, dict):
+            name = " ".join(
+                str(author.get(part) or "").strip()
+                for part in ("first", "middle", "last")
+            ).strip()
+        else:
+            name = str(author or "").strip()
+        if name:
+            names.append(" ".join(name.split()))
+    return "; ".join(names)
 
 
 def _hugging_face_load_kwargs(source: dict[str, Any]) -> dict[str, Any]:
@@ -160,6 +228,7 @@ def probe_source(source: dict[str, Any]) -> dict[str, Any]:
         "source_kind": source["kind"],
         "repository": source.get("repository"),
         "revision": source.get("revision"),
+        "adapter": source.get("adapter"),
         "data_files": source.get("data_files"),
         "filters": filters,
         "filter_any": filter_any,

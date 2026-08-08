@@ -8,13 +8,14 @@ train a model, call Supabase, or alter the ViLu frontend.
 
 ## Safety boundary
 
-- The upstream `PleIAs/common_corpus` revision is pinned to an exact SHA.
-- The pinned shard glob is explicit because the upstream dataset card exposes
-  only one of the 10,000 parquet shards through its default configuration.
-- Metadata-only parquet predicates retain RU/EN Open Science rows with an
-  exact accepted-license allowlist before document bodies enter the bounded
-  scanner. The same rules are checked again locally and remain part of the
-  hashed configuration.
+- The primary acceptance source, `common-pile/pubmed`, is pinned to an exact
+  revision SHA and normalized through the fail-closed `common_pile_pubmed`
+  adapter.
+- The source's raw schema is checked before adaptation. Canonical language,
+  open-science, exact-license, date and size rules are enforced locally and
+  remain part of the hashed configuration.
+- `PleIAs/common_corpus` remains pinned separately for a future bounded
+  enrichment pass; it is not used by the acceptance workflow.
 - Only the `Open Science` collection is eligible.
 - Missing source fields fail the run.
 - Unknown licenses, missing identifiers, missing dates and ambiguous relevance
@@ -27,9 +28,9 @@ train a model, call Supabase, or alter the ViLu frontend.
 - Raw and cleaned text exist only inside protected run artifacts. Run
   directories are gitignored and the CLI never logs document text.
 
-The accepted license allowlist is deliberately narrower than all licenses
-present in Common Corpus. Extending it requires a reviewed configuration
-change.
+The accepted license allowlist is deliberately narrow. Only exact approved
+license metadata is accepted; ambiguous or unknown values remain in review.
+Extending the allowlist requires a reviewed configuration change.
 
 ## Local setup
 
@@ -120,7 +121,8 @@ fails, so aggregate diagnostics and review/rejected evidence are not lost.
 
 `pipeline.bounded_selection` controls the bounded Hugging Face scan:
 
-- `metadata_batch_size` sets the requested source batch size;
+- `metadata_batch_size` sets the requested source batch size when the pinned
+  source reader supports it;
 - `forecast_after` delays reachability diagnostics until enough records have
   been scanned;
 - `min_accepted` defines the accepted-document target used by the acceptance
@@ -130,14 +132,14 @@ fails, so aggregate diagnostics and review/rejected evidence are not lost.
 - `confidence_z` controls statistical yield projections used for diagnostics
   only.
 
-Language, open-science, exact-license and configured word-count predicates are
-pushed upstream and then rechecked locally. Checkpoints expose a `reachability`
-block that separates exact terminal `reason_codes` from statistical
-`warning_codes`. Only an impossible remaining-record count, an exhausted
-runtime budget or the final hard scan bound can stop selection; yield forecasts
-never terminate the deterministic stream because valid licensed documents may
-occur in a later cluster. Run statistics distinguish source exhaustion from
-`scan_limit_reached`.
+The pinned PubMed source is adapted to the canonical candidate schema before
+language, open-science, exact-license and configured word-count checks run
+locally. Checkpoints expose a `reachability` block that separates exact terminal
+`reason_codes` from statistical `warning_codes`. Only an impossible remaining-
+record count, an exhausted runtime budget or the final hard scan bound can stop
+selection; yield forecasts never terminate the deterministic stream because
+valid licensed documents may occur in a later cluster. Run statistics
+distinguish source exhaustion from `scan_limit_reached`.
 
 Taxonomy matching is fail-closed:
 
