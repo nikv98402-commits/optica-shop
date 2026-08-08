@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   test-and-build:
-    name: Test and build 1,000-record pilot
+    name: Test and build 1,000-candidate biomedical pilot
     runs-on: ubuntu-latest
     timeout-minutes: 90
     defaults:
@@ -50,15 +50,17 @@ jobs:
         run: uv run pytest
 
       - name: Probe pinned source schema
-        run: uv run vilu-corpus probe
+        run: uv run vilu-corpus --config configs/corpus.yaml probe
 
       - name: Build bounded pilot
         id: build
         timeout-minutes: 75
         run: >-
-          uv run vilu-corpus build
+          uv run vilu-corpus --config configs/corpus.yaml build
           --limit 1000
           --scan-limit 100000
+          --progress-every 500
+          --checkpoint-every 500
           --output runs/pilot-1000
 
       - name: Upload bounded selection checkpoint
@@ -74,14 +76,16 @@ jobs:
       - name: Validate bounded pilot
         id: validate
         run: >-
-          uv run vilu-corpus validate
+          uv run vilu-corpus --config configs/corpus.yaml validate
           --output runs/pilot-1000
           --min-candidates 1000
           --min-accepted 100
 
       - name: Print aggregate report
         if: ${{ always() && steps.build.outcome == 'success' }}
-        run: uv run vilu-corpus report --output runs/pilot-1000
+        run: >-
+          uv run vilu-corpus --config configs/corpus.yaml report
+          --output runs/pilot-1000
 
       - name: Upload protected corpus artifact
         if: ${{ always() && steps.build.outcome == 'success' }}

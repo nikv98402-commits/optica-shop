@@ -29,20 +29,18 @@ pipeline:
 
 source:
   kind: huggingface
-  repository: PleIAs/common_corpus
-  revision: ff9892ec787101ec881b2da279ed349085657aaf
+  repository: common-pile/pubmed
+  revision: 648b8cfc93953ca0663a9c96a8d842a91b98fb64
   split: train
-  data_files:
-    train: "common_corpus_*/*.parquet"
-  filters:
-    - [open_type, in, [Open Science, OpenScience]]
-    - [language, in, [English, Russian]]
-    - [license, in, [CC0-1.0, CC-BY-4.0, CC-BY-SA-4.0, PDM-1.0, Public Domain]]
-    - [word_count, ">=", 300]
-    - [word_count, "<=", 200000]
-  filter_any:
-    - [date, ">=", 2015]
-    - [date, in, [null]]
+  adapter: common_pile_pubmed
+  supports_batch_size: false
+  raw_required_fields:
+    - id
+    - text
+    - source
+    - added
+    - created
+    - metadata
   required_fields:
     - identifier
     - collection
@@ -58,6 +56,14 @@ source:
     - token_count
     - text
 
+# Common Corpus remains available for a later, separately bounded enrichment
+# pass. It is intentionally not used by the acceptance pilot because its
+# generic full-text stream cannot meet the current throughput/yield contract.
+secondary_sources:
+  - purpose: enrichment_only
+    repository: PleIAs/common_corpus
+    revision: ff9892ec787101ec881b2da279ed349085657aaf
+
 licenses:
   accepted:
     - CC0-1.0
@@ -72,8 +78,11 @@ licenses:
     cc by 4.0: CC-BY-4.0
     cc-by 4.0: CC-BY-4.0
     creative commons attribution 4.0: CC-BY-4.0
+    "creative commons - attribution - https://creativecommons.org/licenses/by/4.0/": CC-BY-4.0
     cc by-sa 4.0: CC-BY-SA-4.0
     cc-by-sa 4.0: CC-BY-SA-4.0
+    "creative commons - attribution-sharealike - https://creativecommons.org/licenses/by-sa/4.0/": CC-BY-SA-4.0
+    "creative commons - cc0 - https://creativecommons.org/publicdomain/zero/1.0/": CC0-1.0
     public domain: Public Domain
     public domain mark 1.0: PDM-1.0
 
