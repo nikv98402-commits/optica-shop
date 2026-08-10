@@ -28,6 +28,12 @@ payments, store locator, canonical metadata, or existing knowledge slugs.
 9. The browser renders numbered sources and stores history and preferences in
    versioned `localStorage` only.
 
+Approved external corpus releases reuse the same `knowledge_sources` and
+`knowledge_chunks` tables. Corpus rows are linked to a version that is built in
+`staging`; retrieval includes them only after exact manifest counts pass and a
+single transaction marks that version `active`. Existing ViLu-owned sources
+remain unversioned and continue to use their original editorial lifecycle.
+
 ## Trust boundaries
 
 - Browser input cannot choose prompts, provider URLs/models, source ids,
@@ -37,6 +43,10 @@ payments, store locator, canonical metadata, or existing knowledge slugs.
 - Browser roles have no policy or grants for `knowledge_sources` or
   `knowledge_chunks`; only `service_role` can execute the retrieval RPC.
 - Source text is indexable only after registry license and review gates pass.
+- Corpus publication additionally requires an exact, non-revoked
+  owner-editor manifest approval stored in the server-only approval registry.
+- Staging, failed, superseded, and rolled-back corpus versions are excluded
+  inside the retrieval RPC, not by browser input.
 - The indexer creates all embeddings before a transactional RPC replaces live
   chunks, so a provider failure cannot empty a published source.
 - Request/response bodies are never logged. Operational errors contain only a
