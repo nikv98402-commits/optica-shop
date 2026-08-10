@@ -34,6 +34,27 @@ source:
   split: train
   adapter: common_pile_pubmed
   supports_batch_size: false
+  # The pinned PubMed shards are chronological. Scan newest shards first so the
+  # strict scan limit reaches post-2015 records without weakening date filters.
+  data_files:
+    train:
+      - data/00016_pubmedcentral.jsonl.gz
+      - data/00015_pubmedcentral.jsonl.gz
+      - data/00014_pubmedcentral.jsonl.gz
+      - data/00013_pubmedcentral.jsonl.gz
+      - data/00012_pubmedcentral.jsonl.gz
+      - data/00011_pubmedcentral.jsonl.gz
+      - data/00010_pubmedcentral.jsonl.gz
+      - data/00009_pubmedcentral.jsonl.gz
+      - data/00008_pubmedcentral.jsonl.gz
+      - data/00007_pubmedcentral.jsonl.gz
+      - data/00006_pubmedcentral.jsonl.gz
+      - data/00005_pubmedcentral.jsonl.gz
+      - data/00004_pubmedcentral.jsonl.gz
+      - data/00003_pubmedcentral.jsonl.gz
+      - data/00002_pubmedcentral.jsonl.gz
+      - data/00001_pubmedcentral.jsonl.gz
+      - data/00000_pubmedcentral.jsonl.gz
   raw_required_fields:
     - id
     - text

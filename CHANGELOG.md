@@ -2,6 +2,20 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.6.3.1] - 2026-08-08
+
+### Fixed
+
+- Made the bounded biomedical corpus scan start with the newest pinned PubMed
+  shards, so post-2015 ophthalmology records are reachable within the strict
+  scan limit without relaxing license, date, language, or relevance checks.
+
+### Tests
+
+- Added a regression assertion for the exact deterministic newest-to-oldest
+  shard order and rechecked corpus tests, TypeScript, lint, frontend tests,
+  Python compilation, workflow YAML, and the production build.
+
 ## [0.6.3.0] - 2026-08-08
 
 ### Changed
