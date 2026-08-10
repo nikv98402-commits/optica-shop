@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "publications": [
+    {
+      "corpusVersion": "ophthalmology-pilot-2026-08-10",
+      "datasetRevision": "648b8cfc93953ca0663a9c96a8d842a91b98fb64",
+      "manifestSha256": "8cdee30ea536d4f53524fcd5b50893191ee8763423fc27cc8d7449d17d49fd9f",
+      "configSha256": "f11dc813fe23d6b25f276e17c413cd42ef824347876e0cdacf2111208748fbc6",
+      "taxonomyVersion": "ophthalmology-taxonomy-v1",
+      "taxonomySha256": "b8efd88caf6f13c34c9bbe79b7416567a2d39b4b55a6bb66aa8fc5367e4700c3",
+      "licensePolicyVersion": "exact-open-licenses-v1",
+      "chunkPolicyVersion": "chars-2400-overlap-240-v1",
+      "embeddingProvider": "cloudflare-workers-ai",
+      "embeddingModel": "@cf/qwen/qwen3-embedding-0.6b",
+      "embeddingDimensions": 1024,
+      "approvedAt": "2026-08-10T09:29:52.9743526+03:00",
+      "approvedByRole": "owner-editor",
+      "protectedArtifactSha256": "6f63485962b19269cdd7b7d459888ae4ec60289ecb6c761903e3ee322c050adf",
+      "expectedSourceCount": 301,
+      "expectedChunkCount": 6663
+    }
+  ]
+}

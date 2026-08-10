@@ -2,6 +2,28 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.7.0.0] - 2026-08-10
+
+### Added
+
+- Added an explicitly approved ophthalmology corpus release path that validates
+  the protected workflow-artifact digest, manifest, provenance, licenses and
+  exact source/chunk counts before any publication can begin.
+- Added server-only staging, atomic activation, safe abort/retry and rollback
+  operations for versioned corpus releases in the existing Knowledge Assistant
+  index, without exposing corpus tables or RPCs to browser roles.
+- Added a protected publication runbook and shared TypeScript contracts for the
+  fixed Cloudflare 1024-dimension embedding model.
+
+### Tests
+
+- Added publisher failure-path tests and 39 local pgTAP integration checks for
+  revoked approvals, artifact-digest mismatch, staging invisibility, exact
+  counts, activation, cleanup, rollback and service-role boundaries.
+- Rechecked the approved 301-document / 6,663-chunk artifact in read-only mode,
+  Knowledge Assistant boundary, TypeScript, lint, all 275 unit tests and the
+  production build without applying production migration or live embeddings.
+
 ## [0.6.3.1] - 2026-08-08
 
 ### Fixed
