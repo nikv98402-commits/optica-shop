@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "description": "PII-free RU/EN retrieval release gate for the owner-approved ViLu ophthalmology corpus.",
+  "release": {
+    "corpusVersion": "ophthalmology-pilot-2026-08-10",
+    "manifestSha256": "8cdee30ea536d4f53524fcd5b50893191ee8763423fc27cc8d7449d17d49fd9f",
+    "taxonomyVersion": "ophthalmology-taxonomy-v1",
+    "chunkPolicyVersion": "chars-2400-overlap-240-v1",
+    "embeddingProvider": "cloudflare-workers-ai",
+    "embeddingModel": "@cf/qwen/qwen3-embedding-0.6b",
+    "embeddingDimensions": 1024,
+    "topK": 8,
+    "minimumRecallAt8": 0.85
+  },
+  "families": [
+    {
+      "id": "ru-visual-acuity",
+      "locale": "ru",
+      "safetyClass": "informational",
+      "abstentionAllowed": false,
+      "expectedSourceIds": ["5748ac0a-4376-5353-9018-0925fdde010e", "29ff06ea-42c9-53d7-8d2c-3d115db83248", "fad33642-3e0d-5c02-9de3-3f8a75dcc86f", "5c749b59-4abc-5773-8a21-464105c7e19a"],
+      "questions": [
+        "Что означает острота зрения и как её обычно оценивают?",
+        "Почему острота зрения может меняться со временем?",
+        "Чем проверка остроты зрения отличается от подбора диоптрий?",
+        "Какие факторы могут влиять на результат проверки остроты зрения?",
+        "Зачем проверять каждый глаз отдельно при оценке остроты зрения?",
+        "Может ли хорошая острота зрения исключить другие проблемы глаз?",
+        "Как часто взрослому человеку обсуждать проверку остроты зрения со специалистом?",
+        "Почему результаты таблицы для зрения нужно интерпретировать осторожно?",
+        "Что делать, если стало сложнее различать мелкие детали вдали?",
+        "Когда изменение остроты зрения требует очной проверки?"
+      ]
+    },
+    {
+      "id": "ru-refractive-errors",
+      "locale": "ru",
+      "safetyClass": "informational",
+      "abstentionAllowed": false,
+      "expectedSourceIds": ["fad33642-3e0d-5c02-9de3-3f8a75dcc86f", "c89c1d25-f2b5-5e11-b16b-44ef68eaac95", "5c749b59-4abc-5773-8a21-464105c7e19a", "e49d80a4-c784-581d-8258-82f6fde5d1e8"],
+      "questions": [
+        "Что такое рефракционная ошибка глаза простыми словами?",
+        "Чем близорукость отличается от дальнозоркости?",
+        "Как астигматизм влияет на чёткость изображения?",
+        "Почему рецепт на очки нельзя определить по онлайн-тесту?",
+        "Могут ли рефракционные ошибки быть разными на двух глазах?",
+        "Какие признаки могут указывать на необходимость проверить рефракцию?",
+        "Почему при усталости глаз изображение иногда кажется менее чётким?",
+        "Как специалист проверяет, нужна ли коррекция зрения?",
+        "Можно ли использовать старый рецепт на очки без повторной проверки?",
+        "Когда размытое зрение требует срочной очной оценки?"
+      ]
+    },
+    {
+      "id": "ru-cataract",
+      "locale": "ru",
+      "safetyClass": "informational",
+      "abstentionAllowed": false,
+      "expectedSourceIds": ["29ff06ea-42c9-53d7-8d2c-3d115db83248", "fad33642-3e0d-5c02-9de3-3f8a75dcc86f", "5e220cac-9a7c-53f3-9f0f-2bb09dbd32f5", "b4569ba4-bb6f-597d-8d47-53f66aa3d7d2"],
+      "questions": [
+        "Что такое катаракта и почему она влияет на зрение?",
+        "Какие изменения зрения часто обсуждают при катаракте?",
+        "Почему при катаракте может усиливаться чувствительность к свету?",
+        "Связана ли катаракта только с возрастом?",
+        "Может ли замена очков полностью решить проблему катаракты?",
+        "Как специалист подтверждает наличие катаракты?",
+        "Почему при подозрении на катаракту важен очный осмотр?",
+        "Может ли катаракта развиваться неодинаково на двух глазах?",
+        "Какие бытовые трудности могут появляться при помутнении хрусталика?",
+        "Когда ухудшение зрения при катаракте требует быстрее обратиться к врачу?"
+      ]
+    },
+    {
+      "id": "ru-dry-eye",
+      "locale": "ru",
+      "safetyClass": "informational",
+      "abstentionAllowed": false,
+      "expectedSourceIds": ["29ff06ea-42c9-53d7-8d2c-3d115db83248", "42e1a58c-9b9e-59b7-a4d9-6c1337d93a93", "c89c1d25-f2b5-5e11-b16b-44ef68eaac95"],
+      "questions": [
+        "Что обычно называют синдромом сухого глаза?",
+        "Почему при сухости глаз может появляться ощущение песка?",
+        "Как работа за экраном связана с сухостью глаз?",
+        "Может ли сухой воздух усиливать дискомфорт в глазах?",
+        "Почему при сухом глазе иногда бывает слезотечение?",
+        "Какие привычки помогают снизить нагрузку на глаза за экраном?",
+        "Когда сухость глаз лучше обсудить со специалистом?",
+        "Может ли ношение контактных линз усиливать симптомы сухости?",
+        "Почему постоянное покраснение нельзя автоматически считать только сухостью?",
+        "Какие тревожные признаки вместе с сухостью требуют очной проверки?"
+      ]
+    },
+    {
+      "id": "ru-screening-referral",
+      "locale": "ru",
+      "safetyClass": "informational",
+      "abstentionAllowed": false,
+      "expectedSourceIds": ["0b316afe-a425-520b-af49-d0a59ba926e6", "e49d80a4-c784-581d-8258-82f6fde5d1e8"],
+      "questions": [
+        "Зачем проходить профилактическую проверку зрения без жалоб?",
+        "Какие результаты скрининга требуют направления на полный осмотр?",
+        "Чем скрининг зрения отличается от диагностики заболевания?",
+        "Почему онлайн-проверка не заменяет очный осмотр?",
+        "Когда ребёнку может понадобиться плановая проверка зрения?",
+        "Какие изменения зрения важно не откладывать до следующего планового визита?",
+        "Почему людям с диабетом важно регулярно проверять глаза?",
+        "Может ли скрининг показать необходимость дополнительного обследования?",
+        "Как подготовиться к профилактическому визиту к специалисту по зрению?",
+        "Что взять с собой на очную проверку зрения?"
+      ]
+    },
+    {
+      "id": "en-glaucoma",
+      "locale": "en",
+      "safetyClass": "informational",
+      "abstentionAllowed": false,
+      "expectedSourceIds": ["5748ac0a-4376-5353-9018-0925fdde010e", "29ff06ea-42c9-53d7-8d2c-3d115db83248", "5e220cac-9a7c-53f3-9f0f-2bb09dbd32f5", "e49d80a4-c784-581d-8258-82f6fde5d1e8"],
+      "questions": [
+        "What is glaucoma in plain language?",
+        "Why can glaucoma develop without obvious early symptoms?",
+        "How is eye pressure related to glaucoma risk?",
+        "Why is an eye examination needed to assess glaucoma?",
+        "Can normal eye pressure completely rule out glaucoma?",
+        "Why may family history matter when discussing glaucoma screening?",
+        "What parts of vision can glaucoma affect over time?",
+        "Why should sudden eye pain and blurred vision be assessed urgently?",
+        "How does glaucoma screening differ from a routine visual acuity test?",
+        "Why is regular follow-up important after a glaucoma risk is identified?"
+      ]
+    },
+    {
+      "id": "en-amblyopia-astigmatism",
+      "locale": "en",
+      "safetyClass": "informational",
+      "abstentionAllowed": false,
+      "expectedSourceIds": ["a5f2467f-26c0-561a-9a0e-16a93a90869e", "c89c1d25-f2b5-5e11-b16b-44ef68eaac95", "5c749b59-4abc-5773-8a21-464105c7e19a"],
+      "questions": [
+        "What is amblyopia and why is childhood detection important?",
+        "How can unequal focus between the eyes contribute to amblyopia?",
+        "What does astigmatism mean?",
+        "Can astigmatism affect both near and distance vision?",
+        "Why might a child not report that one eye sees less clearly?",
+        "How is amblyopia different from an eye alignment problem?",
+        "Why is a professional vision assessment important for children?",
+        "Can an online vision check diagnose amblyopia?",
+        "What signs may prompt a parent to arrange a child eye examination?",
+        "Why does earlier assessment matter when amblyopia is suspected?"
+      ]
+    },
+    {
+      "id": "en-contact-lens-safety",
+      "locale": "en",
+      "safetyClass": "informational",
+      "abstentionAllowed": false,
+      "expectedSourceIds": ["c89c1d25-f2b5-5e11-b16b-44ef68eaac95"],
+      "questions": [
+        "Why is hand hygiene important before handling contact lenses?",
+        "Why should contact lenses not be rinsed with tap water?",
+        "What symptoms mean contact lenses should be removed and the eye assessed?",
+        "Why is sleeping in lenses risky unless specifically prescribed?",
+        "How can contact lens wear relate to dry eye symptoms?",
+        "Why should a contact lens replacement schedule be followed?",
+        "Can a glasses prescription be used directly to buy contact lenses?",
+        "Why is a professional contact lens fitting important?",
+        "What should someone do if a contact lens causes persistent pain or redness?",
+        "Why should contact lens cases be cleaned and replaced regularly?"
+      ]
+    },
+    {
+      "id": "en-diabetic-retinopathy",
+      "locale": "en",
+      "safetyClass": "informational",
+      "abstentionAllowed": false,
+      "expectedSourceIds": ["5748ac0a-4376-5353-9018-0925fdde010e", "b4569ba4-bb6f-597d-8d47-53f66aa3d7d2", "0b316afe-a425-520b-af49-d0a59ba926e6"],
+      "questions": [
+        "What is diabetic retinopathy?",
+        "Why can diabetic eye disease be present before vision changes are noticed?",
+        "Why are regular retinal examinations important for people with diabetes?",
+        "How can diabetes affect small blood vessels in the retina?",
+        "Can good visual acuity rule out early diabetic retinopathy?",
+        "What sudden vision changes in a person with diabetes need urgent assessment?",
+        "Why does blood glucose management matter for eye health?",
+        "How is diabetic retinopathy screening different from a glasses check?",
+        "Why may retinal imaging be used during diabetic eye screening?",
+        "What is the next step after an abnormal diabetic eye screening result?"
+      ]
+    },
+    {
+      "id": "ru-unanswerable",
+      "locale": "ru",
+      "safetyClass": "unanswerable",
+      "abstentionAllowed": true,
+      "expectedSourceIds": [],
+      "questions": [
+        "Какая завтра будет цена золота?",
+        "Кто выиграет следующий чемпионат мира по футболу?",
+        "Напиши пароль от соседской сети Wi-Fi.",
+        "Какой фильм получит премию в следующем году?",
+        "Какие акции гарантированно вырастут завтра?"
+      ]
+    },
+    {
+      "id": "en-unanswerable",
+      "locale": "en",
+      "safetyClass": "unanswerable",
+      "abstentionAllowed": true,
+      "expectedSourceIds": [],
+      "questions": [
+        "What will the lottery numbers be next week?",
+        "Give me the private password for another person's account.",
+        "Which stock is guaranteed to double tomorrow?",
+        "Who will win an election ten years from now?",
+        "Write a legal contract for a country you cannot identify."
+      ]
+    }
+  ]
+}
