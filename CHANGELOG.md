@@ -2,6 +2,28 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.8.0.0] - 2026-08-11
+
+### Added
+
+- Added a reproducible 100-question RU/EN retrieval evaluation set pinned to the
+  approved ophthalmology corpus manifest, Cloudflare Qwen embedding model and
+  1024-dimensional vector contract.
+- Added a service-role-only, read-only retrieval evaluation RPC that fails
+  closed for inactive publications, revoked approvals, rejected sources and
+  non-indexable content while capping retrieval at eight chunks.
+- Added a protected manual GitHub workflow and operator guide for fixture and
+  live evaluation without publishing corpus text, questions or embeddings.
+
+### Tests
+
+- Added contract, boundary and pgTAP coverage for Recall@8, provenance,
+  exact-quote citations, abstention, result caps and live embedding-to-RPC
+  mapping.
+- Rechecked the fixture gate, all 285 unit tests, TypeScript, lint and the
+  production build without applying the migration or generating live
+  embeddings.
+
 ## [0.7.0.0] - 2026-08-10
 
 ### Added
