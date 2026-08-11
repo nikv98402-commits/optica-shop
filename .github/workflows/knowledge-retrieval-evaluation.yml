@@ -1,0 +1,75 @@
+name: Knowledge retrieval evaluation
+
+on:
+  pull_request:
+    paths:
+      - "content/knowledge-assistant/retrieval-golden-set-v1.json"
+      - "scripts/evaluate-knowledge-retrieval.mjs"
+      - "scripts/lib/knowledge-retrieval-evaluation.*"
+      - "supabase/migrations/*knowledge_retrieval_evaluation.sql"
+      - "supabase/tests/knowledge_retrieval_evaluation.sql"
+      - ".github/workflows/knowledge-retrieval-evaluation.yml"
+  workflow_dispatch:
+    inputs:
+      run_live_read_only:
+        description: "Run the protected read-only corpus retrieval gate"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Validate golden set and deterministic release gates
+        run: npm run knowledge:retrieval:evaluate -- --fixture
+      - name: Run retrieval contract tests
+        run: npx vitest run scripts/lib/knowledge-retrieval-evaluation.test.ts scripts/knowledge-retrieval-migration.test.ts
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start isolated Supabase for pgTAP
+        run: supabase start
+      - name: Run SQL integration tests
+        run: supabase test db
+      - uses: actions/upload-artifact@v4
+        with:
+          name: knowledge-retrieval-contract-report
+          path: artifacts/knowledge-retrieval-evaluation.json
+          if-no-files-found: error
+          retention-days: 14
+
+  live-read-only:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_live_read_only
+    needs: contract
+    environment: knowledge-retrieval-evaluation
+    runs-on: ubuntu-latest
+    env:
+      KNOWLEDGE_EMBEDDING_BASE_URL: ${{ secrets.KNOWLEDGE_EMBEDDING_BASE_URL }}
+      KNOWLEDGE_EMBEDDING_API_KEY: ${{ secrets.KNOWLEDGE_EMBEDDING_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Evaluate the approved active corpus without mutation
+        run: npm run knowledge:retrieval:evaluate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: knowledge-retrieval-live-report
+          path: artifacts/knowledge-retrieval-evaluation.json
+          if-no-files-found: error
+          retention-days: 30
