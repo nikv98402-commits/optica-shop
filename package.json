@@ -1,7 +1,7 @@
 {
   "name": "visionlux-optica-shop",
   "private": true,
-  "version": "0.7.0.0",
+  "version": "0.8.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,6 +17,7 @@
     "knowledge:index:dry": "node scripts/index-knowledge-assistant.mjs --dry-run",
     "knowledge:index": "node scripts/index-knowledge-assistant.mjs",
     "knowledge:corpus": "node scripts/publish-approved-corpus.mjs",
+    "knowledge:retrieval:evaluate": "node scripts/evaluate-knowledge-retrieval.mjs",
     "knowledge:preview:check": "node scripts/check-knowledge-assistant-preview.mjs",
     "knowledge:preview:check:live": "node scripts/check-knowledge-assistant-preview.mjs --live",
     "test:knowledge-boundary": "node scripts/check-knowledge-assistant-boundary.mjs",

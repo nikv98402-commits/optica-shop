@@ -2,6 +2,28 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.8.0.0] - 2026-08-11
+
+### Added
+
+- Added a reproducible 100-question RU/EN retrieval evaluation set pinned to the
+  approved ophthalmology corpus manifest, Cloudflare Qwen embedding model and
+  1024-dimensional vector contract.
+- Added a service-role-only, read-only retrieval evaluation RPC that fails
+  closed for inactive publications, revoked approvals, rejected sources and
+  non-indexable content while capping retrieval at eight chunks.
+- Added a protected manual GitHub workflow and operator guide for fixture and
+  live evaluation without publishing corpus text, questions or embeddings.
+
+### Tests
+
+- Added contract, boundary and pgTAP coverage for Recall@8, provenance,
+  exact-quote citations, abstention, result caps and live embedding-to-RPC
+  mapping.
+- Rechecked the fixture gate, all 285 unit tests, TypeScript, lint and the
+  production build without applying the migration or generating live
+  embeddings.
+
 ## [0.7.0.0] - 2026-08-10
 
 ### Added
@@ -342,471 +364,4 @@ All notable ViLu MVP changes should be documented here.
 
 ### Fixed
 
-- Separated ingestion feed origins from outbound product URL origins in Offer
-  Finder, so the bounded GitHub feed can publish the approved ViLu product URL
-  without weakening the network fetch boundary.
-- Added a backward-compatible source loader that works before and after the
-  production migration is applied.
-
-### Security
-
-- Kept fetch requests restricted to the exact approved feed origin while
-  independently validating customer-facing product links.
-- Preserved the first source policy, disabled scheduling for the second source,
-  and retained one-request/one-concurrency limits.
-
-### Tests
-
-- Added focused regression coverage for split origin policies and migration
-  invariants.
-- Rechecked 78 focused tests, all 260 unit tests, TypeScript, lint, and the
-  production build.
-
-## [0.4.5.0] - 2026-07-27
-
-### Added
-
-- Added a second owner-authorized, bounded Offer Finder source for the existing
-  Aurora Crystal offer in the Russian market.
-- Added a separate fail-closed adapter for the exact public GitHub raw feed,
-  without changing the first source, geography, or scheduler.
-
-### Security
-
-- Kept the source limited to one exact URL, one offer, one request per minute,
-  one concurrent request, and manual canary execution only.
-- Added a forward migration that verifies the first source remains unchanged
-  while registering the second source with no schedule.
-
-### Tests
-
-- Added adapter, normalization, deduplication, path-override, destination, and
-  scope-regression coverage.
-- Rechecked all 252 tests, TypeScript, lint, and the production build.
-
-## [0.4.4.0] - 2026-07-27
-
-### Fixed
-
-- Restored direct GitHub Pages product links, including
-  `/products/aurora-crystal`, by publishing static entries for every current
-  catalog product.
-- Added a safe forward migration that restores the single approved bounded
-  ViLu Offer Finder source under the production workflow's canonical ID while
-  refusing to rewrite a source that already has dependent data.
-
-### Tests
-
-- Added regression coverage that keeps GitHub Pages product routes aligned
-  with the catalog and preserves the bounded source's origin, limits, schedule,
-  and stable identifier.
-- Rechecked all 249 tests, TypeScript, lint, and the production build.
-
-## [0.4.3.0] - 2026-07-27
-
-### Fixed
-
-- Restored HTTP 200 responses for direct product links on Vercel while keeping
-  clean URLs enabled.
-- Made the bounded Offer Finder production check use the single approved ViLu
-  source and fail clearly when that source publishes no fresh offer.
-- Matched Aurora Crystal to its confirmed Offer Finder offer without changing
-  the customer-facing ViLu Atelier brand name.
-
-### Tests
-
-- Added regression coverage for Vercel SPA routing, production canary health
-  behavior, and canonical Offer Finder brand matching.
-- Rechecked all 245 tests, TypeScript, lint, and the production build.
-
-## [0.4.2.0] - 2026-07-26
-
-### Fixed
-
-- Restored direct product links such as `/products/aurora-crystal`, so a
-  confirmed Offer Finder result now opens the matching ViLu product instead of
-  a 404 page.
-- Kept the canonical product URL in the browser during in-app navigation and
-  safely handled encoded product identifiers.
-
-### Tests
-
-- Added regression coverage for direct, encoded, malformed, and in-app product
-  links.
-- Rechecked all tests, TypeScript, lint, and the production build.
-
-## [0.4.1.0] - 2026-07-26
-
-### Added
-
-- Connected the first owner-authorized Offer Finder source for one Aurora
-  Crystal offer in the Russian market.
-- Published a bounded first-party JSON feed that lets Offer Finder verify the
-  confirmed price, availability, catalog identity, and product destination.
-- Added an idempotent Supabase migration for the single ViLu merchant, product,
-  variant, and unscheduled source.
-
-### Changed
-
-- Restricted the canary to one request, one offer, one exact feed URL, and one
-  exact product URL; additional sources, products, and markets remain blocked.
-- Documented the source authorization, robots and terms review, request limits,
-  freshness rules, and rollback boundary.
-
-### Tests
-
-- Added adapter, normalization, price, destination, and scope-regression
-  coverage for the bounded real-source canary.
-- Rechecked all 235 tests, TypeScript, lint, and the production build.
-
-## [0.4.0.5] - 2026-07-26
-
-### Fixed
-
-- Prioritized store routes and phone calls over merchant websites in Offer
-  Finder responses, so every available next-step action can reach the product
-  card instead of being masked by the mandatory source URL.
-
-### Tests
-
-- Added Edge contract coverage for route, phone, and website fallback priority.
-- Added product-card coverage for safe `tel:` and Google Maps destinations.
-- Rechecked all 231 tests, TypeScript, lint, and the production build.
-
-## [0.4.0.4] - 2026-07-26
-
-### Added
-
-- Added scheduled, single-source Offer Finder production operations with a
-  bounded live canary, normalization, health checks, and clear workflow alerts.
-- Added service-only health reporting for data freshness, parser success,
-  quarantine volume, fresh offers, open incidents, and stalled runs.
-- Added an operations runbook covering protected configuration, manual canary
-  checks, recovery, interruption handling, and rollback.
-
-### Changed
-
-- Protected each source from overlapping queued or running ingestion jobs at
-  both the workflow and database layers.
-- Added bounded retry with exponential backoff and jitter for canary,
-  normalization, and health-check failures.
-- Limited production credentials to the execution step that requires them.
-
-### Tests
-
-- Added scheduler operations tests and SQL integration coverage for active-run
-  exclusivity, source health counters, health alerts, and RPC permissions.
-- Rechecked all 229 tests, TypeScript, lint, SQL integration tests, and the
-  production build.
-
-## [0.4.0.3] - 2026-07-26
-
-### Fixed
-
-- Allowed the Offer Finder Edge API to authenticate browser requests with both
-  Supabase legacy anonymous keys and current publishable keys.
-- Kept secret API keys excluded while supporting publishable-key rotation from
-  Supabase platform metadata.
-
-### Tests
-
-- Added compatibility coverage for legacy, current, rotated, and secret key
-  formats and rechecked all 225 tests, TypeScript, and the production build.
-
-## [0.4.0.2] - 2026-07-26
-
-### Added
-
-- Added a service-role-only Offer Finder product projection and versioned
-  read-only Edge API for fresh, published offers and minimum confirmed prices.
-- Added product-card states for loading, unavailable data, errors, verified
-  offer sources, availability, currencies, and website, phone, or route actions.
-
-### Security
-
-- Kept operational Offer Finder tables behind the Edge BFF, with strict request
-  validation, origin controls, bounded rate limiting, and no browser access to
-  the service-role credential.
-- Excluded quarantined, unpublished, stale, and expired observations from
-  product-card results.
-
-### Tests
-
-- Added API contract, Edge integration, frontend state, and SQL permission
-  coverage for the Offer Finder product-card flow.
-- Rechecked TypeScript, lint, all 224 unit and integration tests, checkout
-  contracts, SQL migrations, and the production build.
-
-## [0.4.0.1] - 2026-07-25
-
-### Added
-
-- Added deterministic Offer Finder normalization for price, currency,
-  availability, product identity, catalog matching, and 72-hour / 7-day
-  freshness classification.
-- Added a bounded normalization runner connected to the approved ingestion
-  canary, with exact-match publication and review or quarantine routing for
-  ambiguous, anomalous, and invalid observations.
-- Added service-role-only SQL contracts for pending batches, idempotent review
-  work, atomic offer publication, and audited comparable split or merge actions.
-
-### Security
-
-- Serialized publication per logical offer to prevent concurrent price-anomaly
-  bypasses, enforced source-market package boundaries, and retained sanitized
-  source URLs only after removing sensitive query parameters and fragments.
-- Kept all normalization mutations unavailable to browser roles and preserved
-  immutable raw-observation provenance for every published price or review.
-
-### Tests
-
-- Added fixture, runner, and SQL integration coverage for exact and fuzzy
-  matching, malformed input, ambiguity, freshness, retry idempotency, market
-  boundaries, ACLs, provenance, and split or merge regressions.
-
-## [0.4.0.0] - 2026-07-25
-
-### Added
-
-- Added the Offer Finder ingestion runtime with isolated source adapters,
-  idempotent raw observations, parser quarantine, and run accounting.
-- Added bounded source access with exact HTTPS allowlists, robots and terms
-  gates, SSRF protection, rate and concurrency limits, timeouts, response-size
-  limits, and retry backoff.
-- Added a fixture-only canary, a protected manual live-canary workflow, source
-  onboarding guidance, and security and adapter contract coverage.
-
-### Tests
-
-- Rechecked 26 ingestion security and contract tests, strict TypeScript for the
-  runtime, the full 176-test unit suite, lint, checkout contracts, and the
-  production build.
-- Recorded four pre-existing Knowledge Assistant E2E expectation failures
-  separately; this release does not change its UI or backend.
-
-## [0.3.0.3] - 2026-07-24
-
-### Added
-
-- Added the normalized Supabase foundation for Offer Finder markets, sources,
-  stores, products, observations, prices, freshness, and ingestion runs.
-- Added RLS policies, indexes, immutable raw observations, protected SQL search
-  functions, shared TypeScript contracts, and SQL integration coverage.
-- Added operational documentation for the Offer Finder data boundary,
-  retention, security model, testing, and rollback.
-
-### Tests
-
-- Rechecked TypeScript, lint, unit tests, production build, contract tests, and
-  the Offer Finder SQL security invariants.
-
-## [0.3.0.2] - 2026-07-24
-
-### Changed
-
-- Standardized the home page on a deterministic dark/light section cadence.
-- Added the Optical Orbits grid to both surfaces and restored readable
-  typography and controls in the knowledge, showcase, and dashboard sections.
-
-### Fixed
-
-- Removed late cascade overrides that flattened dark sections into a blank
-  light surface and made section labels and actions effectively invisible.
-- Consolidated the release CSS so the final cadence rules have one source of
-  truth.
-
-### Tests
-
-- Rechecked TypeScript, lint, unit tests, production build, and the home page
-  at 1440, 390, and 320 px without horizontal overflow.
-
-## [0.3.0.1] - 2026-07-24
-
-### Changed
-
-- Unified dark hero dimensions, warm-light surfaces, bordered functional cards,
-  typography scale, and responsive spacing across Optical Orbits pages.
-- Clarified the Store Locator map and redesigned compact and full Knowledge
-  Assistant composers as unmistakable conversational interfaces.
-
-### Fixed
-
-- Added working Focus Dot, 20-20-20, and Palming exercise modes with distinct
-  instructions, timers, and motion behavior.
-- Prevented the Store Locator overlay from colliding with navigation.
-- Made the catalog visit-preparation action available and routed unfinished
-  preparation to a dedicated, recoverable â€œin developmentâ€ page.
-
-### Tests
-
-- Rechecked TypeScript, lint, 145 unit tests, production build, responsive
-  layouts, exercise switching, Store Locator, catalog navigation, and assistant
-  loading/error states.
-
-## [0.3.0.0] - 2026-07-23
-
-### Added
-
-- Added a feature-flagged RU/EN Knowledge Assistant with local-only history,
-  reviewed citations, safe abstention, urgent guidance, and privacy-filtered
-  analytics.
-- Added isolated pgvector retrieval storage, a server-only Edge Function,
-  separate chat and multilingual embedding provider adapters, and a
-  fail-closed reviewed source registry/indexer.
-- Added desktop/mobile tests, provider and citation contract coverage, secret
-  boundary scanning, and operational documentation for preview rollout and
-  rollback.
-- Added the Optical Orbits v5 design system across the home page, try-on,
-  vision tracker, catalog, product detail, mission, brand, store locator,
-  dashboard, and Knowledge Assistant experiences.
-- Added reusable atomic headings, optical orbit motion, responsive layouts,
-  structured assistant answers, and consistent next-step navigation.
-
-### Changed
-
-- Migrated shared typography, color, spacing, focus, motion, and mobile
-  behavior to the Optical Orbits v5 product rules.
-- Switched Knowledge Assistant generation and embeddings to the free
-  Cloudflare Workers AI configuration while preserving the Supabase retrieval
-  and safety boundaries.
-
-### Fixed
-
-- Kept the assistant route and home widget unavailable when the feature flag is
-  disabled.
-- Prevented provider diagnostics from crossing the public Edge Function error
-  boundary.
-- Corrected assistant suggestion overflow, readable body-copy sizing,
-  accessibility motion behavior, and Cyrillic heading tracking.
-
-### Tests
-
-- Expanded route, provider, assistant, Store Locator, AtomicHeading, feature
-  flag, responsive, and error-state regression coverage.
-
-## [0.2.0.1] - 2026-07-20
-
-### Changed
-
-- Added regression coverage that keeps checkout contact guidance fully
-  English after the customer switches languages.
-- Clarified that the Eye Map client experience remains hidden until the
-  periorbital product specification receives a signed `Go` decision.
-
-## [0.2.0.0] - 2026-07-20
-
-### Added
-
-- Added browser-side guided camera capture to try-on with live MediaPipe
-  feedback for distance, head level, centering, and one-face framing.
-- Kept captured frames local and routed camera JPEGs through the same
-  auto-fit pipeline as uploaded photos, with RU/EN and mobile coverage.
-- Added a guarded, local-only Eye Map experience with clear quality states,
-  cohort comparison language, local history, and privacy-safe analytics.
-- Added release gates and automated boundary checks that keep Eye Map hidden
-  until its product, evidence, and governance requirements are approved.
-- Added focused regression coverage for camera cleanup, browser fallbacks,
-  focus restoration, duplicate capture prevention, latest-photo wins, and
-  Eye Map storage and result handling.
-
-### Changed
-
-- Made the selected try-on scenario remain visibly and programmatically
-  selected while the customer continues through the fitting flow.
-
-### Fixed
-
-- Prevented camera streams from remaining active after playback errors or
-  dialog closure.
-- Prevented stale face-analysis results from replacing a newer uploaded or
-  captured photo.
-- Ensured temporary camera frames are always released and live analysis
-  automatically retries after an unexpected failure.
-
-## [0.1.0.0] - 2026-07-19
-
-### Added
-
-- Added the guarded Eye Map Sprint 0 foundation: feature flag, typed quality,
-  inference, benchmark, governance, and go/no-go contracts with automated tests.
-- Added the periorbital architecture, private ML repository boundary, golden-set
-  governance, artifact manifest, benchmark templates, review rubric, and source
-  technical specification required for an auditable research spike.
-- Added a production-boundary check that keeps Eye Map disabled, unrouted, and
-  free of server-side ML dependencies until the release gates are approved.
-
-### Changed
-
-- Improved Russian and English localization of try-on scenarios, frame details,
-  checkout use cases, and vision-care labels.
-- Hardened the ML trust boundary by returning sanitized inference objects and
-  rejecting impossible benchmark counts, negative latency, and regression data.
-
-### Fixed
-
-- Prevented unknown ML response fields and internal debug data from crossing the
-  validated Eye Map inference boundary.
-- Prevented incomplete artifact manifests and invalid benchmark samples from
-  producing a false go decision.
-
-## Unreleased
-
-- Hardened the service-checkout release gate: terminal payment retries now rotate idempotency keys, the lead endpoint enforces origin/auth/size/rate boundaries, and Tally fallback protects mixed-version rollouts.
-- Removed personal contact values from Tally fallback URLs and added strict server-side validation for every selected-frame field.
-- Removed contact data from the try-on Tally fallback and validated locale, contact channel, source page, and UTM fields at the Edge boundary.
-
-### Added
-
-- Vitest/React Testing Library coverage for checkout validation, lead/payment orchestration, retry identity, and bounded payment-status polling.
-- Playwright RU/EN desktop and iPhone-profile checkout overflow checks.
-- Safe 429 RUB payment test contour with server-owned pricing, idempotent intent creation, opaque status tokens, and RU/EN return, success, and failure pages.
-- Public-safe payment status Edge Function and forward-only database hardening migration.
-- Engineering runbook for the planned YooKassa integration, including architecture, API contracts, payment states, security boundaries, test matrix, rollout, and rollback.
-- Developer experience review report for the current MVP branch.
-- Product UX wrapper for MediaPipe-powered auto-fit try-on.
-- Route smoke-test script for key app pages and public SEO files.
-- Developer quickstart, contributing guide, environment template, and try-on QA checklist.
-
-### Changed
-
-- Transient payment-intent retry now reuses the successful lead and original idempotency key; retry after a terminal failed or cancelled status keeps the lead but rotates the key.
-- Pending payment status now checks at 0, 2, 5, 10, and 20 seconds, then exposes a manual refresh.
-- Payment-result routes are excluded from search indexing and never treat a browser redirect as proof of payment.
-- Payment analytics record only technical funnel states and never payment tokens or personal data.
-- Auto-fit try-on copy now uses customer-facing language instead of implementation language.
-- Frame asset documentation now uses root-domain paths for `https://vilu.store/`.
-
-### Known
-
-- Real charging remains disabled until the server owns offer pricing, YooKassa webhooks are verified, and the payment Definition of Done is complete.
-- The project currently has non-blocking Fast Refresh lint warnings in existing context and knowledge-base files.
-- Production build can need normal process permissions on Windows because Vite/esbuild starts a child process.
-
-## 2026-06-23
-
-### Added
-
-- MediaPipe Face Landmarker integration for browser-side face landmark detection.
-- Auto-fit frame placement based on eye position, bridge position, and face-width hints.
-- Unsupported HEIC/HEIF handling for browser photo uploads.
-- Optional face-landmark overlay hidden by default.
-- Release note: `docs/release-mediapipe-auto-fit.md`.
-
-### Changed
-
-- Try-on flow now frames MediaPipe as `ĞĞ²Ñ‚Ğ¾Ğ¿Ğ¾ÑĞ°Ğ´ĞºĞ° Ğ¾Ğ¿Ñ€Ğ°Ğ²Ñ‹`.
-- Face-fit score is linked to the auto-fit result.
-- Uploaded photos remain local to the browser and are not sent to the ViLu server.
-
-## 2026-06-18
-
-### Added
-
-- ViLu Knowledge Base pages for Face-fit score, frame size, PD, high prescriptions, online try-on limits, face shape, and AI source references.
-- `robots.txt`, `sitemap.xml`, and `llms.txt`.
-- GitHub Pages custom-domain setup for `vilu.store`.
-- Yandex Metrica integration with safe analytics-event filtering.
-
-### Changed
-
-- Deployment base moved to root domain paths for `https://vilu.store/`.
+- Separated ingestion feed origins from outbound produ×|¶‰ËkºwµçL‚‚ˆÈÈÈš^Y‚‹Hš[Üš]^™YİÜ™H›İ]\È[™Û™HØ[Èİ™\ˆY\˜Ú[ÙXœÚ]\È[ˆÙ™™\‚ˆš[™\ˆ™\ÜÛœÙ\ËÛÈ]™\H]˜Z[X›H™^\İ\Xİ[ÛˆØ[ˆ™XXÚH›ÙXİˆØ\™[œİXYÙˆ™Z[™ÈX\ÚÙYHHX[™]ÜHÛİ\˜ÙHT“‚‚ˆÈÈÈ\İÂ‚‹HYYYÙHÛÛ˜XİÛİ™\˜YÙH›Üˆ›İ]KÛ™K[™ÙXœÚ]H˜[˜XÚÈš[Üš]K‚‹HYY›ÙXİXØ\™Ûİ™\˜YÙH›ÜˆØY™H[˜[™ÛÛÙÛHX\È\İ[˜][ÛœË‚‹H™XÚXÚÙY[ŒÌH\İË\TØÜš\[[™H›ÙXİ[ÛˆZ[‚‚ˆÈÈÌŒHHŒ‹LËL‚‚ˆÈÈÈYY‚‹HYYØÚY[YÚ[™ÛK\Ûİ\˜ÙHÙ™™\ˆš[™\ˆ›ÙXİ[ÛˆÜ\˜][ÛœÈÚ]Bˆ›İ[™Y]™HØ[˜\K›Ü›X[^˜][Û‹X[ÚXÚÜË[™ÛX\ˆÛÜšÙ›İÈ[\Ë‚‹HYYÙ\šXÙK[Û›HX[™\Ü[™È›Üˆ]Hœ™\Ú™\ÜË\œÙ\ˆİXØÙ\ÜËˆ]X\˜[[™H›Û[YKœ™\ÚÙ™™\œËÜ[ˆ[˜ÚY[Ë[™İ[Y[œË‚‹HYY[ˆÜ\˜][ÛœÈ[˜›ÛÚÈÛİ™\š[™È›İXİYÛÛ™šYİ\˜][Û‹X[X[Ø[˜\BˆÚXÚÜË™XÛİ™\K[\œ\[Ûˆ[™[™Ë[™›Û˜XÚË‚‚ˆÈÈÈÚ[™ÙY‚‹H›İXİYXXÚÛİ\˜ÙHœ›ÛHİ™\›\[™È]Y]YYÜˆ[›š[™È[™Ù\İ[Ûˆ›ØœÈ]ˆ›İHÛÜšÙ›İÈ[™]X˜\ÙH^Y\œË‚‹HYY›İ[™Y™]HÚ]^Û™[X[˜XÚÛÙ™ˆ[™š]\ˆ›ÜˆØ[˜\Kˆ›Ü›X[^˜][Û‹[™X[XÚXÚÈ˜Z[\™\Ë‚‹H[Z]Y›ÙXİ[ÛˆÜ™Y[X[ÈÈH^Xİ][Ûˆİ\]™\]Z\™\È[K‚‚ˆÈÈÈ\İÂ‚‹HYYØÚY[\ˆÜ\˜][ÛœÈ\İÈ[™ÔS[YÜ˜][ÛˆÛİ™\˜YÙH›ÜˆXİ]™K\[‚ˆ^Û\Ú]š]KÛİ\˜ÙHX[Ûİ[\œËX[[\Ë[™”È\›Z\ÜÚ[ÛœË‚‹H™XÚXÚÙY[ŒH\İË\TØÜš\[ÔS[YÜ˜][Ûˆ\İË[™Bˆ›ÙXİ[ÛˆZ[‚‚ˆÈÈÌŒŒ×HHŒ‹LËL‚‚ˆÈÈÈš^Y‚‹H[İÙYHÙ™™\ˆš[™\ˆYÙHTHÈ]][XØ]Hœ›İÜÙ\ˆ™\]Y\İÈÚ]›İˆİ\X˜\ÙHYØXŞH[›Û[[İ\ÈÙ^\È[™İ\œ™[X›\ÚX›HÙ^\Ë‚‹HÙ\ÙXÜ™]THÙ^\È^ÛYYÚ[Hİ\Ü[™ÈX›\ÚX›KZÙ^H›İ][Ûˆœ›ÛBˆİ\X˜\ÙH]›Ü›HY]Y]K‚‚ˆÈÈÈ\İÂ‚‹HYYÛÛ\]Xš[]HÛİ™\˜YÙH›ÜˆYØXŞKİ\œ™[›İ]Y[™ÙXÜ™]Ù^Bˆ›Ü›X]È[™™XÚXÚÙY[ŒH\İË\TØÜš\[™H›ÙXİ[ÛˆZ[‚‚ˆÈÈÌŒŒ—HHŒ‹LËL‚‚ˆÈÈÈYY‚‹HYYHÙ\šXÙK\›ÛK[Û›HÙ™™\ˆš[™\ˆ›ÙXİ›Ú™Xİ[Ûˆ[™™\œÚ[Û™Yˆ™XY[Û›HYÙHTH›Üˆœ™\ÚX›\ÚYÙ™™\œÈ[™Z[š[][HÛÛ™š\›YYšXÙ\Ë‚‹HYY›ÙXİXØ\™İ]\È›ÜˆØY[™Ë[˜]˜Z[X›H]K\œ›ÜœË™\šYšYYˆÙ™™\ˆÛİ\˜Ù\Ë]˜Z[Xš[]Kİ\œ™[˜ÚY\Ë[™ÙXœÚ]KÛ™KÜˆ›İ]HXİ[ÛœË‚‚ˆÈÈÈÙXİ\š]B‚‹HÙ\Ü\˜][Û˜[Ù™™\ˆš[™\ˆX›\È™Z[™HYÙH‘‘‹Ú]İšXİ™\]Y\İˆ˜[Y][Û‹ÜšYÚ[ˆÛÛ›ÛË›İ[™Y˜]H[Z][™Ë[™›Èœ›İÜÙ\ˆXØÙ\ÜÈÂˆHÙ\šXÙK\›ÛHÜ™Y[X[‚‹H^ÛYY]X\˜[[™Y[œX›\ÚYİ[K[™^\™YØœÙ\˜][ÛœÈœ›ÛBˆ›ÙXİXØ\™™\İ[Ë‚‚ˆÈÈÈ\İÂ‚‹HYYTHÛÛ˜XİYÙH[YÜ˜][Û‹œ›Û[™İ]K[™ÔS\›Z\ÜÚ[Û‚ˆÛİ™\˜YÙH›ÜˆHÙ™™\ˆš[™\ˆ›ÙXİXØ\™›İË‚‹H™XÚXÚÙY\TØÜš\[[Œ[š][™[YÜ˜][Ûˆ\İËÚXÚÛİ]ˆÛÛ˜XİËÔSZYÜ˜][ÛœË[™H›ÙXİ[ÛˆZ[‚‚ˆÈÈÌŒŒWHHŒ‹LËLB‚ˆÈÈÈYY‚‹HYY]\›Z[š\İXÈÙ™™\ˆš[™\ˆ›Ü›X[^˜][Ûˆ›ÜˆšXÙKİ\œ™[˜ŞKˆ]˜Z[Xš[]K›ÙXİY[]KØ][ÙÈX]Ú[™Ë[™Ì‹Zİ\ˆÈËY^Bˆœ™\Ú™\ÜÈÛ\ÜÚYšXØ][Û‹‚‹HYYH›İ[™Y›Ü›X[^˜][Ûˆ[›™\ˆÛÛ›™XİYÈH\›İ™Y[™Ù\İ[Û‚ˆØ[˜\KÚ]^Xİ[X]ÚX›XØ][Ûˆ[™™]šY]ÈÜˆ]X\˜[[™H›İ][™È›Ü‚ˆ[XšYİ[İ\Ë[›ÛX[İ\Ë[™[˜[YØœÙ\˜][ÛœË‚‹HYYÙ\šXÙK\›ÛK[Û›HÔSÛÛ˜XİÈ›Üˆ[™[™È˜]Ú\ËY[\İ[™]šY]ÂˆÛÜšË]ÛZXÈÙ™™\ˆX›XØ][Û‹[™]Y]YÛÛ\\˜X›HÜ]ÜˆY\™ÙHXİ[ÛœË‚‚ˆÈÈÈÙXİ\š]B‚‹HÙ\šX[^™YX›XØ][Ûˆ\ˆÙÚXØ[Ù™™\ˆÈ™]™[ÛÛ˜İ\œ™[šXÙKX[›ÛX[Bˆ\\ÜÙ\Ë[™›Ü˜ÙYÛİ\˜ÙK[X\šÙ]XÚØYÙH›İ[™\šY\Ë[™™]Z[™YØ[š]^™YˆÛİ\˜ÙHT“ÈÛ›HY\ˆ™[[İš[™ÈÙ[œÚ]]™H]Y\H\˜[Y]\œÈ[™œ˜YÛY[Ë‚‹HÙ\[›Ü›X[^˜][Ûˆ]]][ÛœÈ[˜]˜Z[X›HÈœ›İÜÙ\ˆ›Û\È[™™\Ù\™Yˆ[[]]X›H˜]Ë[ØœÙ\˜][Ûˆ›İ™[˜[˜ÙH›Üˆ]™\HX›\ÚYšXÙHÜˆ™]šY]Ë‚‚ˆÈÈÈ\İÂ‚‹HYYš^\™K[›™\‹[™ÔS[YÜ˜][ÛˆÛİ™\˜YÙH›Üˆ^Xİ[™^BˆX]Ú[™ËX[›Ü›YY[œ][XšYİZ]Kœ™\Ú™\ÜË™]HY[\İ[˜ŞKX\šÙ]ˆ›İ[™\šY\ËPÓË›İ™[˜[˜ÙK[™Ü]ÜˆY\™ÙH™YÜ™\ÜÚ[ÛœË‚‚ˆÈÈÌŒŒHHŒ‹LËLB‚ˆÈÈÈYY‚‹HYYHÙ™™\ˆš[™\ˆ[™Ù\İ[Ûˆ[[YHÚ]\ÛÛ]YÛİ\˜ÙHY\\œËˆY[\İ[˜]ÈØœÙ\˜][ÛœË\œÙ\ˆ]X\˜[[™K[™[ˆXØÛİ[[™Ë‚‹HYY›İ[™YÛİ\˜ÙHXØÙ\ÜÈÚ]^XİÈ[İÛ\İË›Ø›İÈ[™\›\ÂˆØ]\ËÔÔ‘ˆ›İXİ[Û‹˜]H[™ÛÛ˜İ\œ™[˜ŞH[Z]Ë[Y[İ]Ë™\ÜÛœÙK\Ú^™Bˆ[Z]Ë[™™]H˜XÚÛÙ™‹‚‹HYYHš^\™K[Û›HØ[˜\KH›İXİYX[X[]™KXØ[˜\HÛÜšÙ›İËÛİ\˜ÙBˆÛ˜›Ø\™[™ÈİZY[˜ÙK[™ÙXİ\š]H[™Y\\ˆÛÛ˜XİÛİ™\˜YÙK‚‚ˆÈÈÈ\İÂ‚‹H™XÚXÚÙYˆ[™Ù\İ[ÛˆÙXİ\š]H[™ÛÛ˜Xİ\İËİšXİ\TØÜš\›ÜˆBˆ[[YKH[MÍ‹]\İ[š]İZ]K[ÚXÚÛİ]ÛÛ˜XİË[™Bˆ›ÙXİ[ÛˆZ[‚‹H™XÛÜ™Y›İ\ˆ™KY^\İ[™ÈÛ›İÛYÙH\ÜÚ\İ[L‘H^Xİ][Ûˆ˜Z[\™\ÂˆÙ\\˜][NÈ\È™[X\ÙHÙ\È›İÚ[™ÙH]ÈRHÜˆ˜XÚÙ[™‚‚ˆÈÈÌŒËŒŒ×HHŒ‹LËL‚ˆÈÈÈYY‚‹HYYH›Ü›X[^™Yİ\X˜\ÙH›İ[™][Ûˆ›ÜˆÙ™™\ˆš[™\ˆX\šÙ]ËÛİ\˜Ù\ËˆİÜ™\Ë›ÙXİËØœÙ\˜][ÛœËšXÙ\Ëœ™\Ú™\ÜË[™[™Ù\İ[Ûˆ[œË‚‹HYY“ÈÛXÚY\Ë[™^\Ë[[]]X›H˜]ÈØœÙ\˜][ÛœË›İXİYÔSÙX\˜Úˆ[˜İ[ÛœËÚ\™Y\TØÜš\ÛÛ˜XİË[™ÔS[YÜ˜][ÛˆÛİ™\˜YÙK‚‹HYYÜ\˜][Û˜[Øİ[Y[][Ûˆ›ÜˆHÙ™™\ˆš[™\ˆ]H›İ[™\Kˆ™][[Û‹ÙXİ\š]H[Ù[\İ[™Ë[™›Û˜XÚË‚‚ˆÈÈÈ\İÂ‚‹H™XÚXÚÙY\TØÜš\[[š]\İË›ÙXİ[ÛˆZ[ÛÛ˜Xİ\İË[™ˆHÙ™™\ˆš[™\ˆÔSÙXİ\š]H[˜\šX[Ë‚‚ˆÈÈÌŒËŒŒ—HHŒ‹LËLBƒBˆÈÈÈÚ[™ÙYBƒB‹Hİ[™\™^™YHÛYHYÙHÛˆH]\›Z[š\İXÈ\šËÛYÚÙXİ[ÛˆØY[˜ÙKƒB‹HYYHÜXØ[Ü˜š]ÈÜšYÈ›İİ\™˜XÙ\È[™™\İÜ™Y™XYX›CBˆ\ÙÜ˜\H[™ÛÛ›ÛÈ[ˆHÛ›İÛYÙKÚİØØ\ÙK[™\Ú›Ø\™ÙXİ[ÛœËƒBƒBˆÈÈÈš^YBƒB‹H™[[İ™Y]HØ\ØØYHİ™\œšY\È]›][™Y\šÈÙXİ[ÛœÈ[ÈH›[šÃBˆYÚİ\™˜XÙH[™XYHÙXİ[ÛˆX™[È[™Xİ[ÛœÈY™™Xİ]™[H[š\ÚX›KƒB‹HÛÛœÛÛY]YH™[X\ÙHÔÔÈÛÈHš[˜[ØY[˜ÙH[\È]™HÛ™HÛİ\˜ÙHÙƒBˆ]ƒBƒBˆÈÈÈ\İÃBƒB‹H™XÚXÚÙY\TØÜš\[[š]\İË›ÙXİ[ÛˆZ[[™HÛYHYÙCBˆ]MÎL[™ÌŒÚ]İ]Üš^›Û[İ™\™›İËƒBƒBˆÈÈÌŒËŒŒWHHŒ‹LËL‚ˆÈÈÈÚ[™ÙY‚‹H[šYšYY\šÈ\›È[Y[œÚ[ÛœËØ\›K[YÚİ\™˜XÙ\Ë›Ü™\™Y[˜İ[Û˜[Ø\™Ëˆ\ÙÜ˜\HØØ[K[™™\ÜÛœÚ]™HÜXÚ[™ÈXÜ›ÜÜÈÜXØ[Ü˜š]ÈYÙ\Ë‚‹HÛ\šYšYYHİÜ™HØØ]ÜˆX\[™™Y\ÚYÛ™YÛÛ\Xİ[™[Û›İÛYÙBˆ\ÜÚ\İ[ÛÛ\ÜÙ\œÈ\È[›Z\İZØX›HÛÛ™\œØ][Û˜[[\™˜XÙ\Ë‚‚ˆÈÈÈš^Y‚‹HYYÛÜšÚ[™È›Øİ\ÈİŒLŒLŒ[™[Z[™È^\˜Ú\ÙH[Ù\ÈÚ]\İ[˜İˆ[œİXİ[ÛœË[Y\œË[™[İ[Ûˆ™Z]š[Ü‹‚‹H™]™[YHİÜ™HØØ]Üˆİ™\›^Hœ›ÛHÛÛY[™ÈÚ]˜]šYØ][Û‹‚‹HXYHHØ][ÙÈš\Ú]\™\\˜][ÛˆXİ[Ûˆ]˜Z[X›H[™›İ]Y[™š[š\ÚYˆ™\\˜][ÛˆÈHYXØ]Y™XÛİ™\˜X›H8 '[ˆ]™[ÜY[8 'HYÙK‚‚ˆÈÈÈ\İÂ‚‹H™XÚXÚÙY\TØÜš\[MH[š]\İË›ÙXİ[ÛˆZ[™\ÜÛœÚ]™Bˆ^[İ]Ë^\˜Ú\ÙHİÚ]Ú[™ËİÜ™HØØ]Ü‹Ø][ÙÈ˜]šYØ][Û‹[™\ÜÚ\İ[ˆØY[™ËÙ\œ›Üˆİ]\Ë‚‚ˆÈÈÌŒËŒŒHHŒ‹LËLŒÂ‚ˆÈÈÈYY‚‹HYYH™X]\™KY›YÙÙY•KÑSˆÛ›İÛYÙH\ÜÚ\İ[Ú]ØØ[[Û›H\İÜKˆ™]šY]ÙYÚ]][ÛœËØY™HXœİ[[Û‹\™Ù[İZY[˜ÙK[™š]˜XŞKYš[\™Yˆ[˜[]XÜË‚‹HYY\ÛÛ]Yİ™XİÜˆ™]šY]˜[İÜ˜YÙKHÙ\™\‹[Û›HYÙH[˜İ[Û‹ˆÙ\\˜]HÚ][™][[[™İX[[X™Y[™È›İšY\ˆY\\œË[™Bˆ˜Z[XÛÜÙY™]šY]ÙYÛİ\˜ÙH™YÚ\İKÚ[™^\‹‚‹HYY\ÚİÜÛ[Øš[H\İË›İšY\ˆ[™Ú]][ÛˆÛÛ˜XİÛİ™\˜YÙKÙXÜ™]ˆ›İ[™\HØØ[›š[™Ë[™Ü\˜][Û˜[Øİ[Y[][Ûˆ›Üˆ™]šY]È›Ûİ][™ˆ›Û˜XÚË‚‹HYYHÜXØ[Ü˜š]ÈH\ÚYÛˆŞ\İ[HXÜ›ÜÜÈHÛYHYÙKK[Û‹ˆš\Ú[Ûˆ˜XÚÙ\‹Ø][ÙË›ÙXİ]Z[Z\ÜÚ[Û‹œ˜[™İÜ™HØØ]Ü‹ˆ\Ú›Ø\™[™Û›İÛYÙH\ÜÚ\İ[^\šY[˜Ù\Ë‚‹HYY™]\ØX›H]ÛZXÈXY[™ÜËÜXØ[Ü˜š][İ[Û‹™\ÜÛœÚ]™H^[İ]ËˆİXİ\™Y\ÜÚ\İ[[œİÙ\œË[™ÛÛœÚ\İ[™^\İ\˜]šYØ][Û‹‚‚ˆÈÈÈÚ[™ÙY‚‹HZYÜ˜]YÚ\™Y\ÙÜ˜\KÛÛÜ‹ÜXÚ[™Ë›Øİ\Ë[İ[Û‹[™[Øš[Bˆ™Z]š[ÜˆÈHÜXØ[Ü˜š]ÈH›ÙXİ[\Ë‚‹HİÚ]ÚYÛ›İÛYÙH\ÜÚ\İ[Ù[™\˜][Ûˆ[™[X™Y[™ÜÈÈHœ™YBˆÛİY›\™HÛÜšÙ\œÈRHÛÛ™šYİ\˜][ÛˆÚ[H™\Ù\š[™ÈHİ\X˜\ÙH™]šY]˜[ˆ[™ØY™]H›İ[™\šY\Ë‚‚ˆÈÈÈš^Y‚‹HÙ\H\ÜÚ\İ[›İ]H[™ÛYHÚYÙ][˜]˜Z[X›HÚ[ˆH™X]\™H›YÈ\Âˆ\ØX›Y‚‹H™]™[Y›İšY\ˆXYÛ›ÜİXÜÈœ›ÛHÜ›ÜÜÚ[™ÈHX›XÈYÙH[˜İ[Ûˆ\œ›Ü‚ˆ›İ[™\K‚‹HÛÜœ™XİY\ÜÚ\İ[İYÙÙ\İ[Ûˆİ™\™›İË™XYX›H›ÙKXÛÜHÚ^š[™ËˆXØÙ\ÜÚXš[]H[İ[Ûˆ™Z]š[Ü‹[™Ş\š[XÈXY[™È˜XÚÚ[™Ë‚‚ˆÈÈÈ\İÂ‚‹H^[™Y›İ]K›İšY\‹\ÜÚ\İ[İÜ™HØØ]Ü‹]ÛZXÒXY[™Ë™X]\™Bˆ›YË™\ÜÛœÚ]™K[™\œ›Ü‹\İ]H™YÜ™\ÜÚ[ÛˆÛİ™\˜YÙK‚‚ˆÈÈÌŒ‹ŒŒWHHŒ‹LËLŒ‚ˆÈÈÈÚ[™ÙY‚‹HYY™YÜ™\ÜÚ[ÛˆÛİ™\˜YÙH]ÙY\ÈÚXÚÛİ]ÛÛXİİZY[˜ÙH[Bˆ[™Û\ÚY\ˆHİ\İÛY\ˆİÚ]Ú\È[™İXYÙ\Ë‚‹HÛ\šYšYY]H^YHX\ÛY[^\šY[˜ÙH™[XZ[œÈY[ˆ[[Bˆ\š[Ü˜š][›ÙXİÜXÚYšXØ][Ûˆ™XÙZ]™\ÈHÚYÛ™YÛØXÚ\Ú[Û‹‚‚ˆÈÈÌŒ‹ŒŒHHŒ‹LËLŒ‚ˆÈÈÈYY‚‹HYYœ›İÜÙ\‹\ÚYHİZYYØ[Y\˜HØ\\™HÈK[ÛˆÚ]]™HYYXT\Bˆ™YY˜XÚÈ›Üˆ\İ[˜ÙKXY]™[Ù[\š[™Ë[™Û™KY˜XÙHœ˜[Z[™Ë‚‹HÙ\Ø\\™Yœ˜[Y\ÈØØ[[™›İ]YØ[Y\˜H”QÜÈ›İYÚHØ[YBˆ]]ËYš]\[[™H\È\ØYYİÜËÚ]•KÑSˆ[™[Øš[HÛİ™\˜YÙK‚‹HYYHİX\™YØØ[[Û›H^YHX\^\šY[˜ÙHÚ]ÛX\ˆ]X[]Hİ]\ËˆÛÚÜÛÛ\\š\ÛÛˆ[™İXYÙKØØ[\İÜK[™š]˜XŞK\ØY™H[˜[]XÜË‚‹HYY™[X\ÙHØ]\È[™]]ÛX]Y›İ[™\HÚXÚÜÈ]ÙY\^YHX\Y[‚ˆ[[]È›ÙXİ]šY[˜ÙK[™Ûİ™\›˜[˜ÙH™\]Z\™[Y[È\™H\›İ™Y‚‹HYY›Øİ\ÙY™YÜ™\ÜÚ[ÛˆÛİ™\˜YÙH›ÜˆØ[Y\˜HÛX[\œ›İÜÙ\ˆ˜[˜XÚÜËˆ›Øİ\È™\İÜ˜][Û‹\XØ]HØ\\™H™]™[[Û‹]\İ\İÈÚ[œË[™ˆ^YHX\İÜ˜YÙH[™™\İ[[™[™Ë‚‚ˆÈÈÈÚ[™ÙY‚‹HXYHHÙ[XİYK[ÛˆØÙ[˜\š[È™[XZ[ˆš\ÚX›H[™›ÙÜ˜[[X]XØ[BˆÙ[XİYÚ[HHİ\İÛY\ˆÛÛ[Y\È›İYÚHš][™È›İË‚‚ˆÈÈÈš^Y‚‹H™]™[YØ[Y\˜Hİ™X[\Èœ›ÛH™[XZ[š[™ÈXİ]™HY\ˆ^X˜XÚÈ\œ›ÜœÈÜ‚ˆX[ÙÈÛÜİ\™K‚‹H™]™[Yİ[H˜XÙKX[˜[\Ú\È™\İ[Èœ›ÛH™\XÚ[™ÈH™]Ù\ˆ\ØYYÜ‚ˆØ\\™YİË‚‹H[œİ\™Y[\Ü˜\HØ[Y\˜Hœ˜[Y\È\™H[Ø^\È™[X\ÙY[™]™H[˜[\Ú\Âˆ]]ÛX]XØ[H™]šY\ÈY\ˆ[ˆ[™^XİY˜Z[\™K‚‚ˆÈÈÌŒKŒŒHHŒ‹LËLNB‚ˆÈÈÈYY‚‹HYYHİX\™Y^YHX\Üš[›İ[™][Ûˆ™X]\™H›YË\Y]X[]Kˆ[™™\™[˜ÙK™[˜ÚX\šËÛİ™\›˜[˜ÙK[™ÛËÛ›ËYÛÈÛÛ˜XİÈÚ]]]ÛX]Y\İË‚‹HYYH\š[Ü˜š][\˜Ú]Xİ\™Kš]˜]HS™\ÜÚ]ÜH›İ[™\KÛÛ[‹\Ù]ˆÛİ™\›˜[˜ÙK\Y˜XİX[šY™\İ™[˜ÚX\šÈ[\]\Ë™]šY]ÈXœšXË[™Ûİ\˜ÙBˆXÚšXØ[ÜXÚYšXØ][Ûˆ™\]Z\™Y›Üˆ[ˆ]Y]X›H™\ÙX\˜ÚÜZÙK‚‹HYYH›ÙXİ[Û‹X›İ[™\HÚXÚÈ]ÙY\È^YHX\\ØX›Y[œ›İ]Y[™ˆœ™YHÙˆÙ\™\‹\ÚYHS\[™[˜ÚY\È[[H™[X\ÙHØ]\È\™H\›İ™Y‚‚ˆÈÈÈÚ[™ÙY‚‹H[\›İ™Y\ÜÚX[ˆ[™[™Û\ÚØØ[^˜][ÛˆÙˆK[ÛˆØÙ[˜\š[ÜËœ˜[YH]Z[ËˆÚXÚÛİ]\ÙHØ\Ù\Ë[™š\Ú[Û‹XØ\™HX™[Ë‚‹H\™[™YHS\İ›İ[™\HH™]\›š[™ÈØ[š]^™Y[™™\™[˜ÙHØš™XİÈ[™ˆ™Z™Xİ[™È[\ÜÜÚX›H™[˜ÚX\šÈÛİ[Ë™YØ]]™H][˜ŞK[™™YÜ™\ÜÚ[Ûˆ]K‚‚ˆÈÈÈš^Y‚‹H™]™[Y[šÛ›İÛˆS™\ÜÛœÙHšY[È[™[\›˜[XYÈ]Hœ›ÛHÜ›ÜÜÚ[™ÈBˆ˜[Y]Y^YHX\[™™\™[˜ÙH›İ[™\K‚‹H™]™[Y[˜ÛÛ\]H\Y˜XİX[šY™\İÈ[™[˜[Y™[˜ÚX\šÈØ[\\Èœ›ÛBˆ›ÙXÚ[™ÈH˜[ÙHÛÈXÚ\Ú[Û‹‚‚ˆÈÈ[œ™[X\ÙY‚‹H\™[™YHÙ\šXÙKXÚXÚÛİ]™[X\ÙHØ]Nˆ\›Z[˜[^[Y[™]šY\È›İÈ›İ]HY[\İ[˜ŞHÙ^\ËHXY[™Ú[[™›Ü˜Ù\ÈÜšYÚ[‹Ø]]ÜÚ^™KÜ˜]H›İ[™\šY\Ë[™[H˜[˜XÚÈ›İXİÈZ^Y]™\œÚ[Ûˆ›Ûİ]Ë‚‹H™[[İ™Y\œÛÛ˜[ÛÛXİ˜[Y\Èœ›ÛH[H˜[˜XÚÈT“È[™YYİšXİÙ\™\‹\ÚYH˜[Y][Ûˆ›Üˆ]™\HÙ[XİYYœ˜[YHšY[‚‹H™[[İ™YÛÛXİ]Hœ›ÛHHK[Ûˆ[H˜[˜XÚÈ[™˜[Y]YØØ[KÛÛXİÚ[›™[Ûİ\˜ÙHYÙK[™UHšY[È]HYÙH›İ[™\K‚‚ˆÈÈÈYY‚‹Hš]\İÔ™XXİ\İ[™ÈXœ˜\HÛİ™\˜YÙH›ÜˆÚXÚÛİ]˜[Y][Û‹XYÜ^[Y[Ü˜Ú\İ˜][Û‹™]HY[]K[™›İ[™Y^[Y[\İ]\ÈÛ[™Ë‚‹H^]ÜšYÚ•KÑSˆ\ÚİÜ[™TÛ™K\›Ùš[HÚXÚÛİ]İ™\™›İÈÚXÚÜË‚‹HØY™HH•Pˆ^[Y[\İÛÛİ\ˆÚ]Ù\™\‹[İÛ™YšXÚ[™ËY[\İ[[[Ü™X][Û‹Ü\]YHİ]\ÈÚÙ[œË[™•KÑSˆ™]\›‹İXØÙ\ÜË[™˜Z[\™HYÙ\Ë‚‹HX›XË\ØY™H^[Y[İ]\ÈYÙH[˜İ[Ûˆ[™›ÜØ\™[Û›H]X˜\ÙH\™[š[™ÈZYÜ˜][Û‹‚‹H[™Ú[™Y\š[™È[˜›ÛÚÈ›ÜˆH[›™Y[ÛÒØ\ÜØH[YÜ˜][Û‹[˜ÛY[™È\˜Ú]Xİ\™KTHÛÛ˜XİË^[Y[İ]\ËÙXİ\š]H›İ[™\šY\Ë\İX]š^›Ûİ][™›Û˜XÚË‚‹H]™[Ü\ˆ^\šY[˜ÙH™]šY]È™\Ü›ÜˆHİ\œ™[U”œ˜[˜Ú‚‹H›ÙXİVÜ˜\\ˆ›ÜˆYYXT\K\İÙ\™Y]]ËYš]K[Û‹‚‹H›İ]HÛ[ÚÙK]\İØÜš\›ÜˆÙ^H\YÙ\È[™X›XÈÑSÈš[\Ë‚‹H]™[Ü\ˆ]ZXÚÜİ\ÛÛšX][™ÈİZYK[š\›Û›Y[[\]K[™K[ÛˆPHÚXÚÛ\İ‚‚ˆÈÈÈÚ[™ÙY‚‹H˜[œÚY[^[Y[Z[[™]H›İÈ™]\Ù\ÈHİXØÙ\ÜÙ[XY[™ÜšYÚ[˜[Y[\İ[˜ŞHÙ^NÈ™]HY\ˆH\›Z[˜[˜Z[YÜˆØ[˜Ù[Yİ]\ÈÙY\ÈHXY]›İ]\ÈHÙ^K‚‹H[™[™È^[Y[İ]\È›İÈÚXÚÜÈ]‹KL[™ŒÙXÛÛ™Ë[ˆ^ÜÙ\ÈHX[X[™Yœ™\Ú‚‹H^[Y[\™\İ[›İ]\È\™H^ÛYYœ›ÛHÙX\˜Ú[™^[™È[™™]™\ˆ™X]Hœ›İÜÙ\ˆ™Y\™Xİ\È›ÛÙˆÙˆ^[Y[‚‹H^[Y[[˜[]XÜÈ™XÛÜ™Û›HXÚšXØ[[›™[İ]\È[™™]™\ˆ^[Y[ÚÙ[œÈÜˆ\œÛÛ˜[]K‚‹H]]ËYš]K[ÛˆÛÜH›İÈ\Ù\Èİ\İÛY\‹Y˜XÚ[™È[™İXYÙH[œİXYÙˆ[\[Y[][Ûˆ[™İXYÙK‚‹Hœ˜[YH\ÜÙ]Øİ[Y[][Ûˆ›İÈ\Ù\È›ÛİYÛXZ[ˆ]È›ÜˆÎ‹Ëİš[KœİÜ™KØ‚‚ˆÈÈÈÛ›İÛ‚‚‹H™X[Ú\™Ú[™È™[XZ[œÈ\ØX›Y[[HÙ\™\ˆİÛœÈÙ™™\ˆšXÚ[™Ë[ÛÒØ\ÜØHÙXšÛÚÜÈ\™H™\šYšYY[™H^[Y[Yš[š][ÛˆÙˆÛ™H\ÈÛÛ\]K‚‹HH›Ú™Xİİ\œ™[H\È›Û‹X›ØÚÚ[™È˜\İ™Yœ™\Ú[Ø\›š[™ÜÈ[ˆ^\İ[™ÈÛÛ^[™Û›İÛYÙKX˜\ÙHš[\Ë‚‹H›ÙXİ[ÛˆZ[Ø[ˆ™YY›Ü›X[›ØÙ\ÜÈ\›Z\ÜÚ[ÛœÈÛˆÚ[™İÜÈ™XØ]\ÙHš]KÙ\ØZ[İ\ÈHÚ[›ØÙ\ÜË‚‚ˆÈÈŒ‹L‹LŒÂ‚ˆÈÈÈYY‚‹HYYXT\H˜XÙH[™X\šÙ\ˆ[YÜ˜][Ûˆ›Üˆœ›İÜÙ\‹\ÚYH˜XÙH[™X\šÈ]Xİ[Û‹‚‹H]]ËYš]œ˜[YHXÙ[Y[˜\ÙYÛˆ^YHÜÚ][Û‹œšYÙHÜÚ][Û‹[™˜XÙK]ÚY[Ë‚‹H[œİ\ÜYRPËÒRQˆ[™[™È›Üˆœ›İÜÙ\ˆİÈ\ØYË‚‹HÜ[Û˜[˜XÙK[[™X\šÈİ™\›^HY[ˆHY˜][‚‹H™[X\ÙH›İNˆØÜËÜ™[X\ÙK[YYX\\KX]]ËYš]›Y‚‚ˆÈÈÈÚ[™ÙY‚‹HK[Ûˆ›İÈ›İÈœ˜[Y\ÈYYXT\H\È4$4,´`´/´/ô/´`t,4-4.´,4/´/ô`4,4,´bØ‚‹H˜XÙKYš]ØÛÜ™H\È[šÙYÈH]]ËYš]™\İ[‚‹H\ØYYİÜÈ™[XZ[ˆØØ[ÈHœ›İÜÙ\ˆ[™\™H›İÙ[ÈHšSHÙ\™\‹‚‚ˆÈÈŒ‹L‹LN‚ˆÈÈÈYY‚‹HšSHÛ›İÛYÙH˜\ÙHYÙ\È›Üˆ˜XÙKYš]ØÛÜ™Kœ˜[YHÚ^™KYÚ™\ØÜš\[ÛœËÛ›[™HK[Ûˆ[Z]Ë˜XÙHÚ\K[™RHÛİ\˜ÙH™Y™\™[˜Ù\Ë‚‹H›Ø›İËÚ][X\[[™\Ë‚‹HÚ]XˆYÙ\Èİ\İÛKYÛXZ[ˆÙ]\›Üˆš[KœİÜ™X‚‹HX[™^Y]šXØH[YÜ˜][ÛˆÚ]ØY™H[˜[]XÜËY]™[š[\š[™Ë‚‚ˆÈÈÈÚ[™ÙY‚‹H\Ş[Y[˜\ÙH[İ™YÈ›ÛİÛXZ[ˆ]È›ÜˆÎ‹Ëİš[KœİÜ™KØ‚
