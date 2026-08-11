@@ -259,7 +259,7 @@ BEGIN
     RAISE EXCEPTION 'browser role can execute normalization mutation';
   END IF;
 END;
-$$;
+$body$;
 
 SELECT pass('Offer Finder normalization invariants hold');
 SELECT * FROM finish();
