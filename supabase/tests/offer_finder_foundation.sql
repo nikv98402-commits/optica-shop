@@ -1,7 +1,8 @@
 \set ON_ERROR_STOP on
 BEGIN;
+SELECT plan(1);
 
-DO $$
+DO $
 DECLARE
   table_name text;
 BEGIN
@@ -100,4 +101,6 @@ BEGIN
 END;
 $$;
 
+SELECT pass('Offer Finder foundation invariants hold');
+SELECT * FROM finish();
 ROLLBACK;
