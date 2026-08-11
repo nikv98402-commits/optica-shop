@@ -11,6 +11,7 @@ the user-facing assistant.
 - dimensions: `1024`;
 - chunk policy: `chars-2400-overlap-240-v1`;
 - retrieval depth: `8`;
+- similarity threshold: `0.58`;
 - minimum `Recall@8`: `0.85`.
 
 The versioned golden set contains 100 PII-free RU/EN cases, including ten
@@ -39,6 +40,11 @@ requires the four server-side secrets documented in the workflow environment
 and calls only `evaluate_knowledge_retrieval`. The report contains metrics and
 failed case IDs; questions, retrieved chunk text, and full corpus text are not
 written to the report or logs.
+
+This live gate evaluates retrieval quality, provenance, and citation inclusion
+only. It does not evaluate generated-answer quality, medical correctness, or
+clinical safety; those concerns remain outside the retrieval-only scope of
+GitHub #86.
 
 Passing requires all of the following:
 
