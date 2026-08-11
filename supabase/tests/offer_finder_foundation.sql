@@ -52,7 +52,9 @@ DECLARE
 BEGIN
   INSERT INTO public.offer_markets
     (id, code, country_code, default_currency, locale, timezone)
-  VALUES (v_market_id, 'RU', 'RU', 'RUB', 'ru-RU', 'Europe/Moscow')\n  ON CONFLICT (code) DO UPDATE SET code = EXCLUDED.code\n  RETURNING id INTO v_market_id;
+  VALUES (v_market_id, 'RU', 'RU', 'RUB', 'ru-RU', 'Europe/Moscow')
+  ON CONFLICT (code) DO UPDATE SET code = EXCLUDED.code
+  RETURNING id INTO v_market_id;
   INSERT INTO public.offer_merchants (id, market_id, name, slug)
   VALUES (v_merchant_id, v_market_id, 'Fixture merchant', 'fixture-merchant');
   INSERT INTO public.offer_sources
