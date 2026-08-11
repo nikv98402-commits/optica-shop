@@ -22,10 +22,10 @@ DECLARE
 BEGIN
   INSERT INTO public.offer_markets
     (id, code, country_code, default_currency, locale, timezone)
-  VALUES (v_market, 'RU', 'RU', 'RUB', 'ru-RU', 'Europe/Moscow');
+  VALUES (v_market, 'RU', 'RU', 'RUB', 'ru-RU', 'Europe/Moscow')\n  ON CONFLICT (code) DO UPDATE SET code = EXCLUDED.code\n  RETURNING id INTO v_market;
   INSERT INTO public.offer_markets
     (id, code, country_code, default_currency, locale, timezone)
-  VALUES (v_other_market, 'AE', 'AE', 'AED', 'en-AE', 'Asia/Dubai');
+  VALUES (v_other_market, 'AE', 'AE', 'AED', 'en-AE', 'Asia/Dubai')\n  ON CONFLICT (code) DO UPDATE SET code = EXCLUDED.code\n  RETURNING id INTO v_other_market;
   INSERT INTO public.offer_merchants (id, market_id, name, slug)
   VALUES (v_merchant, v_market, 'Normalization fixture', 'normalization-fixture');
   INSERT INTO public.offer_sources (
