@@ -22,9 +22,9 @@ BEGIN
     END IF;
   END LOOP;
 END;
-$$;
+$body$;
 
-DO $$
+DO $body$
 BEGIN
   IF has_table_privilege('anon', 'public.offer_raw_observations', 'SELECT')
     OR has_table_privilege('anon', 'public.offer_offers', 'INSERT')
@@ -41,9 +41,9 @@ BEGIN
     RAISE EXCEPTION 'safe public search function is not executable';
   END IF;
 END;
-$$;
+$body$;
 
-DO $$
+DO $body$
 DECLARE
   v_market_id uuid := gen_random_uuid();
   v_merchant_id uuid := gen_random_uuid();
@@ -99,7 +99,7 @@ BEGIN
     NULL;
   END;
 END;
-$$;
+$body$;
 
 SELECT pass('Offer Finder foundation invariants hold');
 SELECT * FROM finish();
