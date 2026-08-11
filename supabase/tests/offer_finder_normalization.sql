@@ -1,7 +1,8 @@
 \set ON_ERROR_STOP on
 BEGIN;
+SELECT plan(1);
 
-DO $$
+DO $
 DECLARE
   v_market uuid := gen_random_uuid();
   v_other_market uuid := gen_random_uuid();
@@ -260,4 +261,6 @@ BEGIN
 END;
 $$;
 
+SELECT pass('Offer Finder normalization invariants hold');
+SELECT * FROM finish();
 ROLLBACK;
