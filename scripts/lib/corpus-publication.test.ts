@@ -1,13 +1,19 @@
-import { describe, expect, it, vi } from 'vitest';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   EMBEDDING_DIMENSIONS,
+  activateStagedPublication,
   chunkText,
+  createCheckpointStore,
   createEmbeddingClient,
   mapDocument,
   publicationMetadata,
-  publishApprovedArtifact,
+  stageApprovedArtifact,
   validateApproval,
   validateEmbedding,
+  validatePublicationGraph,
   validateProtectedArtifactDigest,
 } from './corpus-publication.mjs';
 
@@ -29,6 +35,65 @@ const approval = {
   expectedSourceCount: 1,
   expectedChunkCount: 1,
 };
+
+const vector = Array(1024).fill(0.25);
+const sourceId = '00000000-0000-4000-8000-000000000001';
+const loaded = {
+  approval,
+  mappedDocuments: [{
+    source: { id: sourceId, slug: 'source-one' },
+    chunks: [{ locale: 'en', content: 'text', token_count: 1, ordinal: 0 }],
+  }],
+};
+
+function verifiedStaging() {
+  return {
+    publication_id: 'publication-id',
+    status: 'staging',
+    manifest_sha256: approval.manifestSha256,
+    expected_source_count: 1,
+    actual_source_count: 1,
+    expected_chunk_count: 1,
+    actual_chunk_count: 1,
+    invalid_embedding_count: 0,
+    duplicate_source_count: 0,
+    duplicate_chunk_count: 0,
+    complete: true,
+  };
+}
+
+function checkpoint(status = 'staging', completedSourceIds: string[] = []) {
+  return {
+    version: 1,
+    mode: 'stage-only',
+    manifestSha256: approval.manifestSha256,
+    protectedArtifactSha256: approval.protectedArtifactSha256,
+    expectedSourceCount: 1,
+    expectedChunkCount: 1,
+    publicationId: 'publication-id',
+    completedSourceIds,
+    status,
+    updatedAt: '2026-08-12T00:00:00.000Z',
+  };
+}
+
+function memoryCheckpointStore(initial: ReturnType<typeof checkpoint> | null = null) {
+  let value = initial;
+  return {
+    load: vi.fn(async () => value),
+    save: vi.fn(async (next) => { value = next; }),
+    current: () => value,
+  };
+}
+
+const temporaryDirectories: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(temporaryDirectories.splice(0).map((path) => rm(path, {
+    recursive: true,
+    force: true,
+  })));
+});
 
 describe('approved corpus publication contract', () => {
   it('requires the exact owner-editor and embedding contract', () => {
@@ -79,7 +144,6 @@ describe('approved corpus publication contract', () => {
   });
 
   it('uses Cloudflare direct fallback and validates every batch vector', async () => {
-    const vector = Array(1024).fill(0.25);
     const fetchImpl = vi.fn()
       .mockResolvedValueOnce(new Response(null, { status: 404 }))
       .mockResolvedValueOnce(Response.json({ result: { data: [vector, vector] } }));
@@ -92,91 +156,226 @@ describe('approved corpus publication contract', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
-  it('activates only after every source is staged', async () => {
+  it('retries transient Cloudflare failures with bounded backoff', async () => {
+    const sleepImpl = vi.fn().mockResolvedValue(undefined);
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 429, headers: { 'retry-after': '1' } }))
+      .mockResolvedValueOnce(Response.json({ data: [{ embedding: vector }] }));
+    const embed = createEmbeddingClient({
+      baseUrl: 'https://api.cloudflare.com/client/v4/accounts/test/ai/v1',
+      apiKey: 'secret',
+      fetchImpl,
+      sleepImpl,
+      randomImpl: () => 0.5,
+    });
+    await expect(embed(['one'])).resolves.toEqual([vector]);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleepImpl).toHaveBeenCalledWith(1000);
+  });
+
+  it('aborts and retries a stalled Cloudflare request', async () => {
+    const sleepImpl = vi.fn().mockResolvedValue(undefined);
+    const fetchImpl = vi.fn()
+      .mockImplementationOnce((_url, options) => new Promise((_resolve, reject) => {
+        options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true });
+      }))
+      .mockResolvedValueOnce(Response.json({ data: [{ embedding: vector }] }));
+    const embed = createEmbeddingClient({
+      baseUrl: 'https://api.cloudflare.com/client/v4/accounts/test/ai/v1',
+      apiKey: 'secret',
+      fetchImpl,
+      maxRetries: 1,
+      requestTimeoutMs: 1,
+      sleepImpl,
+      randomImpl: () => 0.5,
+    });
+    await expect(embed(['one'])).resolves.toEqual([vector]);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleepImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('persists a durable checkpoint as valid JSON', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'vilu-stage-only-'));
+    temporaryDirectories.push(directory);
+    const path = join(directory, 'checkpoint.json');
+    const store = createCheckpointStore(path);
+    await store.save(checkpoint('verified', [sourceId]));
+    await expect(store.load()).resolves.toMatchObject({
+      mode: 'stage-only',
+      status: 'verified',
+      completedSourceIds: [sourceId],
+    });
+    await expect(readFile(path, 'utf8')).resolves.toContain('"manifestSha256"');
+  });
+
+  it('rejects duplicate source and chunk identities before any remote write', () => {
+    expect(validatePublicationGraph(loaded)).toEqual({ sourceCount: 1, chunkCount: 1 });
+    expect(() => validatePublicationGraph({
+      ...loaded,
+      approval: { ...approval, expectedSourceCount: 2, expectedChunkCount: 2 },
+      mappedDocuments: [loaded.mappedDocuments[0], loaded.mappedDocuments[0]],
+    })).toThrow('duplicate source identity');
+    expect(() => validatePublicationGraph({
+      ...loaded,
+      approval: { ...approval, expectedChunkCount: 2 },
+      mappedDocuments: [{
+        ...loaded.mappedDocuments[0],
+        chunks: [loaded.mappedDocuments[0].chunks[0], loaded.mappedDocuments[0].chunks[0]],
+      }],
+    })).toThrow('duplicate chunk identity');
+  });
+
+  it('stages and verifies without ever activating', async () => {
     const rpc = vi.fn()
       .mockResolvedValueOnce('publication-id')
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce('source-id')
-      .mockResolvedValueOnce('publication-id');
-    const embedBatch = vi.fn().mockResolvedValue([Array(1024).fill(0)]);
-    const loaded = {
-      approval,
-      mappedDocuments: [{
-        source: { id: 'source-id' },
-        chunks: [{ locale: 'en', content: 'text', token_count: 1, ordinal: 0 }],
-      }],
-    };
-    await expect(publishApprovedArtifact(loaded, { embedBatch, rpc })).resolves.toBe('publication-id');
+      .mockResolvedValueOnce(verifiedStaging())
+      .mockResolvedValueOnce([{ source_id: sourceId, similarity: 1 }]);
+    const embedBatch = vi.fn().mockResolvedValue([vector]);
+    const checkpointStore = memoryCheckpointStore();
+    await expect(stageApprovedArtifact(loaded, {
+      embedBatch,
+      rpc,
+      checkpointStore,
+    })).resolves.toMatchObject({ publicationId: 'publication-id' });
     expect(rpc.mock.calls.map(([name]) => name)).toEqual([
       'begin_knowledge_corpus_publication',
+      'list_staged_knowledge_corpus_source_ids',
       'stage_knowledge_corpus_source',
-      'activate_knowledge_corpus_publication',
+      'verify_knowledge_corpus_staging',
+      'match_staged_knowledge_chunks',
     ]);
+    expect(checkpointStore.current()).toMatchObject({
+      status: 'verified',
+      completedSourceIds: [sourceId],
+      smokeSourceId: sourceId,
+    });
     expect(publicationMetadata(approval)).toHaveProperty(
       'protectedArtifactSha256',
       approval.protectedArtifactSha256,
     );
   });
 
-  it('aborts partial staging without activation when embedding fails', async () => {
+  it('preserves partial staging and checkpoint when embedding fails', async () => {
     const rpc = vi.fn()
       .mockResolvedValueOnce('publication-id')
-      .mockResolvedValueOnce(undefined);
-    const embedBatch = vi.fn().mockRejectedValue(new Error('provider unavailable'));
-    await expect(publishApprovedArtifact({
-      approval,
-      mappedDocuments: [{ source: {}, chunks: [{ content: 'text' }] }],
-    }, { embedBatch, rpc })).rejects.toThrow('provider unavailable');
+      .mockResolvedValueOnce([]);
+    const checkpointStore = memoryCheckpointStore();
+    await expect(stageApprovedArtifact(loaded, {
+      embedBatch: vi.fn().mockRejectedValue(new Error('provider unavailable')),
+      rpc,
+      checkpointStore,
+    })).rejects.toThrow('provider unavailable');
     expect(rpc.mock.calls.map(([name]) => name)).toEqual([
       'begin_knowledge_corpus_publication',
-      'abort_knowledge_corpus_publication',
+      'list_staged_knowledge_corpus_source_ids',
     ]);
+    expect(checkpointStore.current()).toMatchObject({
+      status: 'interrupted',
+      failureCode: 'stage_interrupted',
+    });
   });
 
-  it('aborts a partial publication when staging fails', async () => {
+  it('resumes from completed source checkpoints without re-embedding them', async () => {
     const rpc = vi.fn()
       .mockResolvedValueOnce('publication-id')
-      .mockRejectedValueOnce(new Error('staging failed'))
-      .mockResolvedValueOnce(undefined);
-    const embedBatch = vi.fn().mockResolvedValue([Array(1024).fill(0)]);
-    await expect(publishApprovedArtifact({
-      approval,
-      mappedDocuments: [{ source: {}, chunks: [{ content: 'text' }] }],
-    }, { embedBatch, rpc })).rejects.toThrow('staging failed');
+      .mockResolvedValueOnce([sourceId])
+      .mockResolvedValueOnce(verifiedStaging())
+      .mockResolvedValueOnce([{ source_id: sourceId, similarity: 1 }]);
+    const embedBatch = vi.fn().mockResolvedValue([vector]);
+    const checkpointStore = memoryCheckpointStore(checkpoint('interrupted', [sourceId]));
+    await expect(stageApprovedArtifact(loaded, {
+      embedBatch,
+      rpc,
+      checkpointStore,
+    })).resolves.toMatchObject({ publicationId: 'publication-id' });
     expect(rpc.mock.calls.map(([name]) => name)).toEqual([
       'begin_knowledge_corpus_publication',
-      'stage_knowledge_corpus_source',
-      'abort_knowledge_corpus_publication',
+      'list_staged_knowledge_corpus_source_ids',
+      'verify_knowledge_corpus_staging',
+      'match_staged_knowledge_chunks',
     ]);
+    expect(embedBatch).toHaveBeenCalledTimes(1);
   });
 
-  it('aborts a complete staging set when activation fails', async () => {
+  it('rejects a checkpoint for a different approved publication before remote writes', async () => {
+    const rpc = vi.fn();
+    const checkpointStore = memoryCheckpointStore({
+      ...checkpoint('interrupted', [sourceId]),
+      manifestSha256: 'f'.repeat(64),
+    });
+    await expect(stageApprovedArtifact(loaded, {
+      embedBatch: vi.fn(),
+      rpc,
+      checkpointStore,
+    })).rejects.toThrow('checkpoint does not match the approved publication');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when counts, dimensions, duplicates, or smoke retrieval differ', async () => {
     const rpc = vi.fn()
       .mockResolvedValueOnce('publication-id')
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce('source-id')
-      .mockRejectedValueOnce(new Error('activation failed'))
-      .mockResolvedValueOnce(undefined);
-    const embedBatch = vi.fn().mockResolvedValue([Array(1024).fill(0)]);
-    await expect(publishApprovedArtifact({
-      approval,
-      mappedDocuments: [{ source: {}, chunks: [{ content: 'text' }] }],
-    }, { embedBatch, rpc })).rejects.toThrow('activation failed');
-    expect(rpc.mock.calls.map(([name]) => name)).toEqual([
-      'begin_knowledge_corpus_publication',
-      'stage_knowledge_corpus_source',
-      'activate_knowledge_corpus_publication',
-      'abort_knowledge_corpus_publication',
-    ]);
+      .mockResolvedValueOnce({ ...verifiedStaging(), invalid_embedding_count: 1, complete: false });
+    await expect(stageApprovedArtifact(loaded, {
+      embedBatch: vi.fn().mockResolvedValue([vector]),
+      rpc,
+      checkpointStore: memoryCheckpointStore(),
+    })).rejects.toThrow('staging verification failed closed');
   });
 
-  it('preserves the original publication error when abort also fails', async () => {
+  it('fails closed when server staging contains an unapproved source id', async () => {
     const rpc = vi.fn()
       .mockResolvedValueOnce('publication-id')
-      .mockRejectedValueOnce(new Error('staging failed'))
-      .mockRejectedValueOnce(new Error('abort failed'));
-    const embedBatch = vi.fn().mockResolvedValue([Array(1024).fill(0)]);
-    await expect(publishApprovedArtifact({
-      approval,
-      mappedDocuments: [{ source: {}, chunks: [{ content: 'text' }] }],
-    }, { embedBatch, rpc })).rejects.toThrow('staging failed');
+      .mockResolvedValueOnce(['00000000-0000-4000-8000-000000000099']);
+    await expect(stageApprovedArtifact(loaded, {
+      embedBatch: vi.fn(),
+      rpc,
+      checkpointStore: memoryCheckpointStore(checkpoint('interrupted', [sourceId])),
+    })).rejects.toThrow('outside the approved artifact');
+  });
+
+  it('fails closed when staged retrieval cannot find the smoke source', async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce('publication-id')
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce('source-id')
+      .mockResolvedValueOnce(verifiedStaging())
+      .mockResolvedValueOnce([]);
+    const checkpointStore = memoryCheckpointStore();
+    await expect(stageApprovedArtifact(loaded, {
+      embedBatch: vi.fn().mockResolvedValue([vector]),
+      rpc,
+      checkpointStore,
+    })).rejects.toThrow('staged retrieval smoke-test failed');
+    expect(checkpointStore.current()).toMatchObject({
+      status: 'interrupted',
+      failureCode: 'stage_interrupted',
+    });
+  });
+
+  it('keeps activation as a separate explicit command', async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce(verifiedStaging())
+      .mockResolvedValueOnce('publication-id');
+    const checkpointStore = memoryCheckpointStore(checkpoint('verified', [sourceId]));
+    await expect(activateStagedPublication(loaded, { rpc, checkpointStore }))
+      .resolves.toBe('publication-id');
+    expect(rpc.mock.calls.map(([name]) => name)).toEqual([
+      'verify_knowledge_corpus_staging',
+      'activate_knowledge_corpus_publication',
+    ]);
+    expect(checkpointStore.current()).toMatchObject({ status: 'activated' });
+  });
+
+  it('refuses activation until the staging checkpoint is verified', async () => {
+    const rpc = vi.fn();
+    await expect(activateStagedPublication(loaded, {
+      rpc,
+      checkpointStore: memoryCheckpointStore(checkpoint('interrupted', [sourceId])),
+    })).rejects.toThrow('only verified staging can be activated');
+    expect(rpc).not.toHaveBeenCalled();
   });
 });
