@@ -2,6 +2,28 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.9.0.0] - 2026-08-12
+
+### Added
+
+- Added a safe stage-only workflow that can generate and upload the approved
+  ophthalmology corpus embeddings without activating the publication or
+  changing the live Knowledge Assistant corpus.
+- Added durable checkpoint and resume support, bounded Cloudflare retries and
+  request timeouts, idempotent source and chunk staging, and a staging-only
+  retrieval smoke test for the pinned 1024-dimensional embedding contract.
+- Added service-role-only staging and verification RPCs that fail closed on
+  manifest, model, dimension, source, chunk, or duplicate mismatches.
+
+### Tests
+
+- Added focused coverage for interrupted and resumed staging, incompatible
+  checkpoints, retryable and stalled Cloudflare requests, duplicate detection,
+  retrieval smoke failures, activation guards, and SQL security boundaries.
+- Rechecked all 298 unit tests, 28 focused corpus tests, TypeScript, lint and
+  the production build without generating live embeddings, applying the new
+  migration, activating a corpus publication, or changing production Supabase.
+
 ## [0.8.0.0] - 2026-08-11
 
 ### Added
