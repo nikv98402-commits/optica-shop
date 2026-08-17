@@ -2,6 +2,24 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.9.1.0] - 2026-08-17
+
+### Fixed
+
+- Fixed stage-only corpus publication behind an HTTP proxy by routing both
+  Supabase and Cloudflare requests through an explicit `undici` proxy agent.
+- Added connection preflight checks, 60-second request timeouts, bounded retry
+  and backoff for embeddings and idempotent staging RPCs, while keeping corpus
+  activation non-retryable and explicitly separate.
+- Released retryable HTTP response bodies before reconnecting so long corpus
+  runs cannot exhaust the proxy connection pool.
+
+### Tests
+
+- Added regression coverage for proxy selection and validation, Cloudflare
+  fallback routing, Supabase network and HTTP retries, preflight failures,
+  connection cleanup, and the non-retryable activation boundary.
+
 ## [0.9.0.0] - 2026-08-12
 
 ### Added
