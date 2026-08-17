@@ -3,6 +3,7 @@ import { createReadStream } from 'node:fs';
 import { mkdir, open, readFile, rename } from 'node:fs/promises';
 import { basename, dirname, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
+import { ProxyAgent } from 'undici';
 
 export const EMBEDDING_PROVIDER = 'cloudflare-workers-ai';
 export const EMBEDDING_MODEL = '@cf/qwen/qwen3-embedding-0.6b';
@@ -16,7 +17,14 @@ export const INDEXABLE_LICENSES = new Set([
 ]);
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
-const RETRYABLE_EMBEDDING_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const RETRYABLE_NETWORK_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const RETRYABLE_SUPABASE_RPCS = new Set([
+  'begin_knowledge_corpus_publication',
+  'stage_knowledge_corpus_source',
+  'list_staged_knowledge_corpus_source_ids',
+  'verify_knowledge_corpus_staging',
+  'match_staged_knowledge_chunks',
+]);
 const CHECKPOINT_VERSION = 1;
 
 export async function fileSha256(path) {
@@ -272,14 +280,23 @@ function retryDelay(response, attempt, { baseDelayMs, maxDelayMs, randomImpl }) 
   return Math.round(exponential * (0.75 + (randomImpl() * 0.5)));
 }
 
-async function requestEmbedding(request, retryOptions) {
+function validateRetryOptions({ maxRetries, baseDelayMs, maxDelayMs, requestTimeoutMs }) {
+  if (!Number.isInteger(maxRetries) || maxRetries < 0 || maxRetries > 8
+    || !Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1 || requestTimeoutMs > 300000
+    || baseDelayMs < 1 || maxDelayMs < baseDelayMs) {
+    throw new Error('invalid network retry policy');
+  }
+}
+
+async function requestWithRetry(request, retryOptions, failureMessage) {
   let lastError;
   for (let attempt = 0; attempt <= retryOptions.maxRetries; attempt += 1) {
     try {
       const response = await request(AbortSignal.timeout(retryOptions.requestTimeoutMs));
-      if (!RETRYABLE_EMBEDDING_STATUSES.has(response.status) || attempt === retryOptions.maxRetries) {
+      if (!RETRYABLE_NETWORK_STATUSES.has(response.status) || attempt === retryOptions.maxRetries) {
         return response;
       }
+      await response.body?.cancel();
       await retryOptions.sleepImpl(retryDelay(response, attempt, retryOptions));
     } catch (error) {
       lastError = error;
@@ -287,7 +304,69 @@ async function requestEmbedding(request, retryOptions) {
       await retryOptions.sleepImpl(retryDelay(null, attempt, retryOptions));
     }
   }
-  throw new Error('embedding provider request failed after retries', { cause: lastError });
+  throw new Error(failureMessage, { cause: lastError });
+}
+
+function requestOptions(options, dispatcher) {
+  return dispatcher ? { ...options, dispatcher } : options;
+}
+
+export function proxyUrlFromEnvironment(environment = process.env) {
+  return environment.HTTPS_PROXY
+    || environment.https_proxy
+    || environment.HTTP_PROXY
+    || environment.http_proxy
+    || null;
+}
+
+export function createProxyDispatcher(proxyUrl) {
+  if (!proxyUrl) return null;
+  let parsed;
+  try {
+    parsed = new URL(proxyUrl);
+  } catch {
+    throw new Error('HTTP proxy URL is invalid');
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('HTTP proxy URL must use http or https');
+  }
+  return new ProxyAgent(parsed.href);
+}
+
+export async function preflightPublicationConnections({
+  supabaseUrl,
+  embeddingBaseUrl,
+  dispatcher,
+  fetchImpl = fetch,
+  maxRetries = 2,
+  baseDelayMs = 500,
+  maxDelayMs = 4000,
+  requestTimeoutMs = 60000,
+  sleepImpl = (milliseconds) => new Promise((resolveSleep) => setTimeout(resolveSleep, milliseconds)),
+  randomImpl = Math.random,
+}) {
+  if (!supabaseUrl || !embeddingBaseUrl) throw new Error('publication preflight endpoints are not configured');
+  const retryOptions = {
+    maxRetries, baseDelayMs, maxDelayMs, requestTimeoutMs, sleepImpl, randomImpl,
+  };
+  validateRetryOptions(retryOptions);
+  const targets = [
+    ['Supabase', `${supabaseUrl.replace(/\/$/, '')}/rest/v1/`],
+    ['embedding provider', embeddingBaseUrl.replace(/\/$/, '')],
+  ];
+  const statuses = {};
+  for (const [name, target] of targets) {
+    const response = await requestWithRetry(
+      (signal) => fetchImpl(target, requestOptions({ method: 'HEAD', signal }, dispatcher)),
+      retryOptions,
+      `${name} preflight connection failed after retries`,
+    );
+    if (response.status === 407 || response.status >= 500) {
+      throw new Error(`${name} preflight failed with status ${response.status}`);
+    }
+    statuses[name] = response.status;
+  }
+  return statuses;
 }
 
 export function createEmbeddingClient({
@@ -295,19 +374,16 @@ export function createEmbeddingClient({
   apiKey,
   model = EMBEDDING_MODEL,
   fetchImpl = fetch,
+  dispatcher,
   maxRetries = 4,
   baseDelayMs = 250,
   maxDelayMs = 8000,
-  requestTimeoutMs = 30000,
+  requestTimeoutMs = 60000,
   sleepImpl = (milliseconds) => new Promise((resolveSleep) => setTimeout(resolveSleep, milliseconds)),
   randomImpl = Math.random,
 }) {
   if (!baseUrl || !apiKey || model !== EMBEDDING_MODEL) throw new Error('approved embedding provider is not configured');
-  if (!Number.isInteger(maxRetries) || maxRetries < 0 || maxRetries > 8
-    || !Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1 || requestTimeoutMs > 120000
-    || baseDelayMs < 1 || maxDelayMs < baseDelayMs) {
-    throw new Error('invalid embedding retry policy');
-  }
+  validateRetryOptions({ maxRetries, baseDelayMs, maxDelayMs, requestTimeoutMs });
   const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
   const retryOptions = {
     maxRetries,
@@ -320,12 +396,12 @@ export function createEmbeddingClient({
 
   return async function embedBatch(texts) {
     if (!Array.isArray(texts) || texts.length < 1 || texts.length > 32) throw new Error('invalid embedding batch');
-    const compatible = await requestEmbedding((signal) => fetchImpl(`${normalizedBaseUrl}/embeddings`, {
+    const compatible = await requestWithRetry((signal) => fetchImpl(`${normalizedBaseUrl}/embeddings`, requestOptions({
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model, input: texts }),
       signal,
-    }), retryOptions);
+    }, dispatcher)), retryOptions, 'embedding provider request failed after retries');
     if (compatible.ok) {
       const body = await compatible.json();
       const vectors = body.data?.map((item) => item.embedding);
@@ -339,12 +415,12 @@ export function createEmbeddingClient({
     if (compatible.status !== 404 || !directBase || !directBase.startsWith('https://api.cloudflare.com/client/v4/accounts/')) {
       throw new Error(`embedding provider failed with status ${compatible.status}`);
     }
-    const direct = await requestEmbedding((signal) => fetchImpl(`${directBase}/ai/run/${model}`, {
+    const direct = await requestWithRetry((signal) => fetchImpl(`${directBase}/ai/run/${model}`, requestOptions({
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: texts }),
       signal,
-    }), retryOptions);
+    }, dispatcher)), retryOptions, 'embedding provider request failed after retries');
     if (!direct.ok) throw new Error(`embedding provider failed with status ${direct.status}`);
     const body = await direct.json();
     const vectors = Array.isArray(body.result) ? body.result : body.result?.data;
@@ -353,11 +429,29 @@ export function createEmbeddingClient({
   };
 }
 
-export function createSupabaseRpcClient({ url, serviceRoleKey, fetchImpl = fetch }) {
+export function createSupabaseRpcClient({
+  url,
+  serviceRoleKey,
+  fetchImpl = fetch,
+  dispatcher,
+  maxRetries = 4,
+  baseDelayMs = 500,
+  maxDelayMs = 10000,
+  requestTimeoutMs = 60000,
+  sleepImpl = (milliseconds) => new Promise((resolveSleep) => setTimeout(resolveSleep, milliseconds)),
+  randomImpl = Math.random,
+}) {
   if (!url || !serviceRoleKey) throw new Error('Supabase server secrets are not configured');
+  const retryOptions = {
+    maxRetries, baseDelayMs, maxDelayMs, requestTimeoutMs, sleepImpl, randomImpl,
+  };
+  validateRetryOptions(retryOptions);
   const baseUrl = url.replace(/\/$/, '');
   return async function rpc(functionName, body) {
-    const response = await fetchImpl(`${baseUrl}/rest/v1/rpc/${functionName}`, {
+    const rpcRetryOptions = RETRYABLE_SUPABASE_RPCS.has(functionName)
+      ? retryOptions
+      : { ...retryOptions, maxRetries: 0 };
+    const response = await requestWithRetry((signal) => fetchImpl(`${baseUrl}/rest/v1/rpc/${functionName}`, requestOptions({
       method: 'POST',
       headers: {
         apikey: serviceRoleKey,
@@ -365,7 +459,8 @@ export function createSupabaseRpcClient({ url, serviceRoleKey, fetchImpl = fetch
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-    });
+      signal,
+    }, dispatcher)), rpcRetryOptions, `Supabase RPC failed after retries: ${functionName}`);
     if (!response.ok) throw new Error(`Supabase RPC failed: ${functionName} (${response.status})`);
     const text = await response.text();
     return text ? JSON.parse(text) : null;

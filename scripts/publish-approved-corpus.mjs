@@ -4,8 +4,11 @@ import {
   activateStagedPublication,
   createCheckpointStore,
   createEmbeddingClient,
+  createProxyDispatcher,
   createSupabaseRpcClient,
   loadApprovedArtifact,
+  preflightPublicationConnections,
+  proxyUrlFromEnvironment,
   stageApprovedArtifact,
 } from './lib/corpus-publication.mjs';
 
@@ -42,30 +45,46 @@ console.log(JSON.stringify({
 }, null, 2));
 
 if (stageOnly || activate) {
-  const checkpointStore = createCheckpointStore(checkpointPath);
-  const rpc = createSupabaseRpcClient({
-    url: process.env.SUPABASE_URL,
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  });
+  const proxyUrl = proxyUrlFromEnvironment();
+  const dispatcher = createProxyDispatcher(proxyUrl);
+  console.log(JSON.stringify({ networkProxy: dispatcher ? 'configured' : 'direct' }));
 
-  if (activate) {
-    const publicationId = await activateStagedPublication(loaded, { rpc, checkpointStore });
-    console.log(JSON.stringify({ status: 'activated', publicationId }));
-  } else {
-    const embedBatch = createEmbeddingClient({
-      baseUrl: process.env.KNOWLEDGE_EMBEDDING_BASE_URL,
-      apiKey: process.env.KNOWLEDGE_EMBEDDING_API_KEY,
-      model: process.env.KNOWLEDGE_EMBEDDING_MODEL,
+  try {
+    const checkpointStore = createCheckpointStore(checkpointPath);
+    const rpc = createSupabaseRpcClient({
+      url: process.env.SUPABASE_URL,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      dispatcher,
     });
-    const result = await stageApprovedArtifact(loaded, {
-      embedBatch,
-      rpc,
-      checkpointStore,
-    });
-    console.log(JSON.stringify({
-      status: 'staged-and-verified',
-      publicationId: result.publicationId,
-      activationPerformed: false,
-    }));
+
+    if (activate) {
+      const publicationId = await activateStagedPublication(loaded, { rpc, checkpointStore });
+      console.log(JSON.stringify({ status: 'activated', publicationId }));
+    } else {
+      const preflight = await preflightPublicationConnections({
+        supabaseUrl: process.env.SUPABASE_URL,
+        embeddingBaseUrl: process.env.KNOWLEDGE_EMBEDDING_BASE_URL,
+        dispatcher,
+      });
+      console.log(JSON.stringify({ status: 'network-preflight-passed', endpoints: preflight }));
+      const embedBatch = createEmbeddingClient({
+        baseUrl: process.env.KNOWLEDGE_EMBEDDING_BASE_URL,
+        apiKey: process.env.KNOWLEDGE_EMBEDDING_API_KEY,
+        model: process.env.KNOWLEDGE_EMBEDDING_MODEL,
+        dispatcher,
+      });
+      const result = await stageApprovedArtifact(loaded, {
+        embedBatch,
+        rpc,
+        checkpointStore,
+      });
+      console.log(JSON.stringify({
+        status: 'staged-and-verified',
+        publicationId: result.publicationId,
+        activationPerformed: false,
+      }));
+    }
+  } finally {
+    await dispatcher?.close();
   }
 }
