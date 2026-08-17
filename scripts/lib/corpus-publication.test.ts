@@ -8,8 +8,12 @@ import {
   chunkText,
   createCheckpointStore,
   createEmbeddingClient,
+  createProxyDispatcher,
+  createSupabaseRpcClient,
   mapDocument,
+  preflightPublicationConnections,
   publicationMetadata,
+  proxyUrlFromEnvironment,
   stageApprovedArtifact,
   validateApproval,
   validateEmbedding,
@@ -144,6 +148,7 @@ describe('approved corpus publication contract', () => {
   });
 
   it('uses Cloudflare direct fallback and validates every batch vector', async () => {
+    const dispatcher = { dispatch: vi.fn() };
     const fetchImpl = vi.fn()
       .mockResolvedValueOnce(new Response(null, { status: 404 }))
       .mockResolvedValueOnce(Response.json({ result: { data: [vector, vector] } }));
@@ -151,9 +156,11 @@ describe('approved corpus publication contract', () => {
       baseUrl: 'https://api.cloudflare.com/client/v4/accounts/test/ai/v1',
       apiKey: 'secret',
       fetchImpl,
+      dispatcher,
     });
     await expect(embed(['one', 'two'])).resolves.toEqual([vector, vector]);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(fetchImpl.mock.calls.every(([, options]) => options.dispatcher === dispatcher)).toBe(true);
   });
 
   it('retries transient Cloudflare failures with bounded backoff', async () => {
@@ -192,6 +199,129 @@ describe('approved corpus publication contract', () => {
     await expect(embed(['one'])).resolves.toEqual([vector]);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(sleepImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes the configured proxy dispatcher to Cloudflare requests', async () => {
+    const dispatcher = { dispatch: vi.fn() };
+    const fetchImpl = vi.fn().mockResolvedValue(Response.json({
+      data: [{ embedding: vector }],
+    }));
+    const embed = createEmbeddingClient({
+      baseUrl: 'https://api.cloudflare.com/client/v4/accounts/test/ai/v1',
+      apiKey: 'secret',
+      fetchImpl,
+      dispatcher,
+    });
+    await embed(['one']);
+    expect(fetchImpl.mock.calls[0][1]).toMatchObject({ dispatcher });
+  });
+
+  it('uses proxy environment precedence and validates proxy URLs', async () => {
+    expect(proxyUrlFromEnvironment({
+      HTTPS_PROXY: 'http://127.0.0.1:10809',
+      HTTP_PROXY: 'http://fallback:8080',
+    })).toBe('http://127.0.0.1:10809');
+    expect(proxyUrlFromEnvironment({})).toBeNull();
+    expect(createProxyDispatcher(null)).toBeNull();
+    expect(() => createProxyDispatcher('not a URL')).toThrow('URL is invalid');
+    expect(() => createProxyDispatcher('socks5://127.0.0.1:10809'))
+      .toThrow('must use http or https');
+    const dispatcher = createProxyDispatcher('http://127.0.0.1:10809');
+    expect(dispatcher?.constructor.name).toBe('ProxyAgent');
+    await dispatcher?.close();
+  });
+
+  it('preflights both endpoints through the proxy before staging', async () => {
+    const dispatcher = { dispatch: vi.fn() };
+    const sleepImpl = vi.fn().mockResolvedValue(undefined);
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }));
+    await expect(preflightPublicationConnections({
+      supabaseUrl: 'https://project.supabase.co',
+      embeddingBaseUrl: 'https://api.cloudflare.com/client/v4/accounts/test/ai/v1',
+      dispatcher,
+      fetchImpl,
+      sleepImpl,
+      randomImpl: () => 0.5,
+    })).resolves.toEqual({ Supabase: 200, 'embedding provider': 404 });
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(fetchImpl.mock.calls.every(([, options]) => options.dispatcher === dispatcher)).toBe(true);
+    expect(sleepImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails preflight on terminal proxy and upstream statuses', async () => {
+    await expect(preflightPublicationConnections({
+      supabaseUrl: 'https://project.supabase.co',
+      embeddingBaseUrl: 'https://api.cloudflare.com/client/v4/accounts/test/ai/v1',
+      fetchImpl: vi.fn().mockResolvedValue(new Response(null, { status: 407 })),
+      maxRetries: 0,
+    })).rejects.toThrow('Supabase preflight failed with status 407');
+    await expect(preflightPublicationConnections({
+      supabaseUrl: 'https://project.supabase.co',
+      embeddingBaseUrl: 'https://api.cloudflare.com/client/v4/accounts/test/ai/v1',
+      fetchImpl: vi.fn().mockRejectedValue(new Error('offline')),
+      maxRetries: 0,
+    })).rejects.toThrow('Supabase preflight connection failed after retries');
+  });
+
+  it('retries timed-out Supabase RPCs and preserves the proxy dispatcher', async () => {
+    const dispatcher = { dispatch: vi.fn() };
+    const sleepImpl = vi.fn().mockResolvedValue(undefined);
+    const fetchImpl = vi.fn()
+      .mockRejectedValueOnce(Object.assign(new Error('connect timeout'), { code: 'UND_ERR_CONNECT_TIMEOUT' }))
+      .mockResolvedValueOnce(Response.json('publication-id'));
+    const rpc = createSupabaseRpcClient({
+      url: 'https://project.supabase.co',
+      serviceRoleKey: 'secret',
+      dispatcher,
+      fetchImpl,
+      sleepImpl,
+      randomImpl: () => 0.5,
+    });
+    await expect(rpc('begin_knowledge_corpus_publication', {})).resolves.toBe('publication-id');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(fetchImpl.mock.calls.every(([, options]) => options.dispatcher === dispatcher)).toBe(true);
+    expect(sleepImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries retryable Supabase HTTP responses', async () => {
+    const sleepImpl = vi.fn().mockResolvedValue(undefined);
+    const retryableResponse = new Response('retry later', { status: 503 });
+    const cancel = vi.spyOn(retryableResponse.body!, 'cancel');
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(retryableResponse)
+      .mockResolvedValueOnce(Response.json(['source-id']));
+    const rpc = createSupabaseRpcClient({
+      url: 'https://project.supabase.co',
+      serviceRoleKey: 'secret',
+      fetchImpl,
+      sleepImpl,
+      randomImpl: () => 0.5,
+    });
+    await expect(rpc('list_staged_knowledge_corpus_source_ids', {
+      p_publication_id: 'publication-id',
+    })).resolves.toEqual(['source-id']);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleepImpl).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry activation when the server outcome is ambiguous', async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(
+      Object.assign(new Error('response lost'), { code: 'UND_ERR_CONNECT_TIMEOUT' }),
+    );
+    const rpc = createSupabaseRpcClient({
+      url: 'https://project.supabase.co',
+      serviceRoleKey: 'secret',
+      fetchImpl,
+      sleepImpl: vi.fn(),
+    });
+    await expect(rpc('activate_knowledge_corpus_publication', {
+      p_publication_id: 'publication-id',
+    })).rejects.toThrow('failed after retries');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it('persists a durable checkpoint as valid JSON', async () => {

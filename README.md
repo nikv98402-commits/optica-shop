@@ -217,6 +217,7 @@ Codex должен использовать его как проектный к�
 - `docs/specs/knowledge-assistant-v1.md` — зафиксированная продуктовая и инженерная спецификация помощника.
 - `docs/knowledge-assistant/source-review.md` — безопасное добавление и повторная проверка источников.
 - `docs/deployment/knowledge-assistant.md` — preview rollout, секреты, индексирование и rollback.
+- `docs/deployment/knowledge-corpus-publication.md` — проверка артефакта, возобновляемый stage-only upload, отдельная активация и rollback корпуса.
 - `docs/testing/knowledge-assistant.md` — локальная проверка, privacy и RU/EN mobile QA.
 - `tools/vilu-corpus/README.md` — изолированный corpus pipeline, bounded pilot, безопасная диагностика и ограничения артефактов.
 - `CHANGELOG.md` — история релизных изменений.

@@ -58,7 +58,7 @@ chunks. The whole-artifact digest is supplied explicitly because it belongs to
 the protected workflow archive layer and cannot be reconstructed from the
 extracted directory alone.
 
-## Publication flow
+## Stage and activate separately
 
 Live publication requires a separate production approval and server-only
 environment variables:
@@ -71,24 +71,50 @@ KNOWLEDGE_EMBEDDING_API_KEY
 KNOWLEDGE_EMBEDDING_MODEL=@cf/qwen/qwen3-embedding-0.6b
 ```
 
-After approval:
+If the production endpoints are reachable only through a proxy, set
+`HTTPS_PROXY` (preferred) or `HTTP_PROXY` to an `http://` or `https://` proxy
+URL. The publisher uses the same proxy for Supabase and Cloudflare requests.
+
+After staging approval, generate embeddings and upload a staging publication:
 
 ```bash
 npm run knowledge:corpus -- \
   --artifact /protected/path/to/artifact \
   --artifact-sha256 6f63485962b19269cdd7b7d459888ae4ec60289ecb6c761903e3ee322c050adf \
-  --publish
+  --checkpoint /protected/path/to/corpus-checkpoint.json \
+  --stage-only
 ```
 
-The adapter verifies the protected manifest again, creates a staging version,
-embeds bounded batches, and stages sources through service-role-only RPCs.
-Retrieval still uses the prior active version. Only after all approved sources
-and chunks exist and exact counts match does one transaction mark the previous
-version `superseded` and the new version `active`.
+The command verifies both network endpoints before staging, uses 60-second
+request timeouts, and retries embeddings and idempotent staging RPCs with
+bounded backoff. It verifies the exact source and chunk counts and runs a
+staging-only retrieval smoke test, but never activates the publication.
+Retrieval continues to use the prior active version.
 
-Provider, validation, or staging failure calls the abort RPC, deletes only the
-partial staging rows, and leaves the previous active index unchanged. Logs
-contain aggregate counts and stable failure categories, never corpus text.
+The checkpoint contains no corpus text or embeddings. Re-run the same command
+with the same checkpoint to resume an interrupted upload. When `--checkpoint`
+is omitted, the default is
+`.gstack/corpus-checkpoints/<manifest-sha256>.json`.
+
+Activation is a separate, explicitly approved operation:
+
+```bash
+npm run knowledge:corpus -- \
+  --artifact /protected/path/to/artifact \
+  --artifact-sha256 6f63485962b19269cdd7b7d459888ae4ec60289ecb6c761903e3ee322c050adf \
+  --checkpoint /protected/path/to/corpus-checkpoint.json \
+  --activate
+```
+
+Activation is intentionally non-retryable after a network failure because the
+server may have committed the transaction even if the response was lost.
+Inspect the publication state before deciding whether another activation
+attempt is safe. A successful transaction marks the previous version
+`superseded` and the staged version `active`.
+
+Provider, validation, or staging failure leaves the previous active index
+unchanged. Logs contain aggregate counts and stable failure categories, never
+corpus text.
 
 ## Rollback
 
