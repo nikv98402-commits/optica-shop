@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isEyeMapFeatureEnabled, isKnowledgeAssistantFeatureEnabled } from '../features';
+import { isEyeMapFeatureEnabled, isKnowledgeAssistantFeatureEnabled, isOrganizationFeatureGloballyEnabled, isViluFoundationFeatureEnabled } from '../features';
 
 describe('isEyeMapFeatureEnabled', () => {
   it('is disabled when the environment value is missing', () => {
@@ -10,6 +10,22 @@ describe('isEyeMapFeatureEnabled', () => {
     expect(isEyeMapFeatureEnabled({ VITE_FEATURE_EYE_MAP: 'true' })).toBe(true);
     expect(isEyeMapFeatureEnabled({ VITE_FEATURE_EYE_MAP: 'TRUE' })).toBe(false);
     expect(isEyeMapFeatureEnabled({ VITE_FEATURE_EYE_MAP: '1' })).toBe(false);
+  });
+});
+
+describe('organization feature flags', () => {
+  it('defaults every rollout flag to disabled and requires exact true', () => {
+    expect(isOrganizationFeatureGloballyEnabled('vilu_employee_flow_v2', {})).toBe(false);
+    expect(isOrganizationFeatureGloballyEnabled('vilu_employee_flow_v2', { VITE_FEATURE_VILU_EMPLOYEE_FLOW_V2: 'true' })).toBe(true);
+    expect(isOrganizationFeatureGloballyEnabled('vilu_employee_flow_v2', { VITE_FEATURE_VILU_EMPLOYEE_FLOW_V2: 'TRUE' })).toBe(false);
+  });
+});
+
+describe('isViluFoundationFeatureEnabled', () => {
+  it('is disabled by default and requires an exact true value', () => {
+    expect(isViluFoundationFeatureEnabled({})).toBe(false);
+    expect(isViluFoundationFeatureEnabled({ VITE_FEATURE_VILU_FOUNDATION: 'true' })).toBe(true);
+    expect(isViluFoundationFeatureEnabled({ VITE_FEATURE_VILU_FOUNDATION: 'TRUE' })).toBe(false);
   });
 });
 

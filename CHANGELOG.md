@@ -2,6 +2,37 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.10.0.0] - 2026-08-19
+
+### Added
+
+- Added the secure ViLu foundation for organization-scoped employee, employer,
+  and clinical-partner workspaces, with Supabase authentication and explicit
+  active-organization routing.
+- Added strict Russian and English localization, Optical Signal interface
+  primitives, and rollout controls that remain disabled until enabled globally
+  and for the active organization.
+- Added organization, membership, role, profile, feature-flag, audit, and
+  privacy-safe product-event storage with row-level security.
+
+### Changed
+
+- Replaced the local demo-account path with configured Supabase sign-in and
+  registration, including profile-language persistence and safe locale redirects.
+
+### Fixed
+
+- Updated Knowledge Assistant RU/EN browser expectations and the corpus SQL
+  dimension-error assertion to match the current localized product behavior and
+  migration contract.
+
+### Tests
+
+- Added integration coverage for allowed and denied organization access,
+  cross-organization isolation, role escalation, telemetry-role spoofing,
+  active-organization routing, feature flags, authentication locale, and RU/EN
+  translation parity.
+
 ## [0.9.1.0] - 2026-08-17
 
 ### Fixed

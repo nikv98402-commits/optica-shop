@@ -2,6 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .optical-signal-page {
+    background-color: #f8f3e8;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(7, 17, 13, 0.09) 1px, transparent 0),
+      radial-gradient(circle at 82% 14%, transparent 0 74px, rgba(7, 17, 13, 0.08) 75px 76px, transparent 77px);
+    background-size: 24px 24px, auto;
+    color: #07110d;
+  }
+
+  .optical-card {
+    @apply rounded-vilu-xl border border-vilu-line bg-vilu-card p-5 md:p-8;
+  }
+
+  .optical-eyebrow {
+    @apply text-xs font-extrabold uppercase text-vilu-green;
+    letter-spacing: 0.14em;
+  }
+
+  .optical-button {
+    @apply min-h-11 items-center justify-center rounded-full bg-vilu-night px-6 py-3 font-extrabold text-white transition-colors duration-150;
+  }
+
+  .optical-button:hover { @apply bg-vilu-green; }
+  .optical-button:focus-visible { @apply outline-none ring-4 ring-vilu-lime/60; }
+  .optical-button:disabled { @apply cursor-not-allowed opacity-50; }
+  .optical-button--secondary { @apply border border-vilu-line bg-transparent text-vilu-ink; }
+
+  .optical-status {
+    @apply inline-flex items-center rounded-full border border-vilu-line bg-vilu-card px-3 py-1 text-xs font-bold;
+  }
+  .optical-status--signal { @apply border-vilu-lime bg-vilu-lime/20; }
+  .optical-status--success { @apply text-vilu-success; }
+  .optical-status--warning { @apply text-vilu-warning; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .optical-signal-page *,
+  .optical-signal-page *::before,
+  .optical-signal-page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 :root {
   --vilu-ink: #07110d;
   --vilu-paper: #f8f3e8;

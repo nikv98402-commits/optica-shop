@@ -26,6 +26,7 @@ import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, trackEvent } from '../lib/analyticsEvents';
 import { AtomicHeading } from '../components/home/AtomicHeading';
 import { OpticalOrbits } from '../components/home/OpticalOrbits';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface DashboardProps {
   onNavigate?: (page: string, productId?: string) => void;
@@ -150,7 +151,8 @@ function calculateStrainScore(profile: ClientProfile, sessions: TrainingSession[
 }
 
 export function Dashboard({ onNavigate, onOpenStores }: DashboardProps) {
-  const { user, signIn, signUp, signOut } = useAuth();
+  const { user, signOut, configured: authConfigured } = useAuth();
+  const t = useTranslation();
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [authOpen, setAuthOpen] = useState(false);
   const [profile, setProfile] = useState<ClientProfile>(defaultProfile);
@@ -242,16 +244,6 @@ export function Dashboard({ onNavigate, onOpenStores }: DashboardProps) {
     window.setTimeout(() => setSaved(false), 1800);
   };
 
-  const openDemoProfile = async () => {
-    const demoEmail = 'demo@vilu.store';
-    const demoPassword = 'demo-local-mode';
-    const signupResult = await signUp(demoEmail, demoPassword, 'Demo user');
-
-    if (signupResult.error) {
-      await signIn(demoEmail, demoPassword);
-    }
-  };
-
   const openAuth = (mode: 'login' | 'signup') => {
     setAuthMode(mode);
     setAuthOpen(true);
@@ -263,18 +255,19 @@ export function Dashboard({ onNavigate, onOpenStores }: DashboardProps) {
         <div className="dashboard-orbits-guest__orbits"><OpticalOrbits /></div>
         <div className="dashboard-orbits-guest">
           <section className="dashboard-orbits-guest__copy">
-            <p className="kinetic-label">Личный кабинет</p>
-            <AtomicHeading lines={['Забота', 'продолжается']} className="dashboard-orbits-heading" />
+            <p className="kinetic-label">{t.auth.dashboard.eyebrow}</p>
+            <AtomicHeading lines={t.auth.dashboard.heading} className="dashboard-orbits-heading" />
             <p className="mt-7 max-w-2xl text-lg font-semibold leading-8 text-vilu-paper/80">
-              Сохраните следующий шаг, напоминания и выбранные оправы для себя или близкого. Все данные остаются локально в браузере.
+              {t.auth.dashboard.body}
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <button onClick={openDemoProfile} className="rounded-full bg-vilu-lime px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-card">Открыть demo-кабинет</button>
-              <button onClick={() => openAuth('signup')} className="rounded-full border border-vilu-paper/30 bg-vilu-paper/10 px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-paper transition hover:bg-vilu-paper hover:text-vilu-ink">Создать demo-кабинет</button>
-              <button onClick={() => openAuth('login')} className="rounded-full border border-vilu-ink/15 bg-vilu-card px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-paper">Войти</button>
+              <button disabled={!authConfigured} onClick={() => openAuth('signup')} className="rounded-full bg-vilu-lime px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-ink transition hover:bg-vilu-card disabled:cursor-not-allowed disabled:opacity-50">{t.auth.dashboard.createAccount}</button>
+              <button disabled={!authConfigured} onClick={() => openAuth('login')} className="rounded-full border border-vilu-paper/30 bg-vilu-paper/10 px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-paper transition hover:bg-vilu-paper hover:text-vilu-ink disabled:cursor-not-allowed disabled:opacity-50">{t.auth.signInBtn}</button>
             </div>
             <p className="mt-4 max-w-xl text-sm font-semibold leading-6 text-vilu-paper/70">
-              Demo-режим можно открыть без реальных персональных данных. Профиль хранится только на этом устройстве.
+              {authConfigured
+                ? t.auth.dashboard.configured
+                : t.auth.dashboard.notConfigured}
             </p>
           </section>
 

@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Eye, Lock, Mail, User, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -14,8 +16,11 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
+  const { language } = useLanguage();
+  const t = useTranslation();
 
   useEffect(() => {
     if (isOpen) setMode(initialMode);
@@ -28,15 +33,22 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError('');
+    setNotice('');
     setLoading(true);
 
     try {
       const result = isSignup
-        ? await signUp(email, password, name)
+        ? await signUp(email, password, name, language)
         : await signIn(email, password);
 
       if (result.error) {
-        setError(result.error.message);
+        setError(t.auth.errors[result.error.code]);
+        return;
+      }
+
+      if (result.confirmationRequired) {
+        setNotice(t.auth.confirmationRequired);
+        setPassword('');
         return;
       }
 
@@ -45,7 +57,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
       setPassword('');
       onClose();
     } catch {
-      setError('Не удалось завершить вход. Проверьте данные и попробуйте еще раз.');
+      setError(t.auth.errors.unexpected);
     } finally {
       setLoading(false);
     }
@@ -62,30 +74,28 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
           <div className="mb-4 inline-flex rounded-full bg-vilu-lime p-3 text-vilu-ink">
             <Eye size={24} />
           </div>
-          <p className="kinetic-label text-vilu-green">Vision profile</p>
+          <p className="kinetic-label text-vilu-green">{t.header.visionHub}</p>
           <h2 className="mt-2 text-4xl font-black tracking-tight">
-            {isSignup ? 'Создать кабинет' : 'Войти в кабинет'}
+            {isSignup ? t.auth.createAccount : t.auth.welcomeBack}
           </h2>
           <p className="mt-3 text-sm font-semibold leading-6 text-vilu-ink/65">
-            {isSignup
-              ? 'Создайте demo-кабинет. Данные сохраняются только в браузере и не отправляются на сервер.'
-              : 'Введите данные demo-аккаунта, чтобы продолжить работу с локальным профилем зрения.'}
+            {isSignup ? t.auth.signUpDesc : t.auth.signInDesc}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {isSignup && (
             <label className="block">
-              <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/40">Имя</span>
+              <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/40">{t.auth.name}</span>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-vilu-green" size={18} />
-                <input value={name} onChange={(event) => setName(event.target.value)} className="w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card py-4 pl-12 pr-4 font-bold outline-none transition focus:border-vilu-lime" placeholder="Demo user" />
+                <input value={name} onChange={(event) => setName(event.target.value)} className="w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card py-4 pl-12 pr-4 font-bold outline-none transition focus:border-vilu-lime" placeholder={t.auth.namePlaceholder} />
               </div>
             </label>
           )}
 
           <label className="block">
-            <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/40">Email</span>
+            <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/40">{t.auth.email}</span>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-vilu-green" size={18} />
               <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required className="w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card py-4 pl-12 pr-4 font-bold outline-none transition focus:border-vilu-lime" placeholder="demo@vilu.store" />
@@ -93,24 +103,25 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/40">Пароль</span>
+            <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/40">{t.auth.password}</span>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-vilu-green" size={18} />
-              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} className="w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card py-4 pl-12 pr-4 font-bold outline-none transition focus:border-vilu-lime" placeholder="Минимум 6 символов" />
+              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} className="w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card py-4 pl-12 pr-4 font-bold outline-none transition focus:border-vilu-lime" placeholder={t.auth.passwordHint} />
             </div>
           </label>
 
           {error && <div className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+          {notice && <div className="rounded-2xl bg-vilu-lime/15 p-4 text-sm font-semibold text-vilu-green" role="status">{notice}</div>}
 
           <button disabled={loading} className="w-full rounded-full bg-vilu-ink px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-vilu-paper transition hover:bg-vilu-lime hover:text-vilu-ink disabled:cursor-not-allowed disabled:opacity-60">
-            {loading ? 'Проверяем...' : isSignup ? 'Создать demo-кабинет' : 'Войти'}
+            {loading ? t.auth.processing : isSignup ? t.auth.createBtn : t.auth.signInBtn}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm font-semibold text-vilu-ink/60">
-          {isSignup ? 'Уже есть аккаунт?' : 'Еще нет аккаунта?'}{' '}
-          <button onClick={() => { setError(''); setMode(isSignup ? 'login' : 'signup'); }} className="font-black text-vilu-green hover:underline">
-            {isSignup ? 'Войти' : 'Создать'}
+          {isSignup ? t.auth.alreadyHaveAccount : t.auth.dontHaveAccount}{' '}
+          <button onClick={() => { setError(''); setNotice(''); setMode(isSignup ? 'login' : 'signup'); }} className="font-black text-vilu-green hover:underline">
+            {isSignup ? t.auth.signInBtn : t.auth.signUp}
           </button>
         </div>
       </div>

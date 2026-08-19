@@ -63,6 +63,7 @@ test('English preference translates the complete assistant shell', async ({ page
   await page.getByRole('textbox').fill('What does 52-18-140 mean?');
   await page.getByTestId('assistant-form').getByRole('button', { name: 'Ask', exact: true }).click();
   await expect(page.getByText('52 — ширина линзы. [1]')).toBeVisible();
+  await expect(page.getByRole('button', { name: /How to choose a frame size/i })).toBeVisible();
 });
 
 test('unsupported question shows a safe abstention and related material', async ({ page }) => {
@@ -70,7 +71,7 @@ test('unsupported question shows a safe abstention and related material', async 
   await page.getByRole('textbox').fill('Неизвестный вопрос без источника');
   await page.getByRole('button', { name: 'Спросить', exact: true }).click();
   await expect(page.getByText('В проверенных материалах ViLu пока нет надежного ответа.')).toBeVisible();
-  await expect(page.getByRole('button', { name: /vision care/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Зрение и выбор оправы/i })).toBeVisible();
 });
 
 test('urgent wording produces prominent in-person guidance', async ({ page }) => {
@@ -94,7 +95,7 @@ test('related material navigation stays inside ViLu', async ({ page }) => {
   await page.goto('/assistant');
   await page.getByRole('textbox').fill('Что значит 52-18-140?');
   await page.getByRole('button', { name: 'Спросить', exact: true }).click();
-  await page.getByRole('button', { name: /kak vybrat razmer opravy/i }).click();
+  await page.getByRole('button', { name: /Как выбрать размер оправы/i }).click();
   await expect(page).toHaveURL(/\/kak-vybrat-razmer-opravy$/);
 });
 
