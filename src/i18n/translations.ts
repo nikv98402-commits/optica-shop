@@ -126,6 +126,24 @@ export const translations = {
       alreadyHaveAccount: 'Already have an account?',
       signUp: 'Sign Up',
       processing: 'Processing...',
+      name: 'Name',
+      namePlaceholder: 'Your name',
+      passwordHint: 'At least 6 characters',
+      confirmationRequired: 'Check your email and confirm the address before signing in.',
+      dashboard: {
+        eyebrow: 'Personal account',
+        heading: ['Care', 'continues'],
+        body: 'Save the next step, reminders, and selected frames for yourself or a family member. Your data stays protected.',
+        createAccount: 'Create secure account',
+        configured: 'Sign-in is protected by Supabase Auth. Server-side roles control data access.',
+        notConfigured: 'Secure sign-in is not configured in this environment; public pages remain available.',
+      },
+      errors: {
+        not_configured: 'Secure sign-in is not configured in this environment.',
+        invalid_credentials: 'The email or password is incorrect.',
+        signup_failed: 'The account could not be created. Check the details and try again.',
+        unexpected: 'Sign-in could not be completed. Try again.',
+      },
     },
     storeLocator: {
       title: 'Store Locator',
@@ -267,6 +285,24 @@ export const translations = {
       alreadyHaveAccount: 'Уже есть аккаунт?',
       signUp: 'Зарегистрироваться',
       processing: 'Загрузка...',
+      name: 'Имя',
+      namePlaceholder: 'Ваше имя',
+      passwordHint: 'Минимум 6 символов',
+      confirmationRequired: 'Проверьте почту и подтвердите адрес, затем войдите.',
+      dashboard: {
+        eyebrow: 'Личный кабинет',
+        heading: ['Забота', 'продолжается'],
+        body: 'Сохраните следующий шаг, напоминания и выбранные оправы для себя или близкого. Ваши данные остаются защищёнными.',
+        createAccount: 'Создать защищённый аккаунт',
+        configured: 'Вход защищён Supabase Auth. Доступ к данным определяется серверной ролью.',
+        notConfigured: 'Безопасный вход не настроен в этом окружении; публичные страницы продолжают работать автономно.',
+      },
+      errors: {
+        not_configured: 'Безопасный вход не настроен в этом окружении.',
+        invalid_credentials: 'Неверная почта или пароль.',
+        signup_failed: 'Не удалось создать аккаунт. Проверьте данные и повторите попытку.',
+        unexpected: 'Не удалось завершить вход. Повторите попытку.',
+      },
     },
     storeLocator: {
       title: 'Поиск магазина',
@@ -284,3 +320,12 @@ export const translations = {
 };
 
 export type Language = 'en' | 'ru';
+
+type DeepTranslationShape<T> = T extends string
+  ? string
+  : T extends readonly (infer Item)[]
+    ? DeepTranslationShape<Item>[]
+    : { [Key in keyof T]: DeepTranslationShape<T[Key]> };
+
+export type TranslationSchema = DeepTranslationShape<(typeof translations)['en']>;
+export const strictTranslations: Record<Language, TranslationSchema> = translations;

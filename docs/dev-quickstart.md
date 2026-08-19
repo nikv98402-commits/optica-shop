@@ -7,6 +7,7 @@ This guide is for a new engineer or operator who needs to run, verify, and safel
 - Node.js 20 or newer.
 - npm 11 or compatible npm bundled with your Node installation.
 - Git.
+- Docker Desktop or another Docker-compatible runtime when running local Supabase RLS tests.
 
 The GitHub Actions workflow uses Node.js 20.
 
@@ -47,6 +48,12 @@ If another server is already using that port, Vite will choose the next availabl
 - `/terms`
 - `/disclaimer`
 
+Slice 0 workspace routes are feature-gated and include both locale and organization:
+
+- `/:locale/organizations/:organizationId/employee/today`
+- `/:locale/organizations/:organizationId/employer/outcomes`
+- `/:locale/organizations/:organizationId/provider/queue`
+
 ## Environment Variables
 
 Copy `.env.example` to `.env.local` only when you need optional integrations.
@@ -63,6 +70,16 @@ Copy-Item .env.example .env.local
 
 The app must still work when `.env.local` is missing.
 
+The legacy storefront stays available without Supabase. Slice 0 workspace routes need `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, the local identity migration, and the relevant `VITE_FEATURE_VILU_*` values. All foundation flags default to `false`.
+
+Start and reset local Supabase before the RLS suite:
+
+```bash
+npx --yes supabase@2.115.0 start
+npx --yes supabase@2.115.0 db reset
+npm run test:rls
+```
+
 ## Checks
 
 Run before a PR or release:
@@ -73,10 +90,11 @@ npm run lint
 npm run build
 npm test
 npm run test:checkout
+npm run test:rls
 npm run test:e2e
 ```
 
-`npm test` runs the Vitest suite, `npm run test:checkout` checks the checkout/backend contract, and `npm run test:e2e` runs the Playwright RU/EN desktop and iPhone-profile flows.
+`npm test` runs the Vitest suite, `npm run test:checkout` checks the checkout/backend contract, `npm run test:rls` runs local Supabase pgTAP coverage for organization and role boundaries, and `npm run test:e2e` runs the Playwright RU/EN desktop and iPhone-profile flows.
 
 Known state: `npm run lint` can show existing Fast Refresh warnings. Treat new warnings as regressions.
 

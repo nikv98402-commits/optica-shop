@@ -15,8 +15,6 @@ import { PaymentStatus } from './pages/PaymentStatus';
 import { KnowledgeAssistant } from './pages/KnowledgeAssistant';
 import { ComingSoon } from './pages/ComingSoon';
 import { getKnowledgePage, KnowledgeBase } from './pages/KnowledgeBase';
-import { LanguageProvider } from './contexts/LanguageContext';
-import { AuthProvider } from './contexts/AuthContext';
 import { demoProducts } from './data/products';
 import { createServiceCheckoutDraft, readServiceCheckoutDraft, saveServiceCheckoutDraft } from './services/serviceCheckout';
 import type { ServiceCheckoutDraft, ServiceCheckoutFrame } from './types/backend';
@@ -147,8 +145,6 @@ function App() {
   };
 
   return (
-    <LanguageProvider>
-      <AuthProvider>
         <div className="min-h-screen kinetic-surface text-vilu-ink">
           <LanguageDomBridge />
           <Navigation
@@ -210,8 +206,6 @@ function App() {
 
           <StoreLocator isOpen={isStoreLocatorOpen} onClose={() => setIsStoreLocatorOpen(false)} />
         </div>
-      </AuthProvider>
-    </LanguageProvider>
   );
 }
 

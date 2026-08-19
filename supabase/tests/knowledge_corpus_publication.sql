@@ -153,7 +153,7 @@ SELECT throws_ok(
     jsonb_build_array(jsonb_build_object(
       'locale', 'en', 'content', 'bad vector', 'token_count', 2,
       'ordinal', 0, 'embedding', to_jsonb(array_fill(0.0, ARRAY[1023])))))$$,
-  'P0001', 'embedding must contain exactly 1024 dimensions',
+  'P0001', 'invalid staged chunk; locale/content/token_count/ordinal and exactly 1024 embedding dimensions are required',
   'wrong embedding dimensions fail before staging commits'
 );
 

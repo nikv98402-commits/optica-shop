@@ -1,7 +1,7 @@
 {
   "name": "visionlux-optica-shop",
   "private": true,
-  "version": "0.9.1.0",
+  "version": "0.10.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "smoke": "node scripts/smoke-routes.mjs",
     "test": "vitest run",
+    "test:rls": "npx --yes supabase@2.115.0 test db",
     "test:checkout": "node scripts/check-service-checkout.mjs",
     "test:eye-map-boundary": "node scripts/check-eye-map-boundary.mjs",
     "test:eye-map:model-smoke": "node scripts/check-eye-map-model.mjs",
@@ -32,6 +33,7 @@
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.2",
     "tailwind-merge": "^3.4.0",
     "undici": "^6.28.0"
   },

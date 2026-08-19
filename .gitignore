@@ -9,6 +9,7 @@ artifacts/
 .DS_Store
 .gstack/
 supabase/.temp/
+supabase/.branches/
 public/test-uploads/
 tools/vilu-corpus/.venv/
 tools/vilu-corpus/.pytest_cache/

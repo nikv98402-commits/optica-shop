@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-The app must work without Supabase environment variables. Demo data is the default fallback.
+The legacy storefront must work without Supabase environment variables. Demo data is the default fallback. Organization-scoped Slice 0 routes require configured Supabase Auth, the identity migration, and explicit global and organization feature flags.
 
 ## Required Checks
 
@@ -28,8 +28,11 @@ npm run lint
 npm run build
 npm test
 npm run test:checkout
+npm run test:rls
 npm run test:e2e
 ```
+
+`npm run test:rls` runs against the local Supabase database and verifies allowed and denied access, cross-organization isolation, role-escalation denial, and telemetry-role spoofing denial. Start the local Supabase stack first; Docker must be available.
 
 For route-level smoke testing, start the dev server and run:
 
@@ -57,7 +60,8 @@ or write to production Supabase unless the task explicitly authorizes it.
 - Photos for try-on must stay in the browser.
 - Do not upload face photos, prescription data, complaints, or exact location. Names and contact values may cross the backend boundary only through the approved consented lead flow.
 - Never place names or contact values in browser storage, URL parameters, clipboard fallbacks, logs, or analytics.
-- Keep dashboard and profile data in demo/local mode unless privacy, consent, storage, and deletion flows are ready.
+- Keep legacy dashboard data in demo/local mode. On Slice 0 routes, read profiles, memberships, roles, feature flags, and audit-safe product events only through the migration's RLS boundary.
+- Resolve role and feature access against the same explicit `organizationId` from the route. Never infer an active organization from role alone.
 - Do not send PII, prescription values, complaints, or uploaded-photo details to analytics.
 - User-facing copy must not promise diagnosis, exact PD measurement, or guaranteed fit.
 - Final frame fit, PD, bridge comfort, lens compatibility, and prescription suitability must be checked by an optical specialist.
