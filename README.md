@@ -56,6 +56,21 @@ vilu.store
 - Ручной MVP-справочник оптик в `src/data/opticsDirectory.ts` без API-ключей и backend.
 - Privacy-текст: фото используется только в браузере для примерки и не отправляется на сервер.
 - Локальные demo-товары, поэтому витрина работает без Supabase-переменных окружения.
+- Защищённый Slice 0 для рабочих пространств сотрудника, работодателя и клинического партнёра: Supabase Auth, организации и роли с RLS, строгий RU/EN, Optical Signal primitives и выключенные по умолчанию feature flags.
+
+## ViLu Slice 0
+
+Новые рабочие пространства доступны только при настроенном Supabase и явном включении двух уровней rollout: глобального `VITE_FEATURE_VILU_FOUNDATION` / соответствующего `VITE_FEATURE_VILU_*` и одноимённого флага активной организации. Маршрут всегда содержит locale и стабильный `organizationId`:
+
+```text
+/:locale/organizations/:organizationId/employee/today
+/:locale/organizations/:organizationId/employer/outcomes
+/:locale/organizations/:organizationId/provider/queue
+```
+
+Соответствие переменных и ключей организации: `VITE_FEATURE_VILU_AUTH_V2` → `vilu_auth_v2`, `VITE_FEATURE_VILU_EMPLOYEE_FLOW_V2` → `vilu_employee_flow_v2`, `VITE_FEATURE_VILU_PROVIDER_QUEUE_V2` → `vilu_provider_queue_v2`, `VITE_FEATURE_VILU_PASSPORT_PROFILE_V2` → `vilu_passport_profile_v2`, `VITE_FEATURE_VILU_EMPLOYER_OUTCOMES_V2` → `vilu_employer_outcomes_v2`.
+
+Проверка роли, feature flag и данных выполняется для одной активной организации. Пользователь без активного членства не получает доступ к чужому workspace. Миграция находится в `supabase/migrations/20260819090000_create_vilu_identity_foundation.sql`, а локальные allowed/denied проверки RLS запускаются через `npm run test:rls`.
 
 ## Релизный MVP-поток
 
@@ -242,6 +257,7 @@ npm run build
 npm run lint
 npm test
 npm run test:checkout
+npm run test:rls
 npm run test:e2e
 npm run knowledge:index:dry
 npm run test:knowledge-boundary
@@ -260,12 +276,22 @@ Workflow запускается при каждом push в `main`, выполн
 
 ## Supabase
 
-В проекте сохранены Supabase-файлы и миграция. Для подключения реальной базы добавьте переменные окружения:
+В проекте сохранены Supabase-файлы и миграции. Для подключения реальной базы добавьте переменные окружения:
 
 ```bash
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
 ```
+
+Для локальной проверки Slice 0 нужен Supabase CLI или Docker-совместимое окружение. Запустите локальный стек, примените миграции и выполните RLS-тесты:
+
+```bash
+npx --yes supabase@2.115.0 start
+npx --yes supabase@2.115.0 db reset
+npm run test:rls
+```
+
+Все `VITE_FEATURE_VILU_*` в `.env.example` намеренно равны `false`. Не включайте foundation routes до применения identity-миграции и успешного прохождения RLS-тестов.
 
 Текущая витрина использует `src/data/products.ts`, поэтому может запускаться как автономный
 demo-магазин. Если Supabase настроен, карточка товара дополнительно запрашивает свежие

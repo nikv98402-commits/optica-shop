@@ -12,7 +12,8 @@ The product is intended for fast demos on desktop and iPhone via GitHub Pages.
 - Product detail: price, stock, fitting availability and contact lens subscription choice.
 - Checkout: unified 1-3-frame visit-preparation flow with store preference, consented lead submission, and a server-priced 429 RUB test payment contour.
 - Store locator: modal with city/address search.
-- Dashboard / Vision Hub: demo auth, client profile, prescription, eye exercises, progress metrics and personal offers.
+- Dashboard / Vision Hub: legacy demo profile, prescription, eye exercises, progress metrics and personal offers.
+- ViLu Slice 0: Supabase Auth plus organization-scoped employee, employer and clinical-partner shells behind strict RU/EN routes, RLS and disabled-by-default feature flags.
 
 ## Commands to run before finishing a code change
 
@@ -23,6 +24,7 @@ npm run build
 npm run lint
 npm test
 npm run test:checkout
+npm run test:rls
 npm run test:e2e
 ```
 
@@ -33,7 +35,8 @@ Always mention which checks were run and which were skipped.
 
 - Keep components typed with TypeScript.
 - Prefer existing Tailwind utility style and rounded premium visual language.
-- Keep the app autonomous: it must work without Supabase environment variables.
+- Keep the legacy storefront autonomous: it must work without Supabase environment variables. Slice 0 organization routes fail closed when Supabase or their rollout flags are unavailable.
+- Keep `activeOrganizationId`, the accepted membership role and organization feature checks bound to the same route organization.
 - Do not remove demo data from `src/data/products.ts` unless a real API replacement is added.
 - Keep iPhone/Safari usability in mind: responsive layouts, readable button sizes, no desktop-only critical flows.
 
