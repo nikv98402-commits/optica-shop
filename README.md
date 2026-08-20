@@ -57,8 +57,9 @@ vilu.store
 - Privacy-текст: фото используется только в браузере для примерки и не отправляется на сервер.
 - Локальные demo-товары, поэтому витрина работает без Supabase-переменных окружения.
 - Защищённый Slice 0 для рабочих пространств сотрудника, работодателя и клинического партнёра: Supabase Auth, организации и роли с RLS, строгий RU/EN, Optical Signal primitives и выключенные по умолчанию feature flags.
+- Защищённый Slice 1 для сотрудника: двуязычный Guided Optical маршрут `Сегодня -> Результат -> Направление`, восстановление черновика после перезагрузки и безопасный следующий шаг без постановки диагноза.
 
-## ViLu Slice 0
+## ViLu защищённые рабочие пространства
 
 Новые рабочие пространства доступны только при настроенном Supabase и явном включении двух уровней rollout: глобального `VITE_FEATURE_VILU_FOUNDATION` / соответствующего `VITE_FEATURE_VILU_*` и одноимённого флага активной организации. Маршрут всегда содержит locale и стабильный `organizationId`:
 
@@ -71,6 +72,16 @@ vilu.store
 Соответствие переменных и ключей организации: `VITE_FEATURE_VILU_AUTH_V2` → `vilu_auth_v2`, `VITE_FEATURE_VILU_EMPLOYEE_FLOW_V2` → `vilu_employee_flow_v2`, `VITE_FEATURE_VILU_PROVIDER_QUEUE_V2` → `vilu_provider_queue_v2`, `VITE_FEATURE_VILU_PASSPORT_PROFILE_V2` → `vilu_passport_profile_v2`, `VITE_FEATURE_VILU_EMPLOYER_OUTCOMES_V2` → `vilu_employer_outcomes_v2`.
 
 Проверка роли, feature flag и данных выполняется для одной активной организации. Пользователь без активного членства не получает доступ к чужому workspace. Миграция находится в `supabase/migrations/20260819090000_create_vilu_identity_foundation.sql`, а локальные allowed/denied проверки RLS запускаются через `npm run test:rls`.
+
+Slice 1 реализует только маршрут сотрудника под `vilu_employee_flow_v2`:
+
+```text
+/:locale/organizations/:organizationId/employee/today
+/:locale/organizations/:organizationId/employee/screenings/:screeningId/result
+/:locale/organizations/:organizationId/employee/referrals/:referralId
+```
+
+Черновик скрининга, завершённый результат и направление всегда связаны с `activeOrganizationId` и текущим сотрудником. Прогресс сохраняется идемпотентным RPC и восстанавливается после перезагрузки; направление создаётся атомарно и идемпотентно. Работодатель, другой сотрудник и участник другой организации не могут читать эти данные. Контракт находится в `supabase/migrations/20260819130000_create_vilu_employee_care_flow.sql`; Passport, Profile, Employer Outcomes и Provider Queue в этом Slice остаются placeholder-экранами за выключенными флагами.
 
 ## Релизный MVP-поток
 
@@ -283,7 +294,7 @@ VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
 ```
 
-Для локальной проверки Slice 0 нужен Supabase CLI или Docker-совместимое окружение. Запустите локальный стек, примените миграции и выполните RLS-тесты:
+Для локальной проверки защищённых ViLu workspace-маршрутов нужен Supabase CLI или Docker-совместимое окружение. Запустите локальный стек, примените identity- и employee-care-миграции и выполните RLS-тесты:
 
 ```bash
 npx --yes supabase@2.115.0 start
@@ -291,7 +302,7 @@ npx --yes supabase@2.115.0 db reset
 npm run test:rls
 ```
 
-Все `VITE_FEATURE_VILU_*` в `.env.example` намеренно равны `false`. Не включайте foundation routes до применения identity-миграции и успешного прохождения RLS-тестов.
+Все `VITE_FEATURE_VILU_*` в `.env.example` намеренно равны `false`. Не включайте foundation routes до применения identity-миграции, а employee flow — до применения employee-care-миграции и успешного прохождения RLS-тестов.
 
 Текущая витрина использует `src/data/products.ts`, поэтому может запускаться как автономный
 demo-магазин. Если Supabase настроен, карточка товара дополнительно запрашивает свежие

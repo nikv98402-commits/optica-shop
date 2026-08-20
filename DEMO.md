@@ -101,12 +101,12 @@ Example:
 - Email: demo@visionlux.ru
 - Password: demo123
 
-The demo auth is local-browser only and uses localStorage.
+The legacy Vision Hub demo auth is local-browser only and uses localStorage. Organization-scoped ViLu employee routes use Supabase Auth when their rollout flags are enabled.
 
 ## Current limitations
 
 - Checkout accepts 1-3 selected frames but does not sell or reserve frames or lenses.
-- Auth and profile data are stored in localStorage.
+- Legacy Vision Hub auth and profile data are stored in localStorage; feature-flagged ViLu workspace auth and membership data use Supabase.
 - Product data comes from `src/data/products.ts`.
 - Lead and test payment-intent Edge Functions require configured Supabase variables; Tally remains the rollout fallback.
 - YooKassa charging, webhook-confirmed payment, receipts, refunds, and reconciliation are not connected.
