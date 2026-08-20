@@ -2,6 +2,24 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.11.0.0] - 2026-08-20
+
+### Added
+
+- Added a bilingual Guided Optical employee journey from the Today workspace
+  through screening completion, an explainable result, and a referral when
+  follow-up care is recommended.
+- Added secure, organization-scoped screening drafts that resume after reload,
+  immutable screening results, and atomic referral creation under Supabase RLS.
+- Added regression coverage for Russian and English result/referral states,
+  cross-organization and cross-employee isolation, and concurrent referral
+  requests.
+
+### Changed
+
+- Extended employee routing and Optical Signal presentation for the Slice 1
+  screens while keeping later ViLu surfaces behind disabled feature flags.
+
 ## [0.10.0.0] - 2026-08-19
 
 ### Added
