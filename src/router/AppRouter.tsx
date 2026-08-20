@@ -7,6 +7,10 @@ import { buildLocaleRedirectTarget } from './foundationRouting';
 import { FoundationPlaceholder } from './FoundationPlaceholder';
 import { AuthGuard, FoundationGate, OrganizationFeatureGate, RoleGuard } from './guards';
 import { RoleLayout } from './RoleLayout';
+import { EmployeeFlowStateProvider } from '../features/employeeFlow/EmployeeFlowState';
+import { EmployeeTodayPage } from '../features/employeeFlow/EmployeeTodayPage';
+import { ScreeningResultPage } from '../features/employeeFlow/ScreeningResultPage';
+import { ReferralPage } from '../features/employeeFlow/ReferralPage';
 
 function LocaleBoundary() {
   const { locale } = useParams();
@@ -30,11 +34,11 @@ export function AppRouter() {
     <Routes>
       <Route path="/:locale/organizations/:organizationId" element={<LocaleBoundary />}>
         <Route element={<SecureFoundation />}>
-          <Route path="employee" element={<RoleGuard roles={['employee']}><RoleLayout role="employee" /></RoleGuard>}>
-            <Route index element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
-            <Route path="today" element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
-            <Route path="screenings/:screeningId/result" element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
-            <Route path="referrals/:referralId" element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
+          <Route path="employee" element={<RoleGuard roles={['employee']}><EmployeeFlowStateProvider><RoleLayout role="employee" /></EmployeeFlowStateProvider></RoleGuard>}>
+            <Route index element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><EmployeeTodayPage /></OrganizationFeatureGate>} />
+            <Route path="today" element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><EmployeeTodayPage /></OrganizationFeatureGate>} />
+            <Route path="screenings/:screeningId/result" element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><ScreeningResultPage /></OrganizationFeatureGate>} />
+            <Route path="referrals/:referralId" element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><ReferralPage /></OrganizationFeatureGate>} />
             <Route path="passport" element={<OrganizationFeatureGate feature="vilu_passport_profile_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
             <Route path="profile" element={<OrganizationFeatureGate feature="vilu_passport_profile_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
           </Route>

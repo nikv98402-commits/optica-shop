@@ -49,6 +49,49 @@
   }
 }
 
+@layer components {
+  .employee-flow-header { @apply sticky top-0 z-40; }
+  .employee-flow-header nav a { @apply rounded-full px-4 py-2 text-sm font-extrabold text-vilu-green hover:bg-vilu-lime/30; }
+  .employee-flow-shell { @apply mx-auto min-h-[calc(100svh-77px)] max-w-7xl px-4 py-8 md:px-6 md:py-12; }
+  .employee-flow-hero { @apply mb-8 grid items-end gap-6 border-b border-vilu-line pb-8 md:grid-cols-[minmax(0,1fr)_auto]; }
+  .employee-flow-hero h1 { @apply mt-3 max-w-4xl font-sans text-4xl font-extrabold leading-tight md:text-6xl; }
+  .employee-flow-hero p { @apply mt-4 max-w-2xl text-base leading-7 md:text-lg; color: var(--vilu-muted-text); }
+  .employee-flow-grid { @apply grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(18rem,0.9fr)]; }
+  .employee-flow-primary-card { @apply border-2 border-vilu-lime; }
+  .employee-flow-primary-card h1, .employee-flow-primary-card h2 { @apply mt-5 max-w-3xl font-sans text-3xl font-extrabold leading-tight md:text-5xl; }
+  .employee-flow-primary-card > p { @apply my-5 max-w-2xl text-lg leading-7; color: var(--vilu-muted-text); }
+  .employee-flow-primary-card .optical-button { @apply mt-6 inline-flex; }
+  .employee-flow-dark-card { @apply border-vilu-night bg-vilu-night text-vilu-paper; }
+  .employee-flow-dark-card h2 { @apply mt-5 font-sans text-2xl font-extrabold; }
+  .employee-flow-dark-card p { @apply mt-4 leading-7 text-vilu-paper/75; }
+  .employee-flow-dark-card small { @apply mt-10 block text-vilu-paper/50; }
+  .employee-flow-mark { @apply grid h-12 w-12 place-items-center rounded-full bg-vilu-lime font-black text-vilu-night; }
+  .employee-flow-question { @apply mx-auto max-w-4xl border-2 border-vilu-lime; }
+  .employee-flow-question__meta { @apply flex items-center justify-between; }
+  .employee-flow-progress { @apply my-5 h-2 overflow-hidden rounded-full bg-vilu-line; }
+  .employee-flow-progress span { @apply block h-full rounded-full bg-vilu-lime transition-all; }
+  .employee-flow-question h2 { @apply mt-8 max-w-3xl font-sans text-3xl font-extrabold leading-tight md:text-5xl; }
+  .employee-flow-options { @apply my-8 grid gap-3 sm:grid-cols-2; }
+  .employee-flow-options button { @apply min-h-14 rounded-2xl border border-vilu-line px-5 py-3 text-left font-bold transition hover:border-vilu-green focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-vilu-lime/60; }
+  .employee-flow-options button.is-selected { @apply border-vilu-night bg-vilu-night text-white; }
+  .employee-flow-result-window { @apply my-6 flex flex-col gap-2 border-y border-vilu-line py-5; }
+  .employee-flow-result-window small { color: var(--vilu-muted-text); }
+  .employee-flow-result-window strong { @apply text-2xl; }
+  .employee-flow-privacy { @apply mt-5 text-sm; color: var(--vilu-muted-text); }
+  .employee-flow-error { @apply mt-5 flex items-center justify-between rounded-2xl border border-red-700 px-4 py-3 text-red-800; }
+  .employee-flow-error button { @apply font-extrabold underline; }
+  .employee-flow-steps { @apply mt-5 divide-y divide-vilu-line; }
+  .employee-flow-steps li { @apply grid grid-cols-[3rem_1fr] items-center gap-2 py-5; }
+  .employee-flow-steps span { @apply font-mono text-xs font-bold text-vilu-green; }
+  .employee-flow-safety { @apply mt-4 rounded-vilu-xl border border-vilu-line bg-vilu-night p-5 font-bold leading-7 text-vilu-paper md:p-8; }
+}
+
+@media (max-width: 639px) {
+  .employee-flow-shell { padding-bottom: 6rem; }
+  .employee-flow-hero .optical-status { align-items: flex-start; white-space: normal; }
+  .employee-flow-primary-card .optical-button { width: 100%; }
+}
+
 :root {
   --vilu-ink: #07110d;
   --vilu-paper: #f8f3e8;
