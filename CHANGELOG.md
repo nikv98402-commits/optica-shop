@@ -2,6 +2,27 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.12.0.0] - 2026-08-21
+
+### Added
+
+- Added bilingual, responsive Vision Passport and Profile experiences scoped to
+  the employee's active organization, including screening and referral history,
+  recommendations, clinic documents, consent controls, and profile settings.
+- Added privacy-safe exports, provider access grants and revocation, signed
+  clinic-document viewing and downloads, and nearest-future review scheduling.
+- Added a durable server-side data-deletion queue with leases, retries, terminal
+  failure reporting, Supabase Storage cleanup, and an Edge Function dispatcher.
+- Added RLS, worker, UI, localization, organization-isolation, and failure-path
+  regression coverage for the Slice 2 workflows.
+
+### Changed
+
+- Extended Optical Signal routing and localization for Passport and Profile
+  while keeping later ViLu surfaces disabled behind feature flags by default.
+- Documented the Slice 2 migration, local RLS verification, required secrets,
+  Edge Function deployment, dispatcher scheduling, and safe rollout order.
+
 ## [0.11.0.0] - 2026-08-20
 
 ### Added
