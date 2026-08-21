@@ -65,6 +65,12 @@ describe("ProfilePage", () => {
       requested_at: "2026-08-20",
       processed_at: null,
     });
+    api.cancelDataDeletion.mockResolvedValue({
+      id: "delete-a",
+      status: "cancelled",
+      requested_at: "2026-08-20",
+      processed_at: "2026-08-21",
+    });
     vi.stubGlobal(
       "confirm",
       vi.fn(() => true),
@@ -219,5 +225,76 @@ describe("ProfilePage", () => {
     expect(
       screen.queryByRole("button", { name: "Запросить удаление данных" }),
     ).not.toBeInTheDocument();
+  });
+  it("shows the localized load failure instead of a dead loading state", async () => {
+    api.getProfileSettings.mockRejectedValue(new Error("offline"));
+    render(
+      <LanguageProvider><MemoryRouter initialEntries={["/ru/organizations/org-a/employee/profile"]}><Routes>
+        <Route path="/:locale/organizations/:organizationId/employee/profile" element={<ProfilePage />} />
+      </Routes></MemoryRouter></LanguageProvider>,
+    );
+    expect(await screen.findByText("Не удалось загрузить данные")).toBeInTheDocument();
+  });
+  it("shows an action error without claiming that profile settings were saved", async () => {
+    const user = userEvent.setup();
+    api.exportEmployeeData.mockRejectedValue(new Error("denied"));
+    render(
+      <LanguageProvider><MemoryRouter initialEntries={["/ru/organizations/org-a/employee/profile"]}><Routes>
+        <Route path="/:locale/organizations/:organizationId/employee/profile" element={<ProfilePage />} />
+      </Routes></MemoryRouter></LanguageProvider>,
+    );
+    await screen.findByText("Настройки и управление данными");
+    await user.click(screen.getByRole("button", { name: "Экспортировать мои данные" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Не удалось загрузить данные");
+    expect(screen.queryByText("Сохранено")).not.toBeInTheDocument();
+  });
+  it("toggles research consent and revokes the exact clinic", async () => {
+    const user = userEvent.setup();
+    api.getProfileSettings.mockResolvedValueOnce({ ...settings, consents: [
+      ...settings.consents,
+      { type: "clinic_access", granted: true, providerOrganizationId: "provider-a", providerName: "Клиника А" },
+    ] });
+    render(
+      <LanguageProvider><MemoryRouter initialEntries={["/ru/organizations/org-a/employee/profile"]}><Routes>
+        <Route path="/:locale/organizations/:organizationId/employee/profile" element={<ProfilePage />} />
+      </Routes></MemoryRouter></LanguageProvider>,
+    );
+    await screen.findByText("Настройки и управление данными");
+    await user.click(screen.getByRole("button", { name: "Отозвать доступ" }));
+    expect(api.setConsent).toHaveBeenCalledWith("org-a", "clinic_access", false, "provider-a");
+    await user.click(screen.getByRole("checkbox", { name: "Использование обезличенных данных для исследований" }));
+    expect(api.setConsent).toHaveBeenCalledWith("org-a", "research", true, null);
+  });
+  it("cancels a requested deletion and restores the request action", async () => {
+    const user = userEvent.setup();
+    api.getProfileSettings.mockResolvedValue({ ...settings, deletionRequest: {
+      id: "delete-a", status: "requested", requestedAt: "2026-08-20", processedAt: null,
+    } });
+    render(
+      <LanguageProvider><MemoryRouter initialEntries={["/ru/organizations/org-a/employee/profile"]}><Routes>
+        <Route path="/:locale/organizations/:organizationId/employee/profile" element={<ProfilePage />} />
+      </Routes></MemoryRouter></LanguageProvider>,
+    );
+    await user.click(await screen.findByRole("button", { name: "Отменить запрос" }));
+    expect(api.cancelDataDeletion).toHaveBeenCalledWith("org-a", "delete-a");
+    expect(await screen.findByText("Запрос отменён")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Запросить удаление данных" })).toBeInTheDocument();
+  });
+  it("polls an English requested deletion to its terminal completed state", async () => {
+    localStorage.setItem("vilu_language", "en");
+    api.getProfileSettings.mockResolvedValue({ ...settings, locale: "en", deletionRequest: {
+      id: "delete-a", status: "requested", requestedAt: "2026-08-20", processedAt: null,
+    } });
+    api.getDataDeletionStatus.mockResolvedValue({
+      id: "delete-a", status: "completed", requestedAt: "2026-08-20", processedAt: "2026-08-21",
+    });
+    render(
+      <LanguageProvider><MemoryRouter initialEntries={["/en/organizations/org-a/employee/profile"]}><Routes>
+        <Route path="/:locale/organizations/:organizationId/employee/profile" element={<ProfilePage />} />
+      </Routes></MemoryRouter></LanguageProvider>,
+    );
+    expect(await screen.findByText("Data deleted")).toBeInTheDocument();
+    expect(api.getDataDeletionStatus).toHaveBeenCalledWith("org-a", "delete-a");
+    expect(screen.queryByRole("button", { name: "Request data deletion" })).not.toBeInTheDocument();
   });
 });
