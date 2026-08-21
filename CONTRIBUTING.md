@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-The legacy storefront must work without Supabase environment variables. Demo data is the default fallback. Organization-scoped ViLu routes require configured Supabase Auth, the identity, employee-care, and Passport/Profile migrations, and explicit global and organization feature flags.
+The legacy storefront must work without Supabase environment variables. Demo data is the default fallback. Organization-scoped ViLu routes require configured Supabase Auth, the identity, employee-care, Passport/Profile, and Employer/Provider migrations, and explicit global and organization feature flags.
 
 ## Required Checks
 
@@ -32,7 +32,7 @@ npm run test:rls
 npm run test:e2e
 ```
 
-`npm run test:rls` runs against the local Supabase database. It verifies allowed and denied access, cross-organization and cross-employee isolation, role-escalation and telemetry-role spoofing denial, draft ownership, concurrent idempotent referral creation, Passport/Profile access, provider consent, exports, documents, and the data-deletion queue. Start the local Supabase stack first; Docker must be available.
+`npm run test:rls` runs against the local Supabase database. It verifies allowed and denied access, cross-organization and cross-employee isolation, role-escalation and telemetry-role spoofing denial, draft ownership, concurrent idempotent referral creation, Passport/Profile access, provider consent, exports, documents, Employer Outcomes privacy suppression, Provider Queue operations and auditing, concurrent provider mutations, and the data-deletion queue. Start the local Supabase stack first; Docker must be available.
 
 For route-level smoke testing, start the dev server and run:
 
@@ -66,6 +66,10 @@ or write to production Supabase unless the task explicitly authorizes it.
 - Keep screening drafts resumable and version-checked. Completion is immutable, and referral creation must remain atomic and idempotent under concurrent requests.
 - Passport/Profile reads and mutations must use the same active organization context as route guards and feature flags.
 - Grant clinic access only to an organization whose `organization_type` is `provider`, and require an explicit, revocable consent record.
+- Employer Outcomes must expose only frozen completed-month aggregates. Preserve the per-cell privacy threshold, complementary suppression, and one screened-referral-outcome cohort; never expose drill-downs or employee identifiers to an employer.
+- Provider Queue detail reads and mutations must bind to the same route `organizationId`, current provider membership, and active clinic consent. Revalidate those boundaries before replaying an idempotency receipt.
+- Keep booking, urgent escalation, and outcome confirmation optimistic-locking and idempotency-safe. Reusing one key with another payload must fail, while a concurrent same-key retry must return the original response without a second side effect.
+- Audit sensitive Provider Queue reads and mutations without placing patient names, document paths, clinical reasons, or outcome details in audit metadata.
 - The Profile UI may request deletion and poll status only. It must not invoke deletion processing directly or depend on an open browser.
 - `process-data-deletion` is a server-only worker authenticated with `DATA_DELETION_DISPATCH_SECRET`. Its Supabase gateway JWT check is disabled per-function so the handler can validate that non-JWT scheduler secret. Preserve the handler check, internal service-role client, storage-first deletion order, observable statuses (`requested`, `processing`, `completed`, `failed`), and recovery of expired `processing` leases.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` through `VITE_*`, browser code, logs, fixtures, or screenshots.
@@ -102,6 +106,29 @@ Deploy in this order:
 5. Run RLS and RU/EN smoke tests, then enable the global and organization flags in that order for the pilot organization.
 
 If verification fails, disable the flags first. Do not reverse a data-bearing migration; repair the worker and resume the durable queue, including expired leases.
+
+## Slice 3 local verification and rollout
+
+Slice 3 is defined by these migrations:
+
+- `supabase/migrations/20260821120000_create_vilu_employer_provider_operations.sql` — Employer Outcomes, provider assignment, queue reads, booking, escalation, outcome confirmation, idempotency receipts and audit events.
+- `supabase/migrations/20260821130000_harden_vilu_slice3_deletion.sql` — deletion ordering for provider-operation receipts, appointments, escalations and clinical outcomes before their parent referral.
+
+Apply the complete local migration chain and run the RLS suite:
+
+```bash
+npx --yes supabase@2.115.0 start
+npx --yes supabase@2.115.0 db reset
+npm run test:rls
+```
+
+The Slice 3 database regressions are split by boundary:
+
+- `supabase/tests/employer_provider_operations_rls.test.sql` covers organization isolation, provider membership, clinic consent, audit events, outcome time bounds, privacy threshold and complementary suppression.
+- `supabase/tests/provider_operations_concurrency.test.sql` uses two independent database sessions to cover same-key replay and different-key optimistic conflicts for booking, escalation and outcome confirmation.
+- `supabase/tests/employer_provider_deletion.test.sql` verifies that the production deletion transaction removes provider-operation children before the referral and reaches an observable completed state.
+
+Before production rollout, keep `VITE_FEATURE_VILU_EMPLOYER_OUTCOMES_V2` and `VITE_FEATURE_VILU_PROVIDER_QUEUE_V2` disabled. Apply both Slice 3 migrations, run the full RLS and application test suites, verify RU/EN and desktop/mobile routes, then enable the global flag followed by the matching organization flag for a pilot organization. Disable the flags first on failure; do not reverse a data-bearing migration.
 
 ## Analytics Rules
 

@@ -59,6 +59,7 @@ vilu.store
 - Защищённый Slice 0 для рабочих пространств сотрудника, работодателя и клинического партнёра: Supabase Auth, организации и роли с RLS, строгий RU/EN, Optical Signal primitives и выключенные по умолчанию feature flags.
 - Защищённый Slice 1 для сотрудника: двуязычный Guided Optical маршрут `Сегодня -> Результат -> Направление`, восстановление черновика после перезагрузки и безопасный следующий шаг без постановки диагноза.
 - Защищённый Slice 2: Vision Passport и Profile с историей помощи, документами клиники, согласиями, экспортом и серверной очередью безопасного удаления данных.
+- Защищённый Slice 3: агрегированный Employer Outcomes с защитой малых выборок и Provider Queue для клинического партнёра с SLA, записью, эскалацией, документами и подтверждением результата.
 
 ## ViLu защищённые рабочие пространства
 
@@ -84,7 +85,11 @@ Slice 1 реализует только маршрут сотрудника по
 
 Черновик скрининга, завершённый результат и направление всегда связаны с `activeOrganizationId` и текущим сотрудником. Прогресс сохраняется идемпотентным RPC и восстанавливается после перезагрузки; направление создаётся атомарно и идемпотентно. Работодатель, другой сотрудник и участник другой организации не могут читать эти данные. Контракт находится в `supabase/migrations/20260819130000_create_vilu_employee_care_flow.sql`.
 
-Slice 2 добавляет отдельные Vision Passport и Profile под флагом `vilu_passport_profile_v2`. Контракт находится в `supabase/migrations/20260820120000_create_vilu_passport_profile.sql`, а интеграционные проверки — в `supabase/tests/passport_profile_rls.test.sql`. Доступ ограничен активной организацией сотрудника; работодатель не получает персональные медицинские данные, а клинический партнёр получает доступ только при действующем согласии и `organization_type=provider`. Employer Outcomes и Provider Queue пока остаются placeholder-экранами.
+Slice 2 добавляет отдельные Vision Passport и Profile под флагом `vilu_passport_profile_v2`. Контракт находится в `supabase/migrations/20260820120000_create_vilu_passport_profile.sql`, а интеграционные проверки — в `supabase/tests/passport_profile_rls.test.sql`. Доступ ограничен активной организацией сотрудника; работодатель не получает персональные медицинские данные, а клинический партнёр получает доступ только при действующем согласии и `organization_type=provider`.
+
+Slice 3 реализует Employer Outcomes под `vilu_employer_outcomes_v2` и Provider Queue под `vilu_provider_queue_v2`. Employer Outcomes возвращает только зафиксированные завершённые UTC-месяцы и агрегаты одной когорты `screening -> referral -> outcome`; малые ячейки, производные ставки и дополняющие ячейки скрываются, чтобы нельзя было восстановить индивидуальные медицинские события сравнением соседних отчётов. Provider Queue доступен только участнику активной provider-организации при действующем `clinic_access` consent и поддерживает очередь, приоритет/SLA, запись, срочную эскалацию, документы и подтверждение результата. Чувствительные чтения и изменения аудитируются без помещения клинического содержимого в audit metadata; мутации используют optimistic locking и идемпотентные ключи, включая конкурентные повторы.
+
+Основной контракт Slice 3 находится в `supabase/migrations/20260821120000_create_vilu_employer_provider_operations.sql`, а безопасный порядок удаления новых дочерних записей — в `supabase/migrations/20260821130000_harden_vilu_slice3_deletion.sql`. RLS, privacy, deletion и двухсессионная конкурентность покрыты файлами `supabase/tests/employer_provider_operations_rls.test.sql`, `supabase/tests/employer_provider_deletion.test.sql` и `supabase/tests/provider_operations_concurrency.test.sql`.
 
 ## Релизный MVP-поток
 
@@ -297,7 +302,7 @@ VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
 ```
 
-Для локальной проверки защищённых ViLu workspace-маршрутов нужен Supabase CLI или Docker-совместимое окружение. Запустите локальный стек, примените identity-, employee-care- и Passport/Profile-миграции и выполните RLS-тесты:
+Для локальной проверки защищённых ViLu workspace-маршрутов нужен Supabase CLI или Docker-совместимое окружение. Запустите локальный стек, примените identity-, employee-care-, Passport/Profile- и Employer/Provider-миграции и выполните RLS-тесты:
 
 ```bash
 npx --yes supabase@2.115.0 start
@@ -305,7 +310,7 @@ npx --yes supabase@2.115.0 db reset
 npm run test:rls
 ```
 
-Все `VITE_FEATURE_VILU_*` в `.env.example` намеренно равны `false`. Не включайте foundation routes до применения identity-миграции, employee flow — до применения employee-care-миграции, а Passport/Profile — до применения `20260820120000_create_vilu_passport_profile.sql` и успешного прохождения RLS-тестов.
+Все `VITE_FEATURE_VILU_*` в `.env.example` намеренно равны `false`. Не включайте foundation routes до применения identity-миграции, employee flow — до применения employee-care-миграции, Passport/Profile — до применения `20260820120000_create_vilu_passport_profile.sql`, а Employer Outcomes и Provider Queue — до применения обеих миграций Slice 3 и успешного прохождения RLS и конкурентных тестов. После миграции сначала включается соответствующий глобальный флаг, затем одноимённый флаг конкретной организации.
 
 ### Удаление данных и rollout Slice 2
 
