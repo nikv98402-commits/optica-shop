@@ -2,6 +2,19 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.12.1.0] - 2026-08-21
+
+### Security
+
+- Isolated production data-deletion dispatch authentication behind a dedicated
+  `DATA_DELETION_DISPATCH_SECRET` instead of transmitting the Supabase
+  service-role key over HTTP.
+- Kept privileged Supabase client creation inside the Edge Function after
+  dispatcher authentication succeeds, with explicit rejection of missing,
+  invalid, and service-role bearer credentials.
+- Added deployment configuration, documentation, and regression coverage for
+  the independent dispatcher credential and visible workflow failures.
+
 ## [0.12.0.0] - 2026-08-21
 
 ### Added
