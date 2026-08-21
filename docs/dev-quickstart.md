@@ -54,6 +54,13 @@ Slice 0 workspace routes are feature-gated and include both locale and organizat
 - `/:locale/organizations/:organizationId/employer/outcomes`
 - `/:locale/organizations/:organizationId/provider/queue`
 
+Slice 1 and Slice 2 add employee routes under the same organization boundary:
+
+- `/:locale/organizations/:organizationId/employee/screenings/:screeningId/result`
+- `/:locale/organizations/:organizationId/employee/referrals/:referralId`
+- `/:locale/organizations/:organizationId/employee/passport`
+- `/:locale/organizations/:organizationId/employee/profile`
+
 ## Environment Variables
 
 Copy `.env.example` to `.env.local` only when you need optional integrations.
@@ -70,7 +77,7 @@ Copy-Item .env.example .env.local
 
 The app must still work when `.env.local` is missing.
 
-The legacy storefront stays available without Supabase. Slice 0 workspace routes need `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, the local identity migration, and the relevant `VITE_FEATURE_VILU_*` values. All foundation flags default to `false`.
+The legacy storefront stays available without Supabase. Protected workspace routes need `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, the Slice 0-2 migrations, and the relevant `VITE_FEATURE_VILU_*` values. All flags default to `false`; Passport/Profile requires both global `VITE_FEATURE_VILU_PASSPORT_PROFILE_V2` and organization flag `vilu_passport_profile_v2`.
 
 Start and reset local Supabase before the RLS suite:
 
