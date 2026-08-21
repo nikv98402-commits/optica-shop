@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabase';
-import type { Referral, Screening, ScreeningAnswer, ScreeningProgress, ScreeningResult } from './types';
+import type { Referral, ReferralProviderOption, Screening, ScreeningAnswer, ScreeningProgress, ScreeningResult } from './types';
 
 type RpcRow = { screening: Screening; result: ScreeningResult };
 
@@ -79,6 +79,22 @@ export async function getReferral(organizationId: string, referralId: string) {
     target_organization_id: organizationId,
     target_referral_id: referralId,
   }).single();
+  if (error) throw error;
+  return data as Referral;
+}
+
+export async function getReferralProviderOptions(organizationId: string) {
+  const { data, error } = await supabase.rpc('get_employee_profile_settings', { target_organization_id: organizationId });
+  if (error) throw error;
+  return ((data as { providers?: ReferralProviderOption[] } | null)?.providers ?? []);
+}
+
+export async function consentAndAssignReferral(organizationId: string, referral: Referral, providerOrganizationId: string, idempotencyKey: string) {
+  const { data, error } = await supabase.rpc('consent_and_assign_employee_referral_provider', {
+    target_organization_id: organizationId, target_referral_id: referral.id,
+    target_provider_organization_id: providerOrganizationId, expected_version: referral.version,
+    request_idempotency_key: idempotencyKey,
+  });
   if (error) throw error;
   return data as Referral;
 }

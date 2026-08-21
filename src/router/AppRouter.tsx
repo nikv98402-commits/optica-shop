@@ -4,7 +4,6 @@ import App from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { buildLocaleRedirectTarget } from './foundationRouting';
-import { FoundationPlaceholder } from './FoundationPlaceholder';
 import { AuthGuard, FoundationGate, OrganizationFeatureGate, RoleGuard } from './guards';
 import { RoleLayout } from './RoleLayout';
 import { EmployeeFlowStateProvider } from '../features/employeeFlow/EmployeeFlowState';
@@ -13,6 +12,8 @@ import { ScreeningResultPage } from '../features/employeeFlow/ScreeningResultPag
 import { ReferralPage } from '../features/employeeFlow/ReferralPage';
 import { VisionPassportPage } from '../features/passportProfile/VisionPassportPage';
 import { ProfilePage } from '../features/passportProfile/ProfilePage';
+import { EmployerOutcomesPage } from '../features/employerOutcomes/EmployerOutcomesPage';
+import { ProviderQueuePage } from '../features/providerQueue/ProviderQueuePage';
 
 function LocaleBoundary() {
   const { locale } = useParams();
@@ -45,10 +46,10 @@ export function AppRouter() {
             <Route path="profile" element={<OrganizationFeatureGate feature="vilu_passport_profile_v2"><ProfilePage /></OrganizationFeatureGate>} />
           </Route>
           <Route path="employer" element={<RoleGuard roles={['employer_admin']}><RoleLayout role="employer" /></RoleGuard>}>
-            <Route path="outcomes" element={<OrganizationFeatureGate feature="vilu_employer_outcomes_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
+            <Route path="outcomes" element={<OrganizationFeatureGate feature="vilu_employer_outcomes_v2"><EmployerOutcomesPage /></OrganizationFeatureGate>} />
           </Route>
           <Route path="provider" element={<RoleGuard roles={['provider_staff']}><RoleLayout role="provider" /></RoleGuard>}>
-            <Route path="queue" element={<OrganizationFeatureGate feature="vilu_provider_queue_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
+            <Route path="queue" element={<OrganizationFeatureGate feature="vilu_provider_queue_v2"><ProviderQueuePage /></OrganizationFeatureGate>} />
           </Route>
         </Route>
       </Route>
