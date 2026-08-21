@@ -11,6 +11,8 @@ import { EmployeeFlowStateProvider } from '../features/employeeFlow/EmployeeFlow
 import { EmployeeTodayPage } from '../features/employeeFlow/EmployeeTodayPage';
 import { ScreeningResultPage } from '../features/employeeFlow/ScreeningResultPage';
 import { ReferralPage } from '../features/employeeFlow/ReferralPage';
+import { VisionPassportPage } from '../features/passportProfile/VisionPassportPage';
+import { ProfilePage } from '../features/passportProfile/ProfilePage';
 
 function LocaleBoundary() {
   const { locale } = useParams();
@@ -39,8 +41,8 @@ export function AppRouter() {
             <Route path="today" element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><EmployeeTodayPage /></OrganizationFeatureGate>} />
             <Route path="screenings/:screeningId/result" element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><ScreeningResultPage /></OrganizationFeatureGate>} />
             <Route path="referrals/:referralId" element={<OrganizationFeatureGate feature="vilu_employee_flow_v2"><ReferralPage /></OrganizationFeatureGate>} />
-            <Route path="passport" element={<OrganizationFeatureGate feature="vilu_passport_profile_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
-            <Route path="profile" element={<OrganizationFeatureGate feature="vilu_passport_profile_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />
+            <Route path="passport" element={<OrganizationFeatureGate feature="vilu_passport_profile_v2"><VisionPassportPage /></OrganizationFeatureGate>} />
+            <Route path="profile" element={<OrganizationFeatureGate feature="vilu_passport_profile_v2"><ProfilePage /></OrganizationFeatureGate>} />
           </Route>
           <Route path="employer" element={<RoleGuard roles={['employer_admin']}><RoleLayout role="employer" /></RoleGuard>}>
             <Route path="outcomes" element={<OrganizationFeatureGate feature="vilu_employer_outcomes_v2"><FoundationPlaceholder /></OrganizationFeatureGate>} />

@@ -84,6 +84,20 @@
   .employee-flow-steps li { @apply grid grid-cols-[3rem_1fr] items-center gap-2 py-5; }
   .employee-flow-steps span { @apply font-mono text-xs font-bold text-vilu-green; }
   .employee-flow-safety { @apply mt-4 rounded-vilu-xl border border-vilu-line bg-vilu-night p-5 font-bold leading-7 text-vilu-paper md:p-8; }
+  .passport-summary { @apply mb-4 grid gap-4 sm:grid-cols-3; }
+  .passport-summary strong { @apply mt-3 block text-2xl font-black; }
+  .passport-grid,.profile-grid { @apply grid gap-4 lg:grid-cols-2; }
+  .passport-grid h2,.profile-grid h2 { @apply mb-5 text-xl font-extrabold; }
+  .passport-timeline { @apply divide-y divide-vilu-line; }
+  .passport-timeline a,.passport-row { @apply grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-4; }
+  .passport-timeline a { @apply transition hover:text-vilu-green; }
+  .passport-timeline time { @apply col-span-2 text-sm text-vilu-green; }
+  .passport-actions { @apply flex flex-wrap justify-end gap-2; }
+  .profile-grid label:not(.profile-toggle) { @apply mb-4 grid gap-2 font-bold; }
+  .profile-grid input:not([type=checkbox]),.profile-grid select { @apply min-h-12 rounded-2xl border border-vilu-line bg-white px-4 font-normal outline-none focus:ring-4 focus:ring-vilu-lime/50; }
+  .profile-toggle { @apply flex min-h-14 items-center justify-between gap-4 border-b border-vilu-line py-3 font-bold; }
+  .profile-toggle input { @apply h-6 w-6 accent-vilu-green; }
+  .profile-danger button { @apply mr-3 mt-3 rounded-full border border-vilu-line px-4 py-3 font-bold hover:border-vilu-green; }
 }
 
 @media (max-width: 639px) {
