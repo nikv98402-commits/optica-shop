@@ -2,6 +2,29 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.0.0] - 2026-08-21
+
+### Added
+
+- Added bilingual, responsive Employer Outcomes with privacy-safe completed-month
+  reporting, minimum cohort thresholds, and complementary suppression that
+  prevents employers from inferring individual medical activity.
+- Added the Provider Queue for authorized clinical partners, including
+  referral priority and SLA, appointment booking, urgent escalation, clinic
+  documents, outcome confirmation, pagination, and status-aware actions.
+- Added organization-scoped RLS, clinic-consent enforcement, sensitive-read and
+  mutation audit trails, replay-safe idempotency, optimistic locking, and true
+  two-session concurrency coverage for provider operations.
+
+### Changed
+
+- Connected employee referral consent to an atomic clinical-partner assignment
+  flow while keeping Employer Outcomes and Provider Queue disabled by default
+  behind their existing feature flags.
+- Extended production data deletion so provider-operation receipts,
+  appointments, escalations, and clinical outcomes are removed safely before
+  their parent referral.
+
 ## [0.12.1.0] - 2026-08-21
 
 ### Security
