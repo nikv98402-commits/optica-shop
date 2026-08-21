@@ -65,3 +65,6 @@ enabled = false
 policy = "oneshot"
 inspector_port = 55883
 deno_version = 2
+
+[functions.process-data-deletion]
+verify_jwt = false

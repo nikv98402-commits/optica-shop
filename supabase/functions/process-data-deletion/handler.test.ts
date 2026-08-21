@@ -7,7 +7,11 @@ const request = (method = 'POST', token = 'secret', body?: unknown) => new Reque
   body: body === undefined ? undefined : JSON.stringify(body),
 });
 
-function setup(env = new Map([['SUPABASE_URL', 'http://db'], ['SUPABASE_SERVICE_ROLE_KEY', 'secret']])) {
+function setup(env = new Map([
+  ['SUPABASE_URL', 'http://db'],
+  ['SUPABASE_SERVICE_ROLE_KEY', 'service-role-secret'],
+  ['DATA_DELETION_DISPATCH_SECRET', 'secret'],
+])) {
   const create = vi.fn(() => ({ service: true }));
   const dispatch = vi.fn(async () => ({ discovered: 1, completed: 1, failed: 0 }));
   return { handler: createDataDeletionHandler((key) => env.get(key), create, dispatch), create, dispatch };
@@ -19,12 +23,35 @@ describe('data deletion HTTP handler', () => {
     expect((await handler(request('GET'))).status).toBe(405);
   });
 
-  it('rejects missing configuration and invalid authorization', async () => {
+  it('rejects a missing dispatcher secret before creating a service client', async () => {
+    const missing = setup(new Map([
+      ['SUPABASE_URL', 'http://db'],
+      ['SUPABASE_SERVICE_ROLE_KEY', 'service-role-secret'],
+    ]));
+    const response = await missing.handler(request());
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: 'worker_not_configured' });
+    expect(missing.create).not.toHaveBeenCalled();
+    expect(missing.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('rejects absent and invalid dispatcher authorization', async () => {
     const missing = setup(new Map());
     expect(await (await missing.handler(request())).json()).toEqual({ error: 'worker_not_configured' });
     const configured = setup();
+    expect((await configured.handler(new Request('http://worker.test', { method: 'POST' }))).status).toBe(401);
     expect((await configured.handler(request('POST', 'wrong'))).status).toBe(401);
+    expect((await configured.handler(request('POST', 'service-role-secret'))).status).toBe(401);
+    expect(configured.create).not.toHaveBeenCalled();
     expect(configured.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('uses the dispatcher secret for HTTP auth and keeps service-role credentials inside the worker', async () => {
+    const { handler, create, dispatch } = setup();
+    const response = await handler(request('POST', 'secret', { batchSize: 5 }));
+    expect(response.status).toBe(200);
+    expect(create).toHaveBeenCalledWith('http://db', 'service-role-secret');
+    expect(dispatch).toHaveBeenCalledWith({ service: true }, 5);
   });
 
   it('normalizes bounded, fractional and missing batch sizes', async () => {

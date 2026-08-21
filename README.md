@@ -313,16 +313,16 @@ Profile только создаёт запрос на удаление и пок
 
 Для production нужны следующие секреты. Никогда не добавляйте service role key в переменные с префиксом `VITE_` или в клиентский bundle.
 
-- Edge Function runtime: `SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY` (в hosted Supabase они обычно предоставляются средой проекта; проверьте их наличие перед deploy).
-- GitHub Actions: `SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY` для `data-deletion-dispatch`.
+- Edge Function runtime: `SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY` (в hosted Supabase они обычно предоставляются средой проекта), а также отдельный `DATA_DELETION_DISPATCH_SECRET` для авторизации scheduler-запросов.
+- GitHub Actions: `SUPABASE_URL` и тот же `DATA_DELETION_DISPATCH_SECRET` для `data-deletion-dispatch`. Не передавайте `SUPABASE_SERVICE_ROLE_KEY` через HTTP.
 - Frontend: существующие публичные `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY`; `VITE_FEATURE_VILU_PASSPORT_PROFILE_V2` остаётся выключенным до завершения проверки.
 
 Безопасный порядок rollout:
 
 1. Проверьте Supabase project ref, резервное копирование и выключенное состояние глобального и организационного feature flags.
 2. Свяжите CLI с нужным проектом и примените миграции: `npx --yes supabase@2.115.0 link --project-ref <project-ref>`, затем `npx --yes supabase@2.115.0 db push`.
-3. Разверните worker: `npx --yes supabase@2.115.0 functions deploy process-data-deletion --project-ref <project-ref>`.
-4. Добавьте или проверьте GitHub secrets и выполните ручной запуск `data-deletion-dispatch`; убедитесь, что тестовый запрос проходит все состояния и файл действительно исчезает из Storage.
+3. Разверните worker: `npx --yes supabase@2.115.0 functions deploy process-data-deletion --project-ref <project-ref>`. Для этой функции `verify_jwt = false` задан в `supabase/config.toml`, потому что handler проверяет отдельный scheduler-secret; не удаляйте эту внутреннюю проверку.
+4. Установите одинаковый случайный `DATA_DELETION_DISPATCH_SECRET` в Edge Function secrets и GitHub Actions secrets, затем выполните ручной запуск `data-deletion-dispatch`; убедитесь, что тестовый запрос проходит все состояния и файл действительно исчезает из Storage.
 5. Запустите `npm run test:rls` и smoke-проверку RU/EN, Passport, Profile, экспорта, документов и privacy boundary.
 6. Сначала включите глобальный флаг, затем организационный `vilu_passport_profile_v2` только для пилотной организации. При проблеме выключите флаги; миграцию с данными не откатывайте. Очередь можно продолжить после исправления worker.
 

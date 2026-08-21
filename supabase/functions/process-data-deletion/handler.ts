@@ -10,8 +10,9 @@ export function createDataDeletionHandler(
     if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
     const serviceUrl = env('SUPABASE_URL');
     const serviceRoleKey = env('SUPABASE_SERVICE_ROLE_KEY');
-    if (!serviceUrl || !serviceRoleKey) return Response.json({ error: 'worker_not_configured' }, { status: 503 });
-    if (request.headers.get('authorization') !== `Bearer ${serviceRoleKey}`) return Response.json({ error: 'unauthorized' }, { status: 401 });
+    const dispatchSecret = env('DATA_DELETION_DISPATCH_SECRET');
+    if (!serviceUrl || !serviceRoleKey || !dispatchSecret) return Response.json({ error: 'worker_not_configured' }, { status: 503 });
+    if (request.headers.get('authorization') !== `Bearer ${dispatchSecret}`) return Response.json({ error: 'unauthorized' }, { status: 401 });
     let batchSize = 10;
     try {
       const payload = await request.json();

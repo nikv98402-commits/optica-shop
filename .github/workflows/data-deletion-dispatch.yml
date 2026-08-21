@@ -19,12 +19,12 @@ jobs:
       - name: Dispatch queued deletion requests
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DATA_DELETION_DISPATCH_SECRET: ${{ secrets.DATA_DELETION_DISPATCH_SECRET }}
         run: |
           test -n "$SUPABASE_URL"
-          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+          test -n "$DATA_DELETION_DISPATCH_SECRET"
           curl --fail-with-body --silent --show-error \
             --request POST "$SUPABASE_URL/functions/v1/process-data-deletion" \
-            --header "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            --header "Authorization: Bearer $DATA_DELETION_DISPATCH_SECRET" \
             --header "Content-Type: application/json" \
             --data '{"batchSize":25}'

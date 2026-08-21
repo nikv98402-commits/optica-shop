@@ -67,7 +67,7 @@ or write to production Supabase unless the task explicitly authorizes it.
 - Passport/Profile reads and mutations must use the same active organization context as route guards and feature flags.
 - Grant clinic access only to an organization whose `organization_type` is `provider`, and require an explicit, revocable consent record.
 - The Profile UI may request deletion and poll status only. It must not invoke deletion processing directly or depend on an open browser.
-- `process-data-deletion` is a service-role-only worker. Preserve its storage-first deletion order, observable statuses (`requested`, `processing`, `completed`, `failed`), and recovery of expired `processing` leases.
+- `process-data-deletion` is a server-only worker authenticated with `DATA_DELETION_DISPATCH_SECRET`. Its Supabase gateway JWT check is disabled per-function so the handler can validate that non-JWT scheduler secret. Preserve the handler check, internal service-role client, storage-first deletion order, observable statuses (`requested`, `processing`, `completed`, `failed`), and recovery of expired `processing` leases.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` through `VITE_*`, browser code, logs, fixtures, or screenshots.
 - Employers, other employees, and members of another organization must never receive an employee's screening answers, result, or referral.
 - Do not send PII, prescription values, complaints, or uploaded-photo details to analytics.
@@ -91,7 +91,7 @@ Production deletion processing has two server-side parts:
 - `supabase/functions/process-data-deletion`: Edge Function that claims queued work, removes clinical files from Storage, and completes database deletion.
 - `.github/workflows/data-deletion-dispatch.yml`: scheduled/manual dispatcher that invokes the function even when the user has closed the app.
 
-The Edge runtime and GitHub repository/environment must provide `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Frontend deployments continue to use only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. The global `VITE_FEATURE_VILU_PASSPORT_PROFILE_V2` and organization flag `vilu_passport_profile_v2` must remain off by default.
+The Edge runtime must provide `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `DATA_DELETION_DISPATCH_SECRET`. GitHub Actions must provide `SUPABASE_URL` and the same `DATA_DELETION_DISPATCH_SECRET`; never send the service-role key over HTTP. Frontend deployments continue to use only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. The global `VITE_FEATURE_VILU_PASSPORT_PROFILE_V2` and organization flag `vilu_passport_profile_v2` must remain off by default.
 
 Deploy in this order:
 
