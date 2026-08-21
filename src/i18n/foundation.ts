@@ -13,7 +13,7 @@ const en = {
     employer: 'Employer',
     provider: 'Clinical partner',
   },
-  employeeNav: { today: 'Today' },
+  employeeNav: { today: 'Today', passport: 'Vision passport', profile: 'Profile' },
 } as const;
 
 type TranslationShape<T> = T extends string
@@ -33,7 +33,7 @@ const ru = {
     employer: 'Работодатель',
     provider: 'Клинический партнёр',
   },
-  employeeNav: { today: 'Сегодня' },
+  employeeNav: { today: 'Сегодня', passport: 'Паспорт зрения', profile: 'Профиль' },
 } as const satisfies TranslationShape<typeof en>;
 
 export const foundationTranslations: Record<Language, TranslationShape<typeof en>> = { en, ru };

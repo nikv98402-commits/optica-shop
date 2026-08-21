@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-The legacy storefront must work without Supabase environment variables. Demo data is the default fallback. Organization-scoped ViLu routes require configured Supabase Auth, the identity and employee-care migrations, and explicit global and organization feature flags.
+The legacy storefront must work without Supabase environment variables. Demo data is the default fallback. Organization-scoped ViLu routes require configured Supabase Auth, the identity, employee-care, and Passport/Profile migrations, and explicit global and organization feature flags.
 
 ## Required Checks
 
@@ -32,7 +32,7 @@ npm run test:rls
 npm run test:e2e
 ```
 
-`npm run test:rls` runs against the local Supabase database. It verifies allowed and denied access, cross-organization and cross-employee isolation, role-escalation and telemetry-role spoofing denial, draft ownership, and concurrent idempotent referral creation. Start the local Supabase stack first; Docker must be available.
+`npm run test:rls` runs against the local Supabase database. It verifies allowed and denied access, cross-organization and cross-employee isolation, role-escalation and telemetry-role spoofing denial, draft ownership, concurrent idempotent referral creation, Passport/Profile access, provider consent, exports, documents, and the data-deletion queue. Start the local Supabase stack first; Docker must be available.
 
 For route-level smoke testing, start the dev server and run:
 
@@ -64,10 +64,44 @@ or write to production Supabase unless the task explicitly authorizes it.
 - Resolve role and feature access against the same explicit `organizationId` from the route. Never infer an active organization from role alone.
 - In the employee care flow, pass the same explicit `organizationId` to every screening and referral read or RPC. Never load a result or referral by its record ID alone.
 - Keep screening drafts resumable and version-checked. Completion is immutable, and referral creation must remain atomic and idempotent under concurrent requests.
+- Passport/Profile reads and mutations must use the same active organization context as route guards and feature flags.
+- Grant clinic access only to an organization whose `organization_type` is `provider`, and require an explicit, revocable consent record.
+- The Profile UI may request deletion and poll status only. It must not invoke deletion processing directly or depend on an open browser.
+- `process-data-deletion` is a service-role-only worker. Preserve its storage-first deletion order, observable statuses (`requested`, `processing`, `completed`, `failed`), and recovery of expired `processing` leases.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` through `VITE_*`, browser code, logs, fixtures, or screenshots.
 - Employers, other employees, and members of another organization must never receive an employee's screening answers, result, or referral.
 - Do not send PII, prescription values, complaints, or uploaded-photo details to analytics.
 - User-facing copy must not promise diagnosis, exact PD measurement, or guaranteed fit.
 - Final frame fit, PD, bridge comfort, lens compatibility, and prescription suitability must be checked by an optical specialist.
+
+## Slice 2 local verification and deployment
+
+The Passport/Profile schema is defined in `supabase/migrations/20260820120000_create_vilu_passport_profile.sql`; its integration coverage is in `supabase/tests/passport_profile_rls.test.sql`.
+
+Run the local database and the complete RLS suite before opening a PR:
+
+```bash
+npx --yes supabase@2.115.0 start
+npx --yes supabase@2.115.0 db reset
+npm run test:rls
+```
+
+Production deletion processing has two server-side parts:
+
+- `supabase/functions/process-data-deletion`: Edge Function that claims queued work, removes clinical files from Storage, and completes database deletion.
+- `.github/workflows/data-deletion-dispatch.yml`: scheduled/manual dispatcher that invokes the function even when the user has closed the app.
+
+The Edge runtime and GitHub repository/environment must provide `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Frontend deployments continue to use only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. The global `VITE_FEATURE_VILU_PASSPORT_PROFILE_V2` and organization flag `vilu_passport_profile_v2` must remain off by default.
+
+Deploy in this order:
+
+1. Confirm the target project ref, backups, and disabled flags.
+2. Apply the migration with a linked Supabase CLI (`supabase db push`).
+3. Deploy `process-data-deletion` and configure the GitHub secrets.
+4. Run the dispatcher manually and verify status transitions plus physical Storage deletion with disposable test data.
+5. Run RLS and RU/EN smoke tests, then enable the global and organization flags in that order for the pilot organization.
+
+If verification fails, disable the flags first. Do not reverse a data-bearing migration; repair the worker and resume the durable queue, including expired leases.
 
 ## Analytics Rules
 

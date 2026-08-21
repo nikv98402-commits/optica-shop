@@ -15,6 +15,7 @@ The product is intended for fast demos on desktop and iPhone via GitHub Pages.
 - Dashboard / Vision Hub: legacy demo profile, prescription, eye exercises, progress metrics and personal offers.
 - ViLu Slice 0: Supabase Auth plus organization-scoped employee, employer and clinical-partner shells behind strict RU/EN routes, RLS and disabled-by-default feature flags.
 - ViLu Slice 1: Guided Optical employee Today, Screening Result and Referral screens, with reload-safe drafts and employee-owned care data behind the Slice 0 organization boundary.
+- ViLu Slice 2: organization-scoped Vision Passport and Profile screens with clinic documents, provider consent, export, and a durable server-side data-deletion queue.
 
 ## Commands to run before finishing a code change
 
@@ -39,6 +40,7 @@ Always mention which checks were run and which were skipped.
 - Keep the legacy storefront autonomous: it must work without Supabase environment variables. Slice 0 organization routes fail closed when Supabase or their rollout flags are unavailable.
 - Keep `activeOrganizationId`, the accepted membership role and organization feature checks bound to the same route organization.
 - Keep every screening and referral query/RPC bound to that same `activeOrganizationId` and the authenticated employee. Preserve optimistic version checks for drafts and atomic idempotency for referral creation.
+- Keep Passport/Profile reads and mutations bound to that same organization. Employers receive aggregates only; providers need an active consent grant. Data deletion must remain server-dispatched, storage-first, retryable, and observable.
 - Do not remove demo data from `src/data/products.ts` unless a real API replacement is added.
 - Keep iPhone/Safari usability in mind: responsive layouts, readable button sizes, no desktop-only critical flows.
 
