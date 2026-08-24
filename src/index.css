@@ -98,6 +98,34 @@
   .profile-toggle { @apply flex min-h-14 items-center justify-between gap-4 border-b border-vilu-line py-3 font-bold; }
   .profile-toggle input { @apply h-6 w-6 accent-vilu-green; }
   .profile-danger button { @apply mr-3 mt-3 rounded-full border border-vilu-line px-4 py-3 font-bold hover:border-vilu-green; }
+  .operations-shell { @apply mx-auto min-h-[calc(100svh-77px)] max-w-7xl px-4 py-8 md:px-6 md:py-12; }
+  .operations-hero { @apply mb-8 grid gap-6 border-b border-vilu-line pb-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end; }
+  .operations-hero h1 { @apply mt-3 text-4xl font-extrabold leading-tight md:text-6xl; }
+  .operations-hero p { @apply mt-4 max-w-3xl text-lg leading-7; color:var(--vilu-muted-text); }
+  .operations-hero label { @apply grid gap-2 text-sm font-bold; }
+  .operations-hero select,.operations-filters input,.operations-filters select,.provider-action input,.provider-action select { @apply min-h-12 rounded-2xl border border-vilu-line bg-vilu-card px-4 outline-none focus:ring-4 focus:ring-vilu-lime/50; }
+  .operations-metrics { @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-4; }
+  .operations-big { @apply mt-4 block text-4xl font-black md:text-5xl; }
+  .operations-signal { @apply border-2 border-vilu-lime; }
+  .operations-grid { @apply my-4 grid gap-4 lg:grid-cols-2; }
+  .operations-progress { @apply my-5 h-3 overflow-hidden rounded-full bg-vilu-line; }
+  .operations-progress span { @apply block h-full rounded-full bg-vilu-lime transition-all duration-500; }
+  .operations-privacy { @apply mt-4 grid gap-5 border-vilu-night bg-vilu-night text-vilu-paper sm:grid-cols-[auto_1fr]; }
+  .operations-privacy h2 { @apply text-2xl font-extrabold; }
+  .operations-privacy p { @apply mt-2 max-w-3xl text-vilu-paper/70; }
+  .operations-filters { @apply grid gap-3 sm:grid-cols-2; }
+  .provider-list { @apply grid gap-3; }
+  .provider-row { @apply grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center; }
+  .provider-row h2 { @apply my-3 text-2xl font-extrabold; }
+  .provider-row>div:last-child { @apply flex flex-wrap items-center gap-3 md:justify-end; }
+  .operations-modal { @apply fixed inset-0 z-50 flex justify-end bg-vilu-night/50 p-3 backdrop-blur-sm md:p-6; }
+  .operations-drawer { @apply relative h-full w-full max-w-xl overflow-y-auto bg-vilu-paper shadow-2xl; }
+  .operations-drawer>h2 { @apply my-4 text-3xl font-extrabold; }
+  .operations-close { @apply absolute right-5 top-4 grid h-11 w-11 place-items-center rounded-full border border-vilu-line text-2xl; }
+  .provider-action { @apply my-4 grid gap-3 border-t border-vilu-line pt-5; }
+  .provider-action h3 { @apply text-lg font-extrabold; }
+  .provider-document { @apply rounded-2xl border border-vilu-line p-4 text-left font-bold hover:border-vilu-green; }
+  .provider-pagination { @apply mt-6 flex items-center justify-center gap-4 text-sm font-bold; }
 }
 
 @media (max-width: 639px) {

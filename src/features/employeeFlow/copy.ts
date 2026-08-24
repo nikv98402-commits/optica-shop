@@ -22,8 +22,8 @@ const en = {
     createReferral: 'Create referral', noReferral: 'Return to today', why: 'Why this recommendation', boundary: 'This is not a diagnosis. Only a qualified professional can diagnose after an examination.',
   },
   referral: {
-    eyebrow: 'Referral created', title: 'Your next step is ready', lead: 'The referral is saved in your private care route. A clinical partner will only receive information after a separate consent step in a later release.',
-    status: 'Status', statusValue: 'Awaiting clinic selection', deadline: 'Complete by', next: 'What happens next', steps: ['Choose an approved clinical partner', 'Give explicit consent to share the referral', 'Book an examination'],
+    eyebrow: 'Referral created', title: 'Your next step is ready', lead: 'The referral is saved in your private care route. Choose a clinical partner and explicitly consent before anything is shared.',
+    status: 'Status', statusValue: 'Awaiting clinic selection', assigned: 'Sent to clinical partner', deadline: 'Complete by', next: 'What happens next', steps: ['Choose an approved clinical partner', 'Give explicit consent to share the referral', 'Book an examination'], chooseProvider: 'Clinical partner', consentNotice: 'By continuing, you consent to share this referral with the selected clinical partner. You can revoke access in Profile.', shareAndSend: 'Consent and send referral', sending: 'Sending…', assignmentSuccess: 'Referral sent securely.', assignmentFailed: 'Could not send the referral. Try again.',
     safety: 'If symptoms suddenly worsen, do not wait for this digital route—seek urgent local care.',
   },
 } as const;
@@ -51,8 +51,8 @@ const ru = {
     createReferral: 'Создать направление', noReferral: 'Вернуться на сегодня', why: 'Почему такая рекомендация', boundary: 'Это не диагноз. Диагноз может поставить только квалифицированный специалист после обследования.',
   },
   referral: {
-    eyebrow: 'Направление создано', title: 'Следующий шаг готов', lead: 'Направление сохранено в вашем приватном маршруте помощи. Клинический партнёр получит данные только после отдельного согласия в следующем релизе.',
-    status: 'Статус', statusValue: 'Ожидает выбора клиники', deadline: 'Завершить до', next: 'Что будет дальше', steps: ['Выбрать проверенного клинического партнёра', 'Явно согласиться на передачу направления', 'Записаться на обследование'],
+    eyebrow: 'Направление создано', title: 'Следующий шаг готов', lead: 'Направление сохранено в вашем приватном маршруте помощи. Выберите клинического партнёра и явно подтвердите согласие перед передачей данных.',
+    status: 'Статус', statusValue: 'Ожидает выбора клиники', assigned: 'Передано клиническому партнёру', deadline: 'Завершить до', next: 'Что будет дальше', steps: ['Выбрать проверенного клинического партнёра', 'Явно согласиться на передачу направления', 'Записаться на обследование'], chooseProvider: 'Клинический партнёр', consentNotice: 'Продолжая, вы разрешаете передать это направление выбранному клиническому партнёру. Доступ можно отозвать в профиле.', shareAndSend: 'Разрешить и отправить направление', sending: 'Отправляем…', assignmentSuccess: 'Направление безопасно передано.', assignmentFailed: 'Не удалось передать направление. Повторите попытку.',
     safety: 'Если симптомы внезапно усилились, не ждите цифрового маршрута — обратитесь за срочной помощью по месту нахождения.',
   },
 } as const satisfies Shape<typeof en>;

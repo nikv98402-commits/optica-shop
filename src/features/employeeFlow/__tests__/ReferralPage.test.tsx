@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LanguageProvider } from '../../../contexts/LanguageContext';
 import { ReferralPage } from '../ReferralPage';
 
-const api = vi.hoisted(() => ({ getReferral: vi.fn() }));
+const api = vi.hoisted(() => ({ getReferral: vi.fn(), getReferralProviderOptions: vi.fn(), consentAndAssignReferral: vi.fn() }));
 vi.mock('../api', () => ({ ...api }));
 
 function renderPage(locale: 'ru' | 'en' = 'ru') {
@@ -17,21 +18,33 @@ function renderPage(locale: 'ru' | 'en' = 'ru') {
 }
 
 describe('ReferralPage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); api.getReferralProviderOptions.mockResolvedValue([{ id: 'provider-1', name: 'Vision Clinic' }]); });
 
   it('renders the RU referral and keeps the return link inside the active organization', async () => {
     api.getReferral.mockResolvedValue({
-      id: 'referral-1', care_pathway_id: 'pathway-1', status: 'created', priority: 'review_recommended',
+      id: 'referral-1', care_pathway_id: 'pathway-1', status: 'created', version: 1, provider_organization_id: null, provider_status: 'unassigned', priority: 'review_recommended',
       respond_by: '2026-09-19T00:00:00Z', created_at: '2026-08-20T00:00:00Z',
     });
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'Следующий шаг готов' })).toBeInTheDocument();
+    expect(screen.getByText('Направление сохранено в вашем приватном маршруте помощи. Выберите клинического партнёра и явно подтвердите согласие перед передачей данных.')).toBeInTheDocument();
+    expect(screen.queryByText(/следующем релизе/)).not.toBeInTheDocument();
     expect(api.getReferral).toHaveBeenCalledWith('org-1', 'referral-1');
     expect(screen.getByRole('link', { name: 'Вернуться на сегодня' })).toHaveAttribute(
       'href', '/ru/organizations/org-1/employee/today',
     );
     expect(screen.getByText('Если симптомы внезапно усилились, не ждите цифрового маршрута — обратитесь за срочной помощью по месту нахождения.')).toBeInTheDocument();
+  });
+
+  it('grants consent and assigns the selected provider inside the active organization', async () => {
+    const referral = { id: 'referral-1', care_pathway_id: 'pathway-1', status: 'created', version: 1, provider_organization_id: null, provider_status: 'unassigned', priority: 'review_recommended', respond_by: '2026-09-19T00:00:00Z', created_at: '2026-08-20T00:00:00Z' };
+    api.getReferral.mockResolvedValue(referral);
+    api.consentAndAssignReferral.mockResolvedValue({ ...referral, version: 2, status: 'assigned', provider_organization_id: 'provider-1', provider_status: 'assigned' });
+    renderPage('en');
+    await userEvent.click(await screen.findByRole('button', { name: 'Consent and send referral' }));
+    expect(api.consentAndAssignReferral).toHaveBeenCalledWith('org-1', referral, 'provider-1', expect.any(String));
+    expect(await screen.findByRole('status')).toHaveTextContent('Referral sent securely.');
   });
 
   it('shows a localized error when the referral cannot be loaded', async () => {

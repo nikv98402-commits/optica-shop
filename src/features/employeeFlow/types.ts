@@ -25,11 +25,16 @@ export interface ScreeningResult {
 export interface Referral {
   id: string;
   care_pathway_id: string;
-  status: 'created';
+  status: 'created' | 'assigned' | 'booked' | 'urgent' | 'completed';
+  version: number;
+  provider_organization_id: string | null;
+  provider_status: string;
   priority: ScreeningOutcome;
   respond_by: string;
   created_at: string;
 }
+
+export interface ReferralProviderOption { id: string; name: string }
 
 export interface ScreeningAnswer {
   questionId: 'comfort' | 'distance' | 'one-eye' | 'distortion';
