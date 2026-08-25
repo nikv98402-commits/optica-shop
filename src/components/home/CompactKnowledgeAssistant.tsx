@@ -1,5 +1,5 @@
 import { ArrowUp, BookOpen, Check, Loader2, Plus, ShieldCheck } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { publicFeatures } from '../../config/features';
 import { askKnowledgeAssistant, AssistantServiceError } from '../../services/knowledgeAssistant';
 import type { AssistantResponse } from '../../types/knowledgeAssistant';
@@ -26,6 +26,8 @@ const content = {
     sources: 'источника',
     open: 'Открыть полный помощник',
     retry: 'Не удалось получить ответ. Откройте полный помощник или попробуйте ещё раз.',
+    suggestionsLabel: 'Подсказки',
+    addMaterialLabel: 'Добавить материал',
     suggestions: [
       'Что значит размер оправы 52–18–140?',
       'Как понять, что оправа широкая?',
@@ -47,6 +49,8 @@ const content = {
     sources: 'sources',
     open: 'Open full assistant',
     retry: 'Could not get an answer. Open the full assistant or try again.',
+    suggestionsLabel: 'Suggestions',
+    addMaterialLabel: 'Add material',
     suggestions: [
       'What does frame size 52–18–140 mean?',
       'How can I tell if a frame is too wide?',
@@ -55,6 +59,22 @@ const content = {
   },
 } as const;
 
+type AssistantLanguage = CompactKnowledgeAssistantProps['language'];
+
+function localizeKnownQuestion(
+  value: string,
+  previousLanguage: AssistantLanguage,
+  nextLanguage: AssistantLanguage,
+) {
+  const previousCopy = content[previousLanguage];
+  const nextCopy = content[nextLanguage];
+
+  if (value === previousCopy.initial) return nextCopy.initial;
+
+  const suggestionIndex = previousCopy.suggestions.findIndex((suggestion) => suggestion === value);
+  return suggestionIndex >= 0 ? nextCopy.suggestions[suggestionIndex] : value;
+}
+
 export function CompactKnowledgeAssistant({ language, onNavigate }: CompactKnowledgeAssistantProps) {
   const copy = content[language];
   const [query, setQuery] = useState<string>(copy.initial);
@@ -62,6 +82,21 @@ export function CompactKnowledgeAssistant({ language, onNavigate }: CompactKnowl
   const [response, setResponse] = useState<AssistantResponse | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const previousLanguage = useRef(language);
+  const requestToken = useRef(0);
+
+  useEffect(() => {
+    if (previousLanguage.current === language) return;
+
+    const previous = previousLanguage.current;
+    requestToken.current += 1;
+    setQuery((current) => localizeKnownQuestion(current, previous, language));
+    setShownQuestion((current) => localizeKnownQuestion(current, previous, language));
+    setResponse(null);
+    setError(false);
+    setLoading(false);
+    previousLanguage.current = language;
+  }, [copy.initial, language]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -76,6 +111,8 @@ export function CompactKnowledgeAssistant({ language, onNavigate }: CompactKnowl
     setResponse(null);
     setError(false);
     setLoading(true);
+    const currentRequestToken = requestToken.current + 1;
+    requestToken.current = currentRequestToken;
 
     try {
       const result = await askKnowledgeAssistant({
@@ -88,11 +125,13 @@ export function CompactKnowledgeAssistant({ language, onNavigate }: CompactKnowl
           answerLength: 'short',
         },
       });
+      if (requestToken.current !== currentRequestToken) return;
       setResponse(result);
     } catch (caught) {
+      if (requestToken.current !== currentRequestToken) return;
       setError(caught instanceof AssistantServiceError);
     } finally {
-      setLoading(false);
+      if (requestToken.current === currentRequestToken) setLoading(false);
     }
   }
 
@@ -146,7 +185,7 @@ export function CompactKnowledgeAssistant({ language, onNavigate }: CompactKnowl
         </div>
 
         {!response && !loading && (
-          <div className="compact-assistant__suggestions" aria-label="Подсказки">
+          <div className="compact-assistant__suggestions" aria-label={copy.suggestionsLabel}>
             {copy.suggestions.map((suggestion) => (
               <button
                 type="button"
@@ -164,7 +203,7 @@ export function CompactKnowledgeAssistant({ language, onNavigate }: CompactKnowl
         )}
 
         <form className="compact-assistant__composer" onSubmit={submit}>
-          <button type="button" className="compact-assistant__icon" aria-label="Добавить материал">
+          <button type="button" className="compact-assistant__icon" aria-label={copy.addMaterialLabel}>
             <Plus size={19} />
           </button>
           <label className="sr-only" htmlFor="home-assistant-question">{copy.placeholder}</label>

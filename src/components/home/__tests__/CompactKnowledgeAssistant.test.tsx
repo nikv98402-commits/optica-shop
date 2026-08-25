@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CompactKnowledgeAssistant } from '../CompactKnowledgeAssistant';
@@ -85,6 +85,118 @@ describe('CompactKnowledgeAssistant', () => {
 
     await user.click(screen.getByRole('button', { name: /Open full assistant/ }));
     expect(onNavigate).toHaveBeenCalledWith('assistant');
+  });
+
+  it('localizes accessibility labels and resets untouched starter copy when language changes', () => {
+    const { rerender } = render(
+      <CompactKnowledgeAssistant language="ru" onNavigate={vi.fn()} />,
+    );
+
+    expect(document.querySelector('.compact-assistant__suggestions')).toHaveAttribute('aria-label', 'Подсказки');
+    expect(screen.getByRole('button', { name: 'Добавить материал' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('Как понять, что ребёнку пора проверить зрение?');
+
+    rerender(<CompactKnowledgeAssistant language="en" onNavigate={vi.fn()} />);
+
+    expect(document.querySelector('.compact-assistant__suggestions')).toHaveAttribute('aria-label', 'Suggestions');
+    expect(screen.getByRole('button', { name: 'Add material' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('How do I know when a child needs an eye check?');
+    expect(document.body.textContent).not.toMatch(/[А-Яа-яЁё]/);
+  });
+
+  it('localizes a selected product suggestion through RU to EN to RU', async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    const { rerender } = render(
+      <CompactKnowledgeAssistant language="ru" onNavigate={onNavigate} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Как понять, что оправа широкая?' }));
+    expect(screen.getByRole('textbox')).toHaveValue('Как понять, что оправа широкая?');
+
+    rerender(<CompactKnowledgeAssistant language="en" onNavigate={onNavigate} />);
+    expect(screen.getByRole('textbox')).toHaveValue('How can I tell if a frame is too wide?');
+    expect(screen.getAllByText('How can I tell if a frame is too wide?')).toHaveLength(2);
+
+    rerender(<CompactKnowledgeAssistant language="ru" onNavigate={onNavigate} />);
+    expect(screen.getByRole('textbox')).toHaveValue('Как понять, что оправа широкая?');
+    expect(screen.getAllByText('Как понять, что оправа широкая?')).toHaveLength(2);
+  });
+
+  it('localizes a submitted product suggestion through RU to EN to RU', async () => {
+    mocks.askKnowledgeAssistant.mockResolvedValueOnce(response);
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    const { rerender } = render(
+      <CompactKnowledgeAssistant language="ru" onNavigate={onNavigate} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Когда нужна очная проверка?' }));
+    await user.click(screen.getByRole('button', { name: 'Спросить ViLu' }));
+    expect(await screen.findByText(response.answer)).toBeVisible();
+
+    rerender(<CompactKnowledgeAssistant language="en" onNavigate={onNavigate} />);
+    expect(screen.getByRole('textbox')).toHaveValue('When is an in-person eye check needed?');
+    expect(screen.getAllByText('When is an in-person eye check needed?')).toHaveLength(2);
+
+    rerender(<CompactKnowledgeAssistant language="ru" onNavigate={onNavigate} />);
+    expect(screen.getByRole('textbox')).toHaveValue('Когда нужна очная проверка?');
+    expect(screen.getAllByText('Когда нужна очная проверка?')).toHaveLength(2);
+  });
+
+  it('does not translate arbitrary user text when language changes', async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    const { rerender } = render(
+      <CompactKnowledgeAssistant language="ru" onNavigate={onNavigate} />,
+    );
+
+    const input = screen.getByRole('textbox');
+    await user.clear(input);
+    await user.type(input, 'My custom question');
+
+    rerender(<CompactKnowledgeAssistant language="en" onNavigate={onNavigate} />);
+    expect(screen.getByRole('textbox')).toHaveValue('My custom question');
+  });
+
+  it('clears an existing answer and its citations when language changes', async () => {
+    mocks.askKnowledgeAssistant.mockResolvedValueOnce(response);
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <CompactKnowledgeAssistant language="ru" onNavigate={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Спросить ViLu' }));
+    expect(await screen.findByText(response.answer)).toBeVisible();
+    expect(screen.getByRole('link', { name: /Источник один/ })).toBeVisible();
+
+    rerender(<CompactKnowledgeAssistant language="en" onNavigate={vi.fn()} />);
+
+    await waitFor(() => expect(screen.queryByText(response.answer)).not.toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: /Источник один/ })).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/[А-Яа-яЁё]/);
+  });
+
+  it('ignores a pending response from the previous language', async () => {
+    let resolveRequest!: (value: typeof response) => void;
+    mocks.askKnowledgeAssistant.mockReturnValueOnce(new Promise((resolve) => {
+      resolveRequest = resolve;
+    }));
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <CompactKnowledgeAssistant language="ru" onNavigate={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Спросить ViLu' }));
+    expect(screen.getByText(/Находим релевантный фрагмент/)).toBeVisible();
+
+    rerender(<CompactKnowledgeAssistant language="en" onNavigate={vi.fn()} />);
+    resolveRequest(response);
+
+    await waitFor(() => expect(screen.queryByText(response.answer)).not.toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: /Источник один/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Finding the relevant ViLu material/)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/[А-Яа-яЁё]/);
   });
 
   it('renders a recoverable message for service errors', async () => {
