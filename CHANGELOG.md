@@ -2,6 +2,15 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.0.1] - 2026-08-25
+
+### Fixed
+
+- Removed mixed Russian and English copy from the complete Home experience,
+  including page metadata, accessibility labels, and mobile navigation.
+- Added regression coverage for full RU and EN rendering, the RU to EN to RU
+  language cycle, and mobile navigation localization.
+
 ## [0.13.0.0] - 2026-08-21
 
 ### Added
