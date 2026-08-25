@@ -64,7 +64,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
 
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <button onClick={() => go('tryon')} className="hidden rounded-full bg-vilu-lime px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-card sm:block md:hidden">{labels.tryOn}</button>
-          <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-vilu-ink ring-1 ring-vilu-lime/20 sm:flex" aria-label={`Switch language to ${targetLanguageLabel}`}><Languages size={15} /> {targetLanguageLabel}</button>
+          <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-vilu-ink ring-1 ring-vilu-lime/20 sm:flex" aria-label={language === 'en' ? `Switch language to ${targetLanguageLabel}` : `Переключить язык на ${targetLanguageLabel}`}><Languages size={15} /> {targetLanguageLabel}</button>
           <button onClick={() => go('dashboard')} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-3 py-3 text-vilu-ink ring-1 ring-vilu-lime/20 transition hover:bg-vilu-lime sm:flex md:px-4">
             <User size={18} />
             {user && <span className="hidden max-w-28 truncate text-xs font-black md:inline">{user.name}</span>}
@@ -75,7 +75,16 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
             </button>
           )}
           <button onClick={() => go('checkout')} className="relative hidden rounded-full bg-vilu-lime p-3 text-vilu-ink transition hover:bg-vilu-card sm:block"><ShoppingBag size={18} />{fittingCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-vilu-paper text-[10px] font-black text-vilu-ink">{fittingCount}</span>}</button>
-          <button onClick={() => setMenuOpen((value) => !value)} className="rounded-full bg-vilu-paper p-3 text-vilu-ink ring-1 ring-vilu-lime/20 md:hidden">{menuOpen ? <X size={18} /> : <Menu size={18} />}</button>
+          <button
+            key={`mobile-menu-${language}`}
+            onClick={() => setMenuOpen((value) => !value)}
+            className="rounded-full bg-vilu-paper p-3 text-vilu-ink ring-1 ring-vilu-lime/20 md:hidden"
+            aria-label={menuOpen
+              ? (language === 'en' ? 'Close menu' : 'Закрыть меню')
+              : (language === 'en' ? 'Open menu' : 'Открыть меню')}
+          >
+            {menuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
         </div>
       </div>
 

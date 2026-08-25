@@ -20,9 +20,10 @@ const homeHeroCopy = {
     description: 'Ясный следующий шаг для себя, ребёнка или близкого.',
     startFitting: 'Начать примерку',
     viewCatalog: 'Смотреть каталог',
-    trustItems: ['Фото остается в браузере', 'Face-fit score', 'Салоны после подбора'],
+    trustItems: ['Фото остается в браузере', 'Оценка посадки', 'Салоны после подбора'],
     mockupEyebrow: 'ViLu примерка',
-    mockupFlow: 'Фото → Score → Салон',
+    mockupFlow: 'Фото → Оценка → Салон',
+    fitScoreLabel: 'Оценка посадки',
     localOnly: 'локально',
     useCase: 'Офис / каждый день',
     fitResult: 'Результат посадки',
@@ -34,10 +35,19 @@ const homeHeroCopy = {
     findStore: 'Найти салон после подбора',
     proofItems: ['Проверка зрения в салонах', 'Подбор линз по рецепту', 'Доставка и самовывоз'],
     missionEyebrow: 'Миссия',
-    missionTitle: 'Vision Access Program',
+    missionTitle: ['Программа', 'доступного зрения'],
     missionBody: 'ViLu начинает с подбора очков и навигации к оптике. Долгосрочно мы хотим помогать расширять доступ к проверке зрения и очкам через партнеров.',
     missionCta: 'Узнать о миссии',
-    missionTrust: ['Без донатов в MVP', 'Без диагноза', 'Партнерская модель доступа']
+    missionTrust: ['Без донатов в первой версии', 'Без диагноза', 'Партнерская модель доступа'],
+    careKicker: 'Забота о зрении', careTitle: ['До визита', 'без лишней', 'тревоги'], careIndex: '01 / ПОНЯТЬ',
+    careBody: 'ViLu помогает подготовиться к проверке зрения и выбору очков: объясняет ограничения онлайн-примерки, собирает вопросы для специалиста и показывает следующий шаг.', careCta: 'Забота о зрении',
+    checkKicker: 'ViLu Проверка зрения', checkTitle: ['Самопроверка', 'перед очной', 'проверкой'], checkBody: 'Короткий сценарий без диагноза. Ответы остаются в браузере и помогают понять, стоит ли запланировать очную проверку.',
+    checkItems: ['Не измеряет диоптрии', 'Не ставит диагноз', 'Не отправляет ответы в аналитику'], checkCta: 'Пройти самопроверку',
+    knowledgeKicker: 'База знаний ViLu', knowledgeTitle: ['Методология', 'которую', 'можно', 'проверить'], knowledgeBody: 'Размер оправы, межзрачковое расстояние, сильные диоптрии и ограничения онлайн-примерки — простым языком и с источниками.',
+    knowledgeItems: ['Оценка посадки', 'Размер оправы 52-18-140', 'Межзрачковое расстояние и выбор оправы', 'Сильные диоптрии', 'Онлайн-примерка', 'Форма лица', 'Забота о зрении', 'Проверка зрения ViLu'],
+    showcaseKicker: 'Витрина', showcaseTitle: ['Оправы для', 'первой', 'примерки'], showcaseCta: 'Все модели',
+    dashboardKicker: 'Кабинет зрения ViLu', dashboardTitle: ['Забота', 'продолжается'], dashboardBody: 'Личный кабинет помогает помнить следующий шаг для себя и близких, не превращаясь в медицинскую карту.',
+    reminderTitle: 'Напоминания', reminderBody: 'Осмотр, замена линз, повтор заказа', storesTitle: 'Салоны рядом', storesBody: 'Удобная точка для очной примерки', monthlySubscription: 'Подписка месяца', choose: 'Выбрать'
   },
   en: {
     label: 'Vision navigator',
@@ -48,6 +58,7 @@ const homeHeroCopy = {
     trustItems: ['Photo stays in browser', 'Face-fit score', 'Stores after fitting'],
     mockupEyebrow: 'ViLu try-on',
     mockupFlow: 'Photo → Score → Store',
+    fitScoreLabel: 'Face-fit score',
     localOnly: 'Local only',
     useCase: 'Office / everyday',
     fitResult: 'Fit result',
@@ -59,10 +70,19 @@ const homeHeroCopy = {
     findStore: 'Find a store after fitting',
     proofItems: ['Eye checks in stores', 'Prescription lens selection', 'Delivery and pickup'],
     missionEyebrow: 'Mission',
-    missionTitle: 'Vision Access Program',
+    missionTitle: ['Vision Access', 'Program'],
     missionBody: 'ViLu starts with eyewear selection and routing to optical stores. Long term, we want to help expand access to eye checks and glasses through partners.',
     missionCta: 'Learn about the mission',
-    missionTrust: ['No donations in MVP', 'No diagnosis', 'Partner access model']
+    missionTrust: ['No donations in MVP', 'No diagnosis', 'Partner access model'],
+    careKicker: 'Vision care', careTitle: ['Before your visit', 'without unnecessary', 'worry'], careIndex: '01 / UNDERSTAND',
+    careBody: 'ViLu helps you prepare for an eye check and choose glasses: it explains online try-on limits, collects questions for the specialist, and shows the next step.', careCta: 'Vision care',
+    checkKicker: 'ViLu eye check', checkTitle: ['Self-check', 'before an in-person', 'eye check'], checkBody: 'A short, non-diagnostic flow. Answers stay in your browser and help you decide whether to schedule an in-person eye check.',
+    checkItems: ['Does not measure prescription strength', 'Does not diagnose', 'Does not send answers to analytics'], checkCta: 'Take the self-check',
+    knowledgeKicker: 'ViLu Knowledge Base', knowledgeTitle: ['A methodology', 'you can', 'verify'], knowledgeBody: 'Frame size, PD, high prescriptions, and online try-on limits — explained plainly and backed by sources.',
+    knowledgeItems: ['Face-fit score', 'Frame size 52-18-140', 'PD and frame choice', 'High prescriptions', 'Online try-on', 'Face shape', 'Vision care', 'ViLu eye check'],
+    showcaseKicker: 'Showcase', showcaseTitle: ['Frames for', 'your first', 'try-on'], showcaseCta: 'All models',
+    dashboardKicker: 'ViLu vision profile', dashboardTitle: ['Care', 'continues'], dashboardBody: 'Your profile keeps the next step visible for you and your family without turning into a medical record.',
+    reminderTitle: 'Reminders', reminderBody: 'Eye check, lens replacement, repeat order', storesTitle: 'Nearby stores', storesBody: 'A convenient place for an in-person fitting', monthlySubscription: 'Monthly subscription', choose: 'Choose'
   }
 } as const;
 
@@ -132,7 +152,7 @@ export function Home({ onNavigate }: HomeProps) {
               </div>
             </div>
             <div className="optical-journey__score">
-              <small>Face-fit score · Aurora 03</small>
+              <small>{copy.fitScoreLabel} · Aurora 03</small>
               <strong>84<i>/100</i></strong>
               <h3>{copy.useCase}</h3>
               <p>{copy.fitSummary}</p>
@@ -153,15 +173,15 @@ export function Home({ onNavigate }: HomeProps) {
       <section className="orbits-section orbits-section--care">
         <div className="orbits-section__grid mx-auto max-w-7xl">
           <div>
-            <p className="orbits-kicker">Забота о зрении</p>
-            <AtomicHeading as="h2" lines={['До визита', 'без лишней', 'тревоги']} className="orbits-heading" />
+            <p className="orbits-kicker">{copy.careKicker}</p>
+            <AtomicHeading as="h2" lines={copy.careTitle} className="orbits-heading" />
           </div>
           <div className="orbits-copy-panel">
-            <span className="orbits-index">01 / ПОНЯТЬ</span>
-            <p>ViLu помогает подготовиться к проверке зрения и выбору очков: объясняет ограничения онлайн-примерки, собирает вопросы для специалиста и показывает следующий шаг.</p>
+            <span className="orbits-index">{copy.careIndex}</span>
+            <p>{copy.careBody}</p>
             <div className="orbits-actions">
-              <button onClick={() => { trackEvent(AnalyticsEvent.VisionCareFaceFitClicked, { source: 'home_vision_care' }); onNavigate('vision-care'); }}>Забота о зрении <ArrowRight size={16} /></button>
-              <button className="is-secondary" onClick={() => onNavigate('face-fit-score')}>Face-fit score</button>
+              <button onClick={() => { trackEvent(AnalyticsEvent.VisionCareFaceFitClicked, { source: 'home_vision_care' }); onNavigate('vision-care'); }}>{copy.careCta} <ArrowRight size={16} /></button>
+              <button className="is-secondary" onClick={() => onNavigate('face-fit-score')}>{copy.fitScoreLabel}</button>
             </div>
           </div>
         </div>
@@ -171,15 +191,15 @@ export function Home({ onNavigate }: HomeProps) {
         <div className="orbits-dark-field" aria-hidden="true" />
         <div className="orbits-section__grid mx-auto max-w-7xl">
           <div>
-            <p className="orbits-kicker">ViLu Проверка зрения</p>
-            <AtomicHeading as="h2" lines={['Self-check', 'перед очной', 'проверкой']} className="orbits-heading" />
-            <p className="orbits-description">Короткий сценарий без диагноза. Ответы остаются в браузере и помогают понять, стоит ли запланировать очную проверку.</p>
+            <p className="orbits-kicker">{copy.checkKicker}</p>
+            <AtomicHeading as="h2" lines={copy.checkTitle} className="orbits-heading" />
+            <p className="orbits-description">{copy.checkBody}</p>
           </div>
           <div className="orbits-checklist">
-            {['Не измеряет диоптрии', 'Не ставит диагноз', 'Не отправляет ответы в аналитику'].map((label, index) => (
+            {copy.checkItems.map((label, index) => (
               <div key={label}><span>0{index + 1}</span><CheckCircle2 size={18} />{label}</div>
             ))}
-            <button onClick={() => { trackEvent(AnalyticsEvent.EyeCheckOpened, { source: 'home_card' }); onNavigate('eyecheck'); }}>Пройти self-check <ArrowRight size={16} /></button>
+            <button onClick={() => { trackEvent(AnalyticsEvent.EyeCheckOpened, { source: 'home_card' }); onNavigate('eyecheck'); }}>{copy.checkCta} <ArrowRight size={16} /></button>
           </div>
         </div>
       </section>
@@ -189,7 +209,7 @@ export function Home({ onNavigate }: HomeProps) {
           <div>
             <span className="orbits-symbol"><Handshake size={22} /></span>
             <p className="orbits-kicker">{copy.missionEyebrow}</p>
-            <AtomicHeading as="h2" lines={['Vision Access', 'Program']} className="orbits-heading" />
+            <AtomicHeading as="h2" lines={copy.missionTitle} className="orbits-heading" />
             <p className="orbits-description">{copy.missionBody}</p>
           </div>
           <div className="orbits-principles">
@@ -202,17 +222,13 @@ export function Home({ onNavigate }: HomeProps) {
       <section className="orbits-section orbits-section--knowledge">
         <div className="orbits-section__grid mx-auto max-w-7xl">
           <div>
-            <p className="orbits-kicker">База знаний ViLu</p>
-            <AtomicHeading as="h2" lines={['Методология', 'которую', 'можно', 'проверить']} className="orbits-heading" />
-            <p className="orbits-description">Размер оправы, PD, сильные диоптрии и ограничения онлайн-примерки — простым языком и с источниками.</p>
+            <p className="orbits-kicker">{copy.knowledgeKicker}</p>
+            <AtomicHeading as="h2" lines={copy.knowledgeTitle} className="orbits-heading" />
+            <p className="orbits-description">{copy.knowledgeBody}</p>
           </div>
           <div className="orbits-library">
-            {[
-              ['Face-fit score', '/face-fit-score'], ['Размер оправы 52-18-140', '/kak-vybrat-razmer-opravy'],
-              ['PD и выбор оправы', '/pd-i-oprava'], ['Сильные диоптрии', '/oprava-pri-vysokih-dioptriyah'],
-              ['Онлайн-примерка', '/primerit-ochki-online'], ['Форма лица', '/podbor-opravy-po-forme-lica'],
-              ['Забота о зрении', '/vision-care'], ['Проверка зрения ViLu', '/eye-check'],
-            ].map(([label, href], index) => <a key={href} href={href}><span>{String(index + 1).padStart(2, '0')}</span><strong>{label}</strong><ArrowRight size={15} /></a>)}
+            {['/face-fit-score', '/kak-vybrat-razmer-opravy', '/pd-i-oprava', '/oprava-pri-vysokih-dioptriyah', '/primerit-ochki-online', '/podbor-opravy-po-forme-lica', '/vision-care', '/eye-check']
+              .map((href, index) => <a key={href} href={href}><span>{String(index + 1).padStart(2, '0')}</span><strong>{copy.knowledgeItems[index]}</strong><ArrowRight size={15} /></a>)}
           </div>
         </div>
       </section>
@@ -220,8 +236,8 @@ export function Home({ onNavigate }: HomeProps) {
       <section className="orbits-section orbits-section--showcase">
         <div className="mx-auto max-w-7xl">
           <div className="orbits-showcase-head">
-            <div><p className="orbits-kicker">Витрина</p><AtomicHeading as="h2" lines={['Оправы для', 'первой', 'примерки']} className="orbits-heading" /></div>
-            <button onClick={() => onNavigate('products')}>Все модели <ArrowRight size={17} /></button>
+            <div><p className="orbits-kicker">{copy.showcaseKicker}</p><AtomicHeading as="h2" lines={copy.showcaseTitle} className="orbits-heading" /></div>
+            <button onClick={() => onNavigate('products')}>{copy.showcaseCta} <ArrowRight size={17} /></button>
           </div>
           <div className="orbits-products">
             {featuredFrames.map((product, index) => (
@@ -240,18 +256,18 @@ export function Home({ onNavigate }: HomeProps) {
         <div className="orbits-dark-field" aria-hidden="true" />
         <div className="orbits-section__grid mx-auto max-w-7xl">
           <div>
-            <p className="orbits-kicker">Кабинет зрения ViLu</p>
-            <AtomicHeading as="h2" lines={['Забота', 'продолжается']} className="orbits-heading" />
-            <p className="orbits-description">Личный кабинет помогает помнить следующий шаг для себя и близких, не превращаясь в медицинскую карту.</p>
+            <p className="orbits-kicker">{copy.dashboardKicker}</p>
+            <AtomicHeading as="h2" lines={copy.dashboardTitle} className="orbits-heading" />
+            <p className="orbits-description">{copy.dashboardBody}</p>
             <div className="orbits-dashboard-tools">
-              <div><CalendarDays size={19} /><span><strong>Напоминания</strong><small>Осмотр, замена линз, повтор заказа</small></span></div>
-              <div><MapPin size={19} /><span><strong>Салоны рядом</strong><small>Удобная точка для очной примерки</small></span></div>
+              <div><CalendarDays size={19} /><span><strong>{copy.reminderTitle}</strong><small>{copy.reminderBody}</small></span></div>
+              <div><MapPin size={19} /><span><strong>{copy.storesTitle}</strong><small>{copy.storesBody}</small></span></div>
             </div>
           </div>
           {featuredLens && (
             <article className="orbits-lens-card">
-              <div className="orbits-lens-visual"><span>Подписка месяца</span><img src={featuredLens.image_url} alt={featuredLens.name} /></div>
-              <div><small>{featuredLens.brand_name}</small><h3>{featuredLens.name}</h3><p>{featuredLens.description}</p><footer><strong>{formatPrice(featuredLens.subscription_price ?? featuredLens.price)}</strong><button onClick={() => onNavigate('product', featuredLens.id)}>Выбрать <ArrowRight size={15} /></button></footer></div>
+              <div className="orbits-lens-visual"><span>{copy.monthlySubscription}</span><img src={featuredLens.image_url} alt={featuredLens.name} /></div>
+              <div><small>{featuredLens.brand_name}</small><h3>{featuredLens.name}</h3><p>{featuredLens.description}</p><footer><strong>{formatPrice(featuredLens.subscription_price ?? featuredLens.price)}</strong><button onClick={() => onNavigate('product', featuredLens.id)}>{copy.choose} <ArrowRight size={15} /></button></footer></div>
             </article>
           )}
         </div>

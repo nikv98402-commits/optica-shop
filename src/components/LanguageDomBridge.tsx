@@ -573,10 +573,10 @@ function updateDefaultPageMeta(language: 'en' | 'ru') {
 
   const title = language === 'en'
     ? 'ViLu - online frame selection and Face-fit score'
-    : 'ViLu - онлайн-подбор оправ и Face-fit score';
+    : 'ViLu — онлайн-подбор оправ и оценка посадки';
   const description = language === 'en'
     ? 'ViLu is an online glasses try-on, Face-fit score, and knowledge base for choosing frames by face, size, PD, and use case.'
-    : 'ViLu - онлайн-примерка очков, Face-fit score и knowledge base по выбору оправы по лицу, размеру, PD и сценарию носки.';
+    : 'ViLu — онлайн-примерка очков, оценка посадки и база знаний по выбору оправы по лицу, размеру, межзрачковому расстоянию и сценарию носки.';
 
   document.title = title;
   const metaDescription = document.querySelector<HTMLMetaElement>('meta[name="description"]');
