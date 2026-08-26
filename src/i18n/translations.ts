@@ -277,7 +277,7 @@ export const translations = {
       createAccount: 'Регистрация',
       signInDesc: 'Войдите для доступа к профилю',
       signUpDesc: 'Начните свой путь к лучшему зрению',
-      email: 'Email',
+      email: 'Электронная почта',
       password: 'Пароль',
       signInBtn: 'Войти',
       createBtn: 'Создать аккаунт',

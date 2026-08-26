@@ -1,4 +1,4 @@
-import { Languages, LogOut, MapPin, Menu, MessageCircleQuestion, ShoppingBag, User, X } from 'lucide-react';
+import { Languages, LogOut, Menu, MessageCircleQuestion, ShoppingBag, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,7 +11,7 @@ interface NavigationProps {
   fittingCount?: number;
 }
 
-export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount = 0 }: NavigationProps) {
+export function Navigation({ currentPage, onNavigate, fittingCount = 0 }: NavigationProps) {
   const { language, setLanguage } = useLanguage();
   const { user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -21,11 +21,6 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
   const go = (page: string) => {
     setMenuOpen(false);
     onNavigate(page);
-  };
-
-  const openStores = () => {
-    setMenuOpen(false);
-    onOpenStores();
   };
 
   const navItems = [
@@ -38,9 +33,10 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
   const assistantLabel = language === 'en' ? 'Ask ViLu' : 'Спросить ViLu';
 
   const labels = {
-    stores: language === 'en' ? 'Stores' : 'Салоны',
     tryOn: language === 'en' ? 'Try-on' : 'Примерка',
     dashboard: language === 'en' ? 'Profile' : 'Личный кабинет',
+    profileButton: language === 'en' ? 'Open profile' : 'Открыть личный кабинет',
+    cartButton: language === 'en' ? 'Open cart' : 'Открыть корзину',
     signOut: language === 'en' ? 'Sign out' : 'Выйти',
     language: language === 'en' ? 'Language' : 'Язык',
   };
@@ -54,7 +50,6 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
           {navItems.map((item) => (
             <button key={item.id} onClick={() => go(item.route)} className={`text-sm font-bold uppercase tracking-[0.18em] transition ${currentPage === item.id ? 'text-vilu-lime' : 'text-vilu-paper/58 hover:text-vilu-paper'}`}>{item.label}</button>
           ))}
-          <button onClick={openStores} className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-vilu-paper/58 transition hover:text-vilu-paper"><MapPin size={16} /> {labels.stores}</button>
           {publicFeatures.knowledgeAssistant && (
             <button onClick={() => go('assistant')} className={`flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] transition ${currentPage === 'assistant' ? 'text-vilu-lime' : 'text-vilu-paper/58 hover:text-vilu-paper'}`}>
               <MessageCircleQuestion size={16} /> {assistantLabel}
@@ -65,7 +60,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <button onClick={() => go('tryon')} className="hidden rounded-full bg-vilu-lime px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-vilu-ink transition hover:bg-vilu-card sm:block md:hidden">{labels.tryOn}</button>
           <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-vilu-ink ring-1 ring-vilu-lime/20 sm:flex" aria-label={language === 'en' ? `Switch language to ${targetLanguageLabel}` : `Переключить язык на ${targetLanguageLabel}`}><Languages size={15} /> {targetLanguageLabel}</button>
-          <button onClick={() => go('dashboard')} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-3 py-3 text-vilu-ink ring-1 ring-vilu-lime/20 transition hover:bg-vilu-lime sm:flex md:px-4">
+          <button aria-label={labels.profileButton} onClick={() => go('dashboard')} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-3 py-3 text-vilu-ink ring-1 ring-vilu-lime/20 transition hover:bg-vilu-lime sm:flex md:px-4">
             <User size={18} />
             {user && <span className="hidden max-w-28 truncate text-xs font-black md:inline">{user.name}</span>}
           </button>
@@ -74,7 +69,7 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
               <LogOut size={18} />
             </button>
           )}
-          <button onClick={() => go('checkout')} className="relative hidden rounded-full bg-vilu-lime p-3 text-vilu-ink transition hover:bg-vilu-card sm:block"><ShoppingBag size={18} />{fittingCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-vilu-paper text-[10px] font-black text-vilu-ink">{fittingCount}</span>}</button>
+          <button aria-label={labels.cartButton} onClick={() => go('checkout')} className="relative hidden rounded-full bg-vilu-lime p-3 text-vilu-ink transition hover:bg-vilu-card sm:block"><ShoppingBag size={18} />{fittingCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-vilu-paper text-[10px] font-black text-vilu-ink">{fittingCount}</span>}</button>
           <button
             key={`mobile-menu-${language}`}
             onClick={() => setMenuOpen((value) => !value)}
@@ -95,7 +90,6 @@ export function Navigation({ currentPage, onNavigate, onOpenStores, fittingCount
             <button onClick={() => go('eyecheck')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[1].label}</button>
             <button onClick={() => go('products')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[2].label}</button>
             <button onClick={() => go('vision-access')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[3].label}</button>
-            <button onClick={openStores} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{language === 'en' ? 'Our stores' : 'Наши салоны'}</button>
             <button onClick={() => go('dashboard')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{labels.dashboard}</button>
             <button onClick={() => go('about')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[4].label}</button>
             {publicFeatures.knowledgeAssistant && <button onClick={() => go('assistant')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{assistantLabel}</button>}

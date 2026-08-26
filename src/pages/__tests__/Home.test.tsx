@@ -105,7 +105,7 @@ describe('Home localization', () => {
 
     await user.click(screen.getByRole('button', { name: 'Открыть меню' }));
     expect(screen.getAllByRole('button', { name: 'Онлайн-примерка' })).toHaveLength(2);
-    expect(screen.getByRole('button', { name: 'Наши салоны' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Наши салоны' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Язык: EN' }));
     await waitFor(() => {
@@ -114,7 +114,30 @@ describe('Home localization', () => {
     });
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Online try-on' })).toHaveLength(2);
-    expect(screen.getByRole('button', { name: 'Our stores' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Our stores' })).not.toBeInTheDocument();
+  });
+
+  it('localizes icon-only profile and cart controls and keeps them keyboard-operable', async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    render(
+      <LanguageProvider>
+        <Navigation currentPage="home" onNavigate={onNavigate} onOpenStores={vi.fn()} />
+      </LanguageProvider>,
+    );
+
+    const profile = screen.getByRole('button', { name: 'Открыть личный кабинет' });
+    const cart = screen.getByRole('button', { name: 'Открыть корзину' });
+    profile.focus();
+    await user.keyboard('{Enter}');
+    expect(onNavigate).toHaveBeenCalledWith('dashboard');
+    cart.focus();
+    await user.keyboard('{Enter}');
+    expect(onNavigate).toHaveBeenCalledWith('checkout');
+
+    await user.click(screen.getByRole('button', { name: 'Переключить язык на EN' }));
+    expect(screen.getByRole('button', { name: 'Open profile' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open cart' })).toBeInTheDocument();
   });
 
   it('does not render assistant actions when the feature is disabled', () => {
