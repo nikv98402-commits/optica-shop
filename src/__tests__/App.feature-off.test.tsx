@@ -61,22 +61,22 @@ describe('App with Knowledge Assistant disabled', () => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
 
-  it('opens a product deep-link with the product id from the URL', () => {
+  it('opens a product deep-link with the product id from the URL', async () => {
     window.history.replaceState({}, '', '/products/aurora-crystal');
     render(<App />);
-    expect(screen.getByRole('heading', { name: 'Product detail: aurora-crystal' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Product detail: aurora-crystal' })).toBeVisible();
   });
 
-  it('decodes an encoded product id from a deep-link', () => {
+  it('decodes an encoded product id from a deep-link', async () => {
     window.history.replaceState({}, '', '/products/aurora%20crystal');
     render(<App />);
-    expect(screen.getByRole('heading', { name: 'Product detail: aurora crystal' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Product detail: aurora crystal' })).toBeVisible();
   });
 
-  it('falls back to the raw product id when percent-encoding is malformed', () => {
+  it('falls back to the raw product id when percent-encoding is malformed', async () => {
     window.history.replaceState({}, '', '/products/aurora%ZZ');
     render(<App />);
-    expect(screen.getByRole('heading', { name: 'Product detail: aurora%ZZ' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Product detail: aurora%ZZ' })).toBeVisible();
   });
 
   it('writes a canonical product URL during in-app navigation', async () => {

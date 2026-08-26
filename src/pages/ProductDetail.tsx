@@ -254,3 +254,4 @@ export function ProductDetail({ productId, onNavigate, onStartCheckout }: Produc
     </div>
   );
 }
+import '../styles/routeStyles';

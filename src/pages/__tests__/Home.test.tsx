@@ -140,6 +140,21 @@ describe('Home localization', () => {
     expect(screen.getByRole('button', { name: 'Open cart' })).toBeInTheDocument();
   });
 
+  it('defers all four below-the-fold Home images with stable responsive geometry', () => {
+    render(<LanguageProvider><TestHome /></LanguageProvider>);
+
+    const images = document.querySelectorAll<HTMLImageElement>('.orbits-product-image img, .orbits-lens-visual img');
+    expect(images).toHaveLength(4);
+    images.forEach((image) => {
+      expect(image.getAttribute('loading')).toBe('lazy');
+      expect(image.getAttribute('decoding')).toBe('async');
+      expect(image.getAttribute('width')).toBe('900');
+      expect(image.getAttribute('height')).toBe('600');
+      expect(image.getAttribute('srcset')).toMatch(/360w.*640w.*900w/);
+      expect(image.getAttribute('sizes')).toBeTruthy();
+    });
+  });
+
   it('does not render assistant actions when the feature is disabled', () => {
     mocks.publicFeatures.knowledgeAssistant = false;
     render(<LanguageProvider><Home onNavigate={vi.fn()} /></LanguageProvider>);

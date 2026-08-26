@@ -627,3 +627,4 @@ export function Checkout({ draft, onDraftChange, onBack }: CheckoutProps) {
     </div>
   );
 }
+import '../styles/routeStyles';

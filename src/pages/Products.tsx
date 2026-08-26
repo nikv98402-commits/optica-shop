@@ -289,3 +289,4 @@ export function Products({ onNavigate, fittingCart, onToggleFitting, onStartChec
     </div>
   );
 }
+import '../styles/routeStyles';

@@ -21,7 +21,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { cityCoordinates, opticsDirectory, DirectoryOptic } from '../data/opticsDirectory';
 import { formatPrice } from '../data/products';
 import { pilotFrames, PilotFrame } from '../data/pilotOptics';
-import { analyzeFacePhoto, type FaceFitMeasurement, unsupportedPhotoMeasurement } from '../lib/faceFitEngine';
+import type { FaceFitMeasurement } from '../lib/faceFitEngine';
 import { createLocalId } from '../lib/id';
 import { AnalyticsEvent, AnalyticsEventName, trackEvent } from '../lib/analyticsEvents';
 import { PhotoRequestGate } from '../lib/photoRequestGate';
@@ -486,6 +486,7 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
 
   const processPhoto = async (file: File, source: 'upload' | 'camera') => {
     const requestId = photoRequestGateRef.current.begin();
+    const { analyzeFacePhoto, unsupportedPhotoMeasurement } = await import('../lib/faceFitEngine');
 
     const clearCurrentPhoto = () => {
       if (photoObjectUrlRef.current) URL.revokeObjectURL(photoObjectUrlRef.current);
@@ -1525,3 +1526,4 @@ export function TryOnPilot({ onNavigate, onStartServiceCheckout }: TryOnPilotPro
     </div>
   );
 }
+import '../styles/routeStyles';
