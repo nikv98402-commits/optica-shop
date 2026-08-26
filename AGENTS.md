@@ -29,10 +29,13 @@ npm test
 npm run test:checkout
 npm run test:rls
 npm run test:e2e
+npm run test:performance
 ```
 
 If only documentation changes were made, typecheck/build are still useful but not mandatory if dependencies are unavailable.
 Always mention which checks were run and which were skipped.
+
+`npm run test:performance` builds first and verifies the anonymous Home asset budgets and lazy route boundaries. Run it for changes to route imports, shared CSS, Home media, fonts, or analytics loading.
 
 ## Code style
 

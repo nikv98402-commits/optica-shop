@@ -278,9 +278,16 @@ npm test
 npm run test:checkout
 npm run test:rls
 npm run test:e2e
+npm run test:performance
 npm run knowledge:index:dry
 npm run test:knowledge-boundary
 ```
+
+`npm run test:performance` собирает production bundle и проверяет бюджет
+анонимного Home: initial JavaScript меньше 150 KiB gzip, initial CSS меньше
+100 KiB raw и 25 KiB gzip, а Supabase, workspace-маршруты, примерка и Face-fit
+остаются ленивыми чанками. Проверка также защищает неблокирующую загрузку шрифтов
+и отложенную Яндекс Метрику.
 
 Если dev-сервер уже запущен, можно проверить ключевые маршруты:
 
