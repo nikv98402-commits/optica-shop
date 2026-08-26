@@ -6,8 +6,12 @@ import { Navigation } from '../../components/Navigation';
 import { LanguageProvider } from '../../contexts/LanguageContext';
 import { Home } from '../Home';
 
+const mocks = vi.hoisted(() => ({
+  publicFeatures: { eyeMap: false, knowledgeAssistant: true },
+}));
+
 vi.mock('../../config/features', () => ({
-  publicFeatures: { eyeMap: false, knowledgeAssistant: false },
+  publicFeatures: mocks.publicFeatures,
 }));
 
 vi.mock('../../contexts/AuthContext', () => ({
@@ -46,6 +50,7 @@ describe('Home localization', () => {
   beforeEach(() => {
     window.localStorage.clear();
     document.documentElement.lang = 'ru';
+    mocks.publicFeatures.knowledgeAssistant = true;
   });
 
   it('renders the complete Home in Russian without unapproved English fragments', async () => {
@@ -81,6 +86,8 @@ describe('Home localization', () => {
     await user.click(screen.getByRole('button', { name: 'Переключить язык на EN' }));
     await waitFor(() => {
       expect(document.documentElement.lang).toBe('en');
+      expect(Array.from(document.querySelectorAll('.compact-assistant__suggestions')).map((element) => element.getAttribute('aria-label'))).toEqual(['Suggestions']);
+      expect(screen.getByRole('button', { name: 'Add material' })).toBeInTheDocument();
       expect(getLanguageSurface()).not.toMatch(/[А-Яа-яЁё]/);
     });
 
@@ -111,6 +118,7 @@ describe('Home localization', () => {
   });
 
   it('does not render assistant actions when the feature is disabled', () => {
+    mocks.publicFeatures.knowledgeAssistant = false;
     render(<LanguageProvider><Home onNavigate={vi.fn()} /></LanguageProvider>);
 
     expect(screen.queryByRole('region', { name: 'Спросить ViLu' })).not.toBeInTheDocument();

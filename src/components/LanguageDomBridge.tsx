@@ -544,25 +544,37 @@ function translateDom(root: ParentNode, language: 'en' | 'ru') {
 
   document.querySelectorAll<HTMLElement>('[placeholder]').forEach((element) => {
     if (element.closest('[data-no-translate="true"]')) return;
-    const original = element.dataset.i18nPlaceholderSource ?? element.getAttribute('placeholder') ?? '';
+    const current = element.getAttribute('placeholder') ?? '';
+    const storedSource = element.dataset.i18nPlaceholderSource;
+    const lastBridgeWrite = element.dataset.i18nPlaceholderLastWrite;
+    const original = storedSource && current === lastBridgeWrite ? storedSource : current;
     element.dataset.i18nPlaceholderSource = original;
     const nextPlaceholder = language === 'en' ? placeholderTranslations[original] ?? original : original;
+    element.dataset.i18nPlaceholderLastWrite = nextPlaceholder;
     if (element.getAttribute('placeholder') !== nextPlaceholder) element.setAttribute('placeholder', nextPlaceholder);
   });
 
   document.querySelectorAll<HTMLElement>('[title]').forEach((element) => {
     if (element.closest('[data-no-translate="true"]')) return;
-    const original = element.dataset.i18nTitleSource ?? element.getAttribute('title') ?? '';
+    const current = element.getAttribute('title') ?? '';
+    const storedSource = element.dataset.i18nTitleSource;
+    const lastBridgeWrite = element.dataset.i18nTitleLastWrite;
+    const original = storedSource && current === lastBridgeWrite ? storedSource : current;
     element.dataset.i18nTitleSource = original;
     const nextTitle = language === 'en' ? translateValue(original) : original;
+    element.dataset.i18nTitleLastWrite = nextTitle;
     if (element.getAttribute('title') !== nextTitle) element.setAttribute('title', nextTitle);
   });
 
   document.querySelectorAll<HTMLElement>('[aria-label]').forEach((element) => {
     if (element.closest('[data-no-translate="true"]')) return;
-    const original = element.dataset.i18nAriaLabelSource ?? element.getAttribute('aria-label') ?? '';
+    const current = element.getAttribute('aria-label') ?? '';
+    const storedSource = element.dataset.i18nAriaLabelSource;
+    const lastBridgeWrite = element.dataset.i18nAriaLabelLastWrite;
+    const original = storedSource && current === lastBridgeWrite ? storedSource : current;
     element.dataset.i18nAriaLabelSource = original;
     const nextLabel = language === 'en' ? translateValue(original) : original;
+    element.dataset.i18nAriaLabelLastWrite = nextLabel;
     if (element.getAttribute('aria-label') !== nextLabel) element.setAttribute('aria-label', nextLabel);
   });
 }

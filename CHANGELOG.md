@@ -2,6 +2,17 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.1.0] - 2026-08-25
+
+### Fixed
+
+- Kept Ask ViLu questions, answers, and source names synchronized with the
+  selected RU or EN locale, including language changes during an active request.
+- Preserved custom user questions while translating built-in product prompts
+  across the complete RU to EN to RU language cycle.
+- Added component and browser regression coverage for Home localization,
+  accessibility attributes, suggestion flows, and mobile navigation.
+
 ## [0.13.0.1] - 2026-08-25
 
 ### Fixed
