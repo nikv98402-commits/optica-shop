@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Eye, Lock, Mail, User, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
@@ -21,12 +22,83 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
   const { signIn, signUp } = useAuth();
   const { language } = useLanguage();
   const t = useTranslation();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (isOpen) setMode(initialMode);
   }, [initialMode, isOpen]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+
+    returnFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
+    const dialog = dialogRef.current;
+    const focusableSelector = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+    const getFocusableElements = () => Array.from(
+      dialog?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
+    ).filter((element) => !element.hasAttribute('hidden'));
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      const firstInput = dialog?.querySelector<HTMLElement>('input:not([disabled])');
+      (firstInput ?? getFocusableElements()[0] ?? dialog)?.focus();
+    });
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialog) return;
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && (activeElement === firstElement || !dialog.contains(activeElement))) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener('keydown', handleKeyDown);
+      returnFocusRef.current?.focus();
+      returnFocusRef.current = null;
+    };
+  }, [isOpen]);
+
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const isSignup = mode === 'signup';
 
@@ -63,10 +135,10 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-vilu-ink/80 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg overflow-hidden rounded-[2rem] bg-vilu-paper p-7 shadow-2xl shadow-vilu-ink/30 ring-1 ring-vilu-lime/20 md:p-9">
-        <button onClick={onClose} className="absolute right-6 top-6 rounded-full bg-vilu-card p-3 text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-lime">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" tabIndex={-1} className="relative w-full max-w-lg overflow-hidden rounded-[2rem] bg-vilu-paper p-7 shadow-2xl shadow-vilu-ink/30 ring-1 ring-vilu-lime/20 md:p-9">
+        <button aria-label={t.dashboard.close} onClick={onClose} className="absolute right-6 top-6 rounded-full bg-vilu-card p-3 text-vilu-ink ring-1 ring-vilu-ink/10 transition hover:bg-vilu-lime">
           <X size={18} />
         </button>
 
@@ -75,7 +147,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
             <Eye size={24} />
           </div>
           <p className="kinetic-label text-vilu-green">{t.header.visionHub}</p>
-          <h2 className="mt-2 text-4xl font-black tracking-tight">
+          <h2 id="auth-modal-title" className="mt-2 text-4xl font-black tracking-tight">
             {isSignup ? t.auth.createAccount : t.auth.welcomeBack}
           </h2>
           <p className="mt-3 text-sm font-semibold leading-6 text-vilu-ink/65">
@@ -125,6 +197,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
