@@ -2,6 +2,26 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.2.0] - 2026-08-26
+
+### Fixed
+
+- Made the profile, cart, and authentication controls fully accessible in RU
+  and EN across desktop and mobile, including initial focus, keyboard trapping,
+  Escape dismissal, and returning focus to the opening control.
+- Kept the authentication form fully localized by replacing the remaining
+  English email label in the Russian experience.
+
+### Removed
+
+- Removed the inactive Stores / Салоны navigation item instead of presenting a
+  dead destination.
+
+### Added
+
+- Added component and browser regression coverage for localized accessible
+  names, keyboard navigation, mobile modal layering, and focus management.
+
 ## [0.13.1.0] - 2026-08-25
 
 ### Fixed
