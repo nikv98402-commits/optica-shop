@@ -13,6 +13,12 @@ interface HomeProps {
 const featuredFrames = demoProducts.filter((product) => product.featured && product.category !== 'contact_lenses').slice(0, 3);
 const featuredLens = demoProducts.find((product) => product.category === 'contact_lenses');
 
+function responsiveImageSet(source: string) {
+  return [360, 640, 900]
+    .map((width) => `${source.replace(/([?&])w=\d+/, `$1w=${width}`)} ${width}w`)
+    .join(', ');
+}
+
 const homeHeroCopy = {
   ru: {
     label: 'Навигатор по зрению',
@@ -243,7 +249,7 @@ export function Home({ onNavigate }: HomeProps) {
             {featuredFrames.map((product, index) => (
               <article key={product.id}>
                 <button onClick={() => onNavigate('product', product.id)}>
-                  <div className="orbits-product-image"><span>0{index + 1}</span><img src={product.image_url} alt={product.name} /></div>
+                  <div className="orbits-product-image"><span>0{index + 1}</span><img src={product.image_url} srcSet={responsiveImageSet(product.image_url)} sizes="(max-width: 767px) 92vw, 30vw" width="900" height="600" loading="lazy" decoding="async" alt={product.name} /></div>
                   <div className="orbits-product-meta"><small>{product.brand_name}</small><h3>{product.name}</h3><p>{product.description}</p><strong>{formatPrice(product.price)}</strong></div>
                 </button>
               </article>
@@ -266,7 +272,7 @@ export function Home({ onNavigate }: HomeProps) {
           </div>
           {featuredLens && (
             <article className="orbits-lens-card">
-              <div className="orbits-lens-visual"><span>{copy.monthlySubscription}</span><img src={featuredLens.image_url} alt={featuredLens.name} /></div>
+              <div className="orbits-lens-visual"><span>{copy.monthlySubscription}</span><img src={featuredLens.image_url} srcSet={responsiveImageSet(featuredLens.image_url)} sizes="(max-width: 767px) 92vw, 46vw" width="900" height="600" loading="lazy" decoding="async" alt={featuredLens.name} /></div>
               <div><small>{featuredLens.brand_name}</small><h3>{featuredLens.name}</h3><p>{featuredLens.description}</p><footer><strong>{formatPrice(featuredLens.subscription_price ?? featuredLens.price)}</strong><button onClick={() => onNavigate('product', featuredLens.id)}>{copy.choose} <ArrowRight size={15} /></button></footer></div>
             </article>
           )}

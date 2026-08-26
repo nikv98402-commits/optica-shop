@@ -198,3 +198,4 @@ export function AboutBrand({ onNavigate }: AboutBrandProps) {
     </div>
   );
 }
+import '../styles/routeStyles';

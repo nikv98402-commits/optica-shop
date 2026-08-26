@@ -7,11 +7,19 @@
       (function(m,e,t,r,i,k,a){
         m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
         m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {
-          if (document.scripts[j].src === r) { return; }
+        function load(){
+          for (var j = 0; j < document.scripts.length; j++) {
+            if (document.scripts[j].src === r) { return; }
+          }
+          k=e.createElement(t),a=e.getElementsByTagName(t)[0],
+          k.async=1,k.src=r,a.parentNode.insertBefore(k,a);
         }
-        k=e.createElement(t),a=e.getElementsByTagName(t)[0],
-        k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        function schedule(){
+          if ('requestIdleCallback' in m) m.requestIdleCallback(load, { timeout: 3000 });
+          else m.setTimeout(load, 1500);
+        }
+        if (e.readyState === 'complete') schedule();
+        else m.addEventListener('load', schedule, { once: true });
       })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=109764495', 'ym');
 
       ym(109764495, 'init', {
@@ -30,7 +38,8 @@
     <title>ViLu - онлайн-подбор оправ и Face-fit score</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;700;800;900&display=swap"></noscript>
     <meta property="og:title" content="ViLu" />
     <meta property="og:description" content="Онлайн-примерка очков, Face-fit score и структурированная база знаний по выбору оправы." />
   </head>

@@ -269,3 +269,4 @@ export function PaymentStatus({ mode, onNavigate, onOpenStores }: PaymentStatusP
     </section>
   );
 }
+import '../styles/routeStyles';

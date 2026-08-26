@@ -1,8 +1,22 @@
 import { Languages, LogOut, Menu, MessageCircleQuestion, ShoppingBag, User, X } from 'lucide-react';
-import { useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import type { AuthNavigationSession } from './AuthNavigationBridge';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
 import { publicFeatures } from '../config/features';
+
+const AuthNavigationBridge = lazy(() => import('./AuthNavigationBridge').then((module) => ({ default: module.AuthNavigationBridge })));
+
+function hasSupabaseSessionHint() {
+  try {
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+      if (key && /^sb-.+-auth-token$/.test(key) && window.localStorage.getItem(key)) return true;
+    }
+  } catch {
+    // Storage can be unavailable in privacy-restricted browser contexts.
+  }
+  return false;
+}
 
 interface NavigationProps {
   currentPage: string;
@@ -13,10 +27,26 @@ interface NavigationProps {
 
 export function Navigation({ currentPage, onNavigate, fittingCount = 0 }: NavigationProps) {
   const { language, setLanguage } = useLanguage();
-  const { user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hasAuthHint, setHasAuthHint] = useState(hasSupabaseSessionHint);
+  const [authSession, setAuthSession] = useState<AuthNavigationSession | null>(null);
   const targetLanguage = language === 'en' ? 'ru' : 'en';
   const targetLanguageLabel = targetLanguage.toUpperCase();
+
+  useEffect(() => {
+    setHasAuthHint(hasSupabaseSessionHint());
+  }, [currentPage]);
+
+  useEffect(() => {
+    const handleStorage = () => setHasAuthHint(hasSupabaseSessionHint());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const handleAuthSessionChange = useCallback((session: AuthNavigationSession | null) => {
+    setAuthSession(session);
+    if (!session) setHasAuthHint(hasSupabaseSessionHint());
+  }, []);
 
   const go = (page: string) => {
     setMenuOpen(false);
@@ -62,10 +92,10 @@ export function Navigation({ currentPage, onNavigate, fittingCount = 0 }: Naviga
           <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-vilu-ink ring-1 ring-vilu-lime/20 sm:flex" aria-label={language === 'en' ? `Switch language to ${targetLanguageLabel}` : `Переключить язык на ${targetLanguageLabel}`}><Languages size={15} /> {targetLanguageLabel}</button>
           <button aria-label={labels.profileButton} onClick={() => go('dashboard')} className="hidden items-center gap-2 rounded-full bg-vilu-paper px-3 py-3 text-vilu-ink ring-1 ring-vilu-lime/20 transition hover:bg-vilu-lime sm:flex md:px-4">
             <User size={18} />
-            {user && <span className="hidden max-w-28 truncate text-xs font-black md:inline">{user.name}</span>}
+            {authSession && <span className="hidden max-w-28 truncate text-xs font-black md:inline">{authSession.userName}</span>}
           </button>
-          {user && (
-            <button onClick={() => signOut()} className="hidden rounded-full bg-vilu-paper p-3 text-vilu-ink/55 ring-1 ring-vilu-lime/20 transition hover:text-vilu-ink md:block" title={labels.signOut}>
+          {authSession && (
+            <button onClick={() => void authSession.signOut().catch(() => undefined)} className="hidden rounded-full bg-vilu-paper p-3 text-vilu-ink/55 ring-1 ring-vilu-lime/20 transition hover:text-vilu-ink md:block" title={labels.signOut} aria-label={labels.signOut}>
               <LogOut size={18} />
             </button>
           )}
@@ -94,10 +124,11 @@ export function Navigation({ currentPage, onNavigate, fittingCount = 0 }: Naviga
             <button onClick={() => go('about')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{navItems[4].label}</button>
             {publicFeatures.knowledgeAssistant && <button onClick={() => go('assistant')} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold text-vilu-ink">{assistantLabel}</button>}
             <button data-no-translate="true" onClick={() => setLanguage(targetLanguage)} className="rounded-2xl bg-vilu-paper p-4 text-left font-bold uppercase text-vilu-ink">{labels.language}: {targetLanguageLabel}</button>
-            {user && <button onClick={() => signOut()} className="rounded-2xl bg-vilu-lime p-4 text-left font-bold text-vilu-ink">{labels.signOut}</button>}
+            {authSession && <button onClick={() => void authSession.signOut().catch(() => undefined)} className="rounded-2xl bg-vilu-lime p-4 text-left font-bold text-vilu-ink">{labels.signOut}</button>}
           </div>
         </div>
       )}
+      {hasAuthHint && <Suspense fallback={null}><AuthNavigationBridge onSessionChange={handleAuthSessionChange} /></Suspense>}
     </nav>
   );
 }

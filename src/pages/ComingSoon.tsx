@@ -32,3 +32,4 @@ export function ComingSoon({ onNavigate }: ComingSoonProps) {
     </section>
   );
 }
+import '../styles/routeStyles';

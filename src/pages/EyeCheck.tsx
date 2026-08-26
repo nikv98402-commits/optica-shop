@@ -240,3 +240,4 @@ export function EyeCheck({ onNavigate }: EyeCheckProps) {
     </div>
   );
 }
+import '../styles/routeStyles';

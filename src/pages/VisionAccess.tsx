@@ -318,3 +318,4 @@ export function VisionAccess({ onNavigate }: VisionAccessProps) {
     </div>
   );
 }
+import '../styles/routeStyles';

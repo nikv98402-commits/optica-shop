@@ -1,24 +1,25 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Navigation } from './components/Navigation';
-import { StoreLocator } from './components/StoreLocator';
 import { LanguageDomBridge } from './components/LanguageDomBridge';
 import { Home } from './pages/Home';
-import { Products } from './pages/Products';
-import { ProductDetail } from './pages/ProductDetail';
-import { Checkout } from './pages/Checkout';
-import { Dashboard } from './pages/Dashboard';
-import { TryOnPilot } from './pages/TryOnPilot';
-import { EyeCheck } from './pages/EyeCheck';
-import { VisionAccess } from './pages/VisionAccess';
-import { AboutBrand } from './pages/AboutBrand';
-import { PaymentStatus } from './pages/PaymentStatus';
-import { KnowledgeAssistant } from './pages/KnowledgeAssistant';
-import { ComingSoon } from './pages/ComingSoon';
 import { getKnowledgePage, KnowledgeBase } from './pages/KnowledgeBase';
 import { demoProducts } from './data/products';
 import { createServiceCheckoutDraft, readServiceCheckoutDraft, saveServiceCheckoutDraft } from './services/serviceCheckout';
 import type { ServiceCheckoutDraft, ServiceCheckoutFrame } from './types/backend';
 import { publicFeatures } from './config/features';
+
+const AboutBrand = lazy(() => import('./pages/AboutBrand').then((module) => ({ default: module.AboutBrand })));
+const AuthenticatedDashboard = lazy(() => import('./pages/AuthenticatedDashboard').then((module) => ({ default: module.AuthenticatedDashboard })));
+const Checkout = lazy(() => import('./pages/Checkout').then((module) => ({ default: module.Checkout })));
+const ComingSoon = lazy(() => import('./pages/ComingSoon').then((module) => ({ default: module.ComingSoon })));
+const EyeCheck = lazy(() => import('./pages/EyeCheck').then((module) => ({ default: module.EyeCheck })));
+const KnowledgeAssistant = lazy(() => import('./pages/KnowledgeAssistant').then((module) => ({ default: module.KnowledgeAssistant })));
+const PaymentStatus = lazy(() => import('./pages/PaymentStatus').then((module) => ({ default: module.PaymentStatus })));
+const ProductDetail = lazy(() => import('./pages/ProductDetail').then((module) => ({ default: module.ProductDetail })));
+const Products = lazy(() => import('./pages/Products').then((module) => ({ default: module.Products })));
+const StoreLocator = lazy(() => import('./components/StoreLocator').then((module) => ({ default: module.StoreLocator })));
+const TryOnPilot = lazy(() => import('./pages/TryOnPilot').then((module) => ({ default: module.TryOnPilot })));
+const VisionAccess = lazy(() => import('./pages/VisionAccess').then((module) => ({ default: module.VisionAccess })));
 
 type Page = 'home' | 'about' | 'products' | 'product' | 'checkout' | 'dashboard' | 'admin' | 'tryon' | 'eyecheck' | 'visionaccess' | 'payment-return' | 'payment-success' | 'payment-failed' | 'assistant' | 'visit-preparation';
 
@@ -155,6 +156,7 @@ function App() {
           />
 
           <main className="pt-20">
+            <Suspense fallback={null}>
             {knowledgePage && <KnowledgeBase page={knowledgePage} onNavigate={handleNavigate} />}
             {!knowledgePage && currentPage === 'home' && <Home onNavigate={handleNavigate} />}
             {!knowledgePage && currentPage === 'about' && <AboutBrand onNavigate={handleNavigate} />}
@@ -181,7 +183,7 @@ function App() {
               />
             )}
             {(currentPage === 'dashboard' || currentPage === 'admin') && (
-              <Dashboard onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />
+              <AuthenticatedDashboard onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />
             )}
             {currentPage === 'tryon' && (
               <TryOnPilot
@@ -202,9 +204,10 @@ function App() {
             {currentPage === 'payment-return' && <PaymentStatus mode="return" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}
             {currentPage === 'payment-success' && <PaymentStatus mode="success" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}
             {currentPage === 'payment-failed' && <PaymentStatus mode="failed" onNavigate={handleNavigate} onOpenStores={() => setIsStoreLocatorOpen(true)} />}
+            </Suspense>
           </main>
 
-          <StoreLocator isOpen={isStoreLocatorOpen} onClose={() => setIsStoreLocatorOpen(false)} />
+          {isStoreLocatorOpen && <Suspense fallback={null}><StoreLocator isOpen onClose={() => setIsStoreLocatorOpen(false)} /></Suspense>}
         </div>
   );
 }

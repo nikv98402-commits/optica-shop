@@ -2,6 +2,22 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.3.0] - 2026-08-26
+
+### Changed
+
+- Made Home load faster by deferring authenticated areas, clinical and employer
+  tools, virtual try-on, and other route-specific code until it is needed.
+- Preserved signed-in navigation while keeping Supabase authentication out of
+  the anonymous Home initial bundle on desktop and mobile.
+- Reduced the initial rendering workload with responsive lazy-loaded imagery,
+  non-blocking fonts, and deferred analytics without changing the visual style.
+
+### Added
+
+- Added reproducible performance budgets and regression coverage for JavaScript,
+  CSS, lazy chunks, Home imagery, localized navigation, and authenticated states.
+
 ## [0.13.2.0] - 2026-08-26
 
 ### Fixed
