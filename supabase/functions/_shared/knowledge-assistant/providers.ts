@@ -1,4 +1,5 @@
 import type { ChatProvider, EmbeddingProvider, ModelAnswer } from './contracts.ts';
+import type { OperationBudget } from './deadline.ts';
 
 export class ProviderError extends Error {
   constructor(
@@ -32,6 +33,7 @@ export interface ProviderResponseShape {
 }
 
 const MAX_CHAT_RESPONSE_CHARACTERS = 32_000;
+const MINIMUM_RETRY_BUDGET_MS = 1_000;
 
 interface ProviderConfig {
   baseUrl: string;
@@ -45,9 +47,14 @@ async function providerFetch(
   init: RequestInit,
   stage: 'embeddings' | 'chat',
   timeoutMs = 15_000,
+  budget?: OperationBudget,
 ) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const abortFromBudget = () => controller.abort();
+  budget?.signal.addEventListener('abort', abortFromBudget, { once: true });
+  if (budget?.signal.aborted) controller.abort();
+  const effectiveTimeoutMs = Math.max(1, Math.min(timeoutMs, budget?.remainingMs() ?? timeoutMs));
+  const timer = setTimeout(() => controller.abort(), effectiveTimeoutMs);
   try {
     const response = await fetch(url, { ...init, signal: controller.signal });
     if (!response.ok) {
@@ -71,6 +78,7 @@ async function providerFetch(
     throw new ProviderError('unavailable', stage);
   } finally {
     clearTimeout(timer);
+    budget?.signal.removeEventListener('abort', abortFromBudget);
   }
 }
 
@@ -99,14 +107,14 @@ export class OpenAICompatibleEmbeddingProvider implements EmbeddingProvider {
     }
   }
 
-  async embed(text: string) {
+  async embed(text: string, budget?: OperationBudget) {
     const compatibleUrl = endpoint(this.config.baseUrl, '/embeddings');
     try {
       const response = await providerFetch(compatibleUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${this.config.apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: this.config.model, input: text }),
-      }, 'embeddings', this.config.timeoutMs);
+      }, 'embeddings', this.config.timeoutMs, budget);
       const body = await response.json() as { data?: Array<{ embedding?: number[] }> };
       const embedding = body.data?.[0]?.embedding;
       if (!validEmbedding(embedding)) throw new ProviderError('invalid_response', 'embeddings');
@@ -119,7 +127,7 @@ export class OpenAICompatibleEmbeddingProvider implements EmbeddingProvider {
         method: 'POST',
         headers: { Authorization: `Bearer ${this.config.apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: [text] }),
-      }, 'embeddings', this.config.timeoutMs);
+      }, 'embeddings', this.config.timeoutMs, budget);
       const body = await response.json() as {
         result?: { data?: number[][] } | number[][];
       };
@@ -138,7 +146,7 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
     }
   }
 
-  async complete(system: string, user: string): Promise<ModelAnswer> {
+  async complete(system: string, user: string, budget?: OperationBudget): Promise<ModelAnswer> {
     const request = () => providerFetch(endpoint(this.config.baseUrl, '/chat/completions'), {
       method: 'POST',
       headers: { Authorization: `Bearer ${this.config.apiKey}`, 'Content-Type': 'application/json' },
@@ -148,7 +156,7 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
         response_format: { type: 'json_object' },
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       }),
-    }, 'chat', this.config.timeoutMs);
+    }, 'chat', this.config.timeoutMs, budget);
     const parse = async (response: Response) => {
       const body = await response.json() as unknown;
       const root = body && typeof body === 'object' && !Array.isArray(body)
@@ -190,6 +198,7 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
         || error.code !== 'invalid_response'
         || error.stage !== 'chat'
         || error.responseShape?.content !== 'null') throw error;
+      if (budget && budget.remainingMs() < MINIMUM_RETRY_BUDGET_MS) throw error;
       return parse(await request());
     }
   }

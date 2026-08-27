@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildSupportedResponse, CitationValidationError } from '../../../../supabase/functions/_shared/knowledge-assistant/citations';
 import type { AssistantRequest, RetrievedChunk } from '../../../../supabase/functions/_shared/knowledge-assistant/contracts';
 import { answerKnowledgeQuestion } from '../../../../supabase/functions/_shared/knowledge-assistant/orchestrator';
+import { PipelineDeadline } from '../../../../supabase/functions/_shared/knowledge-assistant/deadline';
 import { isDisallowedQuery, isUrgentQuery } from '../../../../supabase/functions/_shared/knowledge-assistant/safety';
 import { validateAssistantRequest } from '../../../../supabase/functions/_shared/knowledge-assistant/validation';
 import { OpenAICompatibleEmbeddingProvider, ProviderError } from '../../../../supabase/functions/_shared/knowledge-assistant/providers';
@@ -143,6 +144,43 @@ describe('citation and orchestration contract', () => {
       chatProvider: { complete: vi.fn().mockResolvedValue({ claims: [{ text: 'No citation', evidence: [] }] }) },
     });
     expect(result.confidence).toBe('insufficient_sources');
+  });
+
+  it('aborts a hung retrieval when its explicit stage budget expires', async () => {
+    vi.useFakeTimers();
+    const retrieve = vi.fn((_embedding: number[], budget) => new Promise<never>((_resolve, reject) => {
+      budget?.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    }));
+    const result = answerKnowledgeQuestion(request, {
+      embeddingProvider: { embed: vi.fn().mockResolvedValue(Array(1024).fill(0)) },
+      retriever: { retrieve },
+      chatProvider: { complete: vi.fn() },
+      deadline: new PipelineDeadline(50),
+    });
+
+    const rejection = expect(result).rejects.toMatchObject({ stage: 'retrieval' });
+    await vi.advanceTimersByTimeAsync(50);
+    await rejection;
+    expect(retrieve).toHaveBeenCalledOnce();
+    vi.useRealTimers();
+  });
+
+  it('does not start citation correction when the shared budget is insufficient', async () => {
+    vi.useFakeTimers();
+    const complete = vi.fn().mockImplementation(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+      return { claims: [{ text: 'Unsupported', evidence: [] }] };
+    });
+    const result = await answerKnowledgeQuestion(request, {
+      embeddingProvider: { embed: vi.fn().mockResolvedValue(Array(1024).fill(0)) },
+      retriever: { retrieve: vi.fn().mockResolvedValue([chunk]) },
+      chatProvider: { complete },
+      deadline: new PipelineDeadline(1_500),
+    });
+
+    expect(result.confidence).toBe('insufficient_sources');
+    expect(complete).toHaveBeenCalledOnce();
+    vi.useRealTimers();
   });
 
   it('bypasses every provider for urgent prompts', async () => {

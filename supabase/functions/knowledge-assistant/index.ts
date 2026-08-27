@@ -2,6 +2,11 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { answerKnowledgeQuestion } from '../_shared/knowledge-assistant/orchestrator.ts';
 import {
+  PipelineDeadline,
+  PipelineDeadlineError,
+  type StageTiming,
+} from '../_shared/knowledge-assistant/deadline.ts';
+import {
   OpenAICompatibleChatProvider,
   OpenAICompatibleEmbeddingProvider,
   ProviderError,
@@ -22,6 +27,12 @@ import { validateAssistantRequest } from '../_shared/knowledge-assistant/validat
 const MAX_BODY_BYTES = 16 * 1024;
 const RATE_LIMIT = 20;
 const RATE_WINDOW_SECONDS = 60;
+const SERVER_DEADLINE_MS = 18_000;
+
+function logStageTiming(timing: StageTiming) {
+  // Structural timing only: no prompts, answers, retrieved text, tokens, keys, or secrets.
+  console.info('knowledge_assistant_stage_timing', timing);
+}
 
 function allowedOrigins() {
   return new Set((Deno.env.get('KNOWLEDGE_ALLOWED_ORIGINS') || 'https://vilu.store,http://localhost:5173,http://127.0.0.1:5173')
@@ -52,12 +63,16 @@ async function privacyKey(request: Request) {
   return Array.from(new Uint8Array(digest)).slice(0, 12).map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-async function isRateLimited(client: ReturnType<typeof createClient>, request: Request) {
+async function isRateLimited(
+  client: ReturnType<typeof createClient>,
+  request: Request,
+  signal: AbortSignal,
+) {
   const { data, error } = await client.rpc('consume_knowledge_rate_limit', {
     p_key_hash: await privacyKey(request),
     p_window_seconds: RATE_WINDOW_SECONDS,
     p_limit: RATE_LIMIT,
-  });
+  }).abortSignal(signal);
   if (error || typeof data !== 'boolean') throw new RetrievalError('rate_limit_unavailable');
   return data;
 }
@@ -98,8 +113,14 @@ serve(async (request) => {
   }
 
   try {
+    const deadline = new PipelineDeadline(SERVER_DEADLINE_MS, logStageTiming);
     const client = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-    if (await isRateLimited(client, request)) return json(request, { error: 'rate_limited' }, 429);
+    const rateLimited = await deadline.run(
+      'rate_limit',
+      3_000,
+      ({ signal }) => isRateLimited(client, request, signal),
+    );
+    if (rateLimited) return json(request, { error: 'rate_limited' }, 429);
     const response = await answerKnowledgeQuestion(input, {
       embeddingProvider: new OpenAICompatibleEmbeddingProvider({
         baseUrl: embeddingBaseUrl,
@@ -115,14 +136,25 @@ serve(async (request) => {
       // lower than the previous provider's scores. The corpus is curated and
       // citation validation still prevents unsupported answers.
       retriever: new SupabaseKnowledgeRetriever(client, 8, 0.35),
+      deadline,
     });
-    const { data: externalSourceRows, error: externalSourceError } = await client
-      .from('knowledge_sources')
-      .select('id,title,url,publisher')
-      .eq('review_status', 'approved')
-      .eq('indexable', false)
-      .order('title')
-      .limit(6);
+    const { data: externalSourceRows, error: externalSourceError } = deadline.hasBudget(100)
+      ? await deadline.run(
+        'external_sources',
+        2_000,
+        ({ signal }) => client
+          .from('knowledge_sources')
+          .select('id,title,url,publisher')
+          .eq('review_status', 'approved')
+          .eq('indexable', false)
+          .order('title')
+          .limit(6)
+          .abortSignal(signal),
+      )
+      : (() => {
+        deadline.skip('external_sources');
+        return { data: [], error: null };
+      })();
     if (externalSourceError) throw new RetrievalError('external_sources_unavailable');
     return json(request, {
       ...response,
@@ -135,6 +167,10 @@ serve(async (request) => {
     });
   } catch (error) {
     // Deliberately log only a content-free category; never log request or response bodies.
+    if (error instanceof PipelineDeadlineError) {
+      console.error('knowledge_assistant_error', { code: 'request_timeout', stage: error.stage });
+      return json(request, { error: 'request_timeout' }, 504);
+    }
     if (error instanceof RetrievalError) {
       console.error('knowledge_assistant_error', { code: 'retrieval_unavailable' });
       return json(request, { error: 'retrieval_unavailable' }, 503);

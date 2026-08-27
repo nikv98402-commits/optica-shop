@@ -27,19 +27,27 @@ function normalizeError(status?: number, code?: string): AssistantServiceErrorCo
   return 'network_error';
 }
 
-export async function askKnowledgeAssistant(request: AssistantRequest): Promise<AssistantResponse> {
+export async function askKnowledgeAssistant(
+  request: AssistantRequest,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+): Promise<AssistantResponse> {
   if (!isSupabaseConfigured) throw new AssistantServiceError('not_configured');
   let timer: number | undefined;
 
   try {
+    const controller = typeof AbortController === 'undefined' ? undefined : new AbortController();
     const invocation = supabase.functions.invoke<AssistantResponse>('knowledge-assistant', {
       body: request,
       headers: { 'x-vilu-client': 'knowledge-assistant-v1' },
+      ...(controller ? { signal: controller.signal } : {}),
     });
     const timeout = new Promise<never>((_, reject) => {
       timer = window.setTimeout(
-        () => reject(new AssistantServiceError('network_error')),
-        REQUEST_TIMEOUT_MS,
+        () => {
+          controller?.abort();
+          reject(new AssistantServiceError('network_error'));
+        },
+        timeoutMs,
       );
     });
     const { data, error } = await Promise.race([invocation, timeout]);

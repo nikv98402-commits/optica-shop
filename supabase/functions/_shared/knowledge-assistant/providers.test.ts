@@ -166,6 +166,43 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     expect(JSON.stringify(providerErrorDiagnostic(error))).not.toContain(leaked);
   });
 
+  it('does not retry content=null when the shared deadline has too little budget', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({ choices: [{ message: { content: null } }] }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+    const controller = new AbortController();
+
+    await expect(provider.complete('system', 'user', {
+      signal: controller.signal,
+      remainingMs: () => 999,
+    })).rejects.toMatchObject({ code: 'invalid_response', stage: 'chat' });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('uses the remaining shared budget as the provider timeout', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => new Promise((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    })));
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model', timeoutMs: 15_000,
+    });
+    const controller = new AbortController();
+    const completion = provider.complete('system', 'user', {
+      signal: controller.signal,
+      remainingMs: () => 30,
+    });
+
+    const rejection = expect(completion).rejects.toMatchObject({ code: 'timeout', stage: 'chat' });
+    await vi.advanceTimersByTimeAsync(30);
+    await rejection;
+    vi.useRealTimers();
+  });
+
   it('rejects incomplete provider configuration', () => {
     expect(() => new OpenAICompatibleEmbeddingProvider({
       baseUrl: '',

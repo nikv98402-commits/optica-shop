@@ -65,13 +65,13 @@ export interface AssistantResponse {
 }
 
 export interface EmbeddingProvider {
-  embed(text: string): Promise<number[]>;
+  embed(text: string, budget?: import('./deadline.ts').OperationBudget): Promise<number[]>;
 }
 
 export interface ChatProvider {
-  complete(system: string, user: string): Promise<ModelAnswer>;
+  complete(system: string, user: string, budget?: import('./deadline.ts').OperationBudget): Promise<ModelAnswer>;
 }
 
 export interface Retriever {
-  retrieve(embedding: number[]): Promise<RetrievedChunk[]>;
+  retrieve(embedding: number[], budget?: import('./deadline.ts').OperationBudget): Promise<RetrievedChunk[]>;
 }
