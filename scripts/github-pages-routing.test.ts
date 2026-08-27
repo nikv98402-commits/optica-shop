@@ -1,10 +1,11 @@
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { demoProducts } from '../src/data/products';
 import {
   addGithubPagesRoutes,
+  DIRECT_ROUTE_ENTRIES,
   PRODUCT_SLUGS,
   STATIC_ROUTES,
 } from './add-github-pages-routes.mjs';
@@ -29,5 +30,19 @@ describe('GitHub Pages SPA routing', () => {
     await expect(readFile(join(distDirectory, '404.html'), 'utf8')).resolves.toBe(
       '<main>ViLu SPA</main>',
     );
+  });
+
+  it('publishes direct app routes as clean-url HTML files without redirect directories', async () => {
+    const distDirectory = await mkdtemp(join(tmpdir(), 'vilu-pages-'));
+    await writeFile(join(distDirectory, 'index.html'), '<main>ViLu SPA</main>');
+
+    await addGithubPagesRoutes(distDirectory);
+
+    for (const route of DIRECT_ROUTE_ENTRIES) {
+      await expect(readFile(join(distDirectory, `${route}.html`), 'utf8')).resolves.toBe(
+        '<main>ViLu SPA</main>',
+      );
+      await expect(access(join(distDirectory, route, 'index.html'))).rejects.toThrow();
+    }
   });
 });

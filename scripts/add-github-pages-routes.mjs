@@ -11,6 +11,8 @@ export const PRODUCT_SLUGS = [
   'comfort-monthly',
 ];
 
+export const DIRECT_ROUTE_ENTRIES = ['assistant', 'dashboard', 'checkout'];
+
 export const STATIC_ROUTES = [
   'tryon',
   'eye-check',
@@ -51,6 +53,11 @@ export async function addGithubPagesRoutes(distDirectory = 'dist') {
   const entryPoint = join(distDirectory, 'index.html');
   await Promise.all(
     STATIC_ROUTES.map(async (route) => {
+      if (DIRECT_ROUTE_ENTRIES.includes(route)) {
+        await copyFile(entryPoint, join(distDirectory, `${route}.html`));
+        return;
+      }
+
       const routeDirectory = join(distDirectory, route);
       await mkdir(routeDirectory, { recursive: true });
       await copyFile(entryPoint, join(routeDirectory, 'index.html'));

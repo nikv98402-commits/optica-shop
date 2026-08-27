@@ -2,6 +2,18 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.4.0] - 2026-08-27
+
+### Fixed
+
+- Made direct visits to Assistant, Dashboard, and Checkout load immediately on
+  GitHub Pages without an extra fallback redirect.
+
+### Added
+
+- Added unit and browser regression coverage that verifies each direct route
+  returns the application with HTTP 200 while preserving its clean URL.
+
 ## [0.13.3.0] - 2026-08-26
 
 ### Changed
