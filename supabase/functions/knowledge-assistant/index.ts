@@ -142,7 +142,7 @@ serve(async (request) => {
     if (error instanceof ProviderError) {
       const diagnostic = providerErrorDiagnostic(error);
       console.error('knowledge_assistant_error', { code: 'provider_unavailable', ...diagnostic });
-      return json(request, { error: 'provider_unavailable' }, 502);
+      return json(request, { error: 'provider_unavailable', diagnostic }, 502);
     }
     console.error('knowledge_assistant_error', { code: 'provider_unavailable' });
     return json(request, { error: 'provider_unavailable' }, 502);
