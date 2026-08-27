@@ -99,10 +99,11 @@ npm test
 npm run test:checkout
 npm run test:rls
 npm run test:e2e
+npm run test:pages-routes
 npm run test:performance
 ```
 
-`npm test` runs the Vitest suite, `npm run test:checkout` checks the checkout/backend contract, `npm run test:rls` runs local Supabase pgTAP coverage for organization and role boundaries, and `npm run test:e2e` runs the Playwright RU/EN desktop and iPhone-profile flows. `npm run test:performance` creates a production build and checks the anonymous Home initial JavaScript and CSS budgets, lazy route chunks, non-blocking fonts, and deferred analytics.
+`npm test` runs the Vitest suite, `npm run test:checkout` checks the checkout/backend contract, `npm run test:rls` runs local Supabase pgTAP coverage for organization and role boundaries, and `npm run test:e2e` runs the Playwright RU/EN desktop and iPhone-profile flows. `npm run test:pages-routes` builds the GitHub Pages artifact and verifies that direct visits to `/assistant`, `/dashboard`, and `/checkout` return the application with HTTP 200 without changing the clean URL. `npm run test:performance` creates a production build and checks the anonymous Home initial JavaScript and CSS budgets, lazy route chunks, non-blocking fonts, and deferred analytics.
 
 Known state: `npm run lint` can show existing Fast Refresh warnings. Treat new warnings as regressions.
 
