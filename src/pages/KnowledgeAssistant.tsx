@@ -195,6 +195,8 @@ export function KnowledgeAssistant({ onNavigate, onOpenStores }: KnowledgeAssist
   const { language } = useLanguage();
   const t = copy[language];
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const requestTokenRef = useRef(0);
+  const previousLanguageRef = useRef(language);
   const [localState, setLocalState] = useState<AssistantLocalState>(readAssistantLocalState);
   const [draft, setDraft] = useState('');
   const [lastQuery, setLastQuery] = useState('');
@@ -209,12 +211,25 @@ export function KnowledgeAssistant({ onNavigate, onOpenStores }: KnowledgeAssist
   }, [language]);
 
   useEffect(() => {
+    if (previousLanguageRef.current === language) return;
+    previousLanguageRef.current = language;
+    requestTokenRef.current += 1;
+    setLocalState((current) => ({ ...current, turns: [] }));
+    setLastQuery('');
+    setErrorCode(null);
+    setExpandedSources({});
+    setLoading(false);
+  }, [language]);
+
+  useEffect(() => {
     saveAssistantLocalState(localState);
   }, [localState]);
 
   const submitQuery = async (query: string, appendUserTurn = true) => {
     const normalized = query.trim();
     if (normalized.length < 2 || loading) return;
+    const requestToken = ++requestTokenRef.current;
+    const requestLocale = language;
     const recentTurns = toBoundedRecentTurns(localState.turns);
     const userTurn = createTurn('user', normalized);
     if (appendUserTurn) {
@@ -229,10 +244,11 @@ export function KnowledgeAssistant({ onNavigate, onOpenStores }: KnowledgeAssist
     try {
       const response = await askKnowledgeAssistant({
         query: normalized,
-        locale: language,
+        locale: requestLocale,
         recentTurns,
         preferences: localState.preferences,
       });
+      if (requestToken !== requestTokenRef.current) return;
       const answerTurn = createTurn('assistant', response.answer, response);
       setLocalState((current) => ({ ...current, turns: [...current.turns, answerTurn] }));
       if (response.confidence === 'insufficient_sources') {
@@ -242,14 +258,17 @@ export function KnowledgeAssistant({ onNavigate, onOpenStores }: KnowledgeAssist
           confidence: response.confidence,
           citation_count: response.citations.length,
           safety: response.safety,
-          locale: language,
+          locale: requestLocale,
         });
       }
     } catch (error) {
+      if (requestToken !== requestTokenRef.current) return;
       setErrorCode(error instanceof AssistantServiceError ? error.code : 'network_error');
     } finally {
-      setLoading(false);
-      window.setTimeout(() => inputRef.current?.focus(), 0);
+      if (requestToken === requestTokenRef.current) {
+        setLoading(false);
+        window.setTimeout(() => inputRef.current?.focus(), 0);
+      }
     }
   };
 

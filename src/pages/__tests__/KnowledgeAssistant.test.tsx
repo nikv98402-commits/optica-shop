@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LanguageProvider } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { KnowledgeAssistant } from '../KnowledgeAssistant';
 
 const askKnowledgeAssistant = vi.fn();
@@ -16,6 +17,11 @@ const supported = {
   citations: [{ id: 'source-1', title: 'Размер оправы', url: 'https://vilu.store/kak-vybrat-razmer-opravy', publisher: 'ViLu', license: 'vilu-owned' }],
   externalSources: [{ id: 'external-1', title: 'OcuLearning', url: 'https://www.oculearning.com/', publisher: 'OcuLearning' }],
 };
+
+function LanguageHarness() {
+  const { language, setLanguage } = useLanguage();
+  return <><button onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}>toggle locale</button><KnowledgeAssistant onNavigate={vi.fn()} /></>;
+}
 
 describe('KnowledgeAssistant', () => {
   beforeEach(() => askKnowledgeAssistant.mockReset().mockResolvedValue(supported));
@@ -50,5 +56,32 @@ describe('KnowledgeAssistant', () => {
     await user.click(screen.getByRole('button', { name: /Очистить историю/i }));
     expect(screen.queryByText('Stored question')).not.toBeInTheDocument();
     expect(localStorage.getItem('vilu_knowledge_assistant_v1')).toContain('"turns":[]');
+  });
+
+  it('clears a completed response across RU to EN to RU', async () => {
+    const user = userEvent.setup();
+    render(<LanguageProvider><LanguageHarness /></LanguageProvider>);
+    await user.type(screen.getByRole('textbox'), 'Что значит размер?');
+    await user.click(screen.getByRole('button', { name: 'Спросить' }));
+    expect(await screen.findByText(supported.answer)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'toggle locale' }));
+    expect(screen.queryByText(supported.answer)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ask ViLu about vision and choosing frames' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'toggle locale' }));
+    expect(screen.queryByText(supported.answer)).not.toBeInTheDocument();
+  });
+
+  it('ignores a late response from the previous locale', async () => {
+    let resolveRequest!: (value: typeof supported) => void;
+    askKnowledgeAssistant.mockReturnValueOnce(new Promise((resolve) => { resolveRequest = resolve; }));
+    const user = userEvent.setup();
+    render(<LanguageProvider><LanguageHarness /></LanguageProvider>);
+    await user.type(screen.getByRole('textbox'), 'Что значит размер?');
+    await user.click(screen.getByRole('button', { name: 'Спросить' }));
+    await user.click(screen.getByRole('button', { name: 'toggle locale' }));
+    resolveRequest(supported);
+    await Promise.resolve();
+    expect(screen.queryByText(supported.answer)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ask ViLu about vision and choosing frames' })).toBeVisible();
   });
 });
