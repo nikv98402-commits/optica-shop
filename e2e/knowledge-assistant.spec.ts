@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const supportedResponse = {
   answerId: 'answer-e2e', answer: '52 — ширина линзы. [1]', confidence: 'supported', safety: 'informational',
@@ -24,10 +24,33 @@ const urgentResponse = {
   relatedPaths: ['/vision-care'],
 };
 
+async function switchAssistantLanguage(page: Page, target: 'en' | 'ru') {
+  const desktopName = target === 'en' ? /Переключить язык на EN/i : /Switch language to RU/i;
+  const desktopButton = page.getByRole('button', { name: desktopName });
+  if (await desktopButton.isVisible()) {
+    await desktopButton.click();
+    return;
+  }
+  const mobileName = target === 'en' ? /Язык: EN/i : /Language: RU/i;
+  const openMobileButton = page.getByRole('button', { name: mobileName });
+  if (await openMobileButton.isVisible()) {
+    await openMobileButton.click();
+    await page.getByRole('button', { name: target === 'en' ? 'Close menu' : 'Закрыть меню' }).click();
+    return;
+  }
+  await page.getByRole('button', { name: target === 'en' ? 'Открыть меню' : 'Open menu' }).click();
+  await page.getByRole('button', { name: mobileName }).click();
+  await page.getByRole('button', { name: target === 'en' ? 'Close menu' : 'Закрыть меню' }).click();
+}
+
 test.beforeEach(async ({ page }) => {
   let transientAttempts = 0;
   await page.route('**/functions/v1/knowledge-assistant', async (route) => {
-    const query = ((route.request().postDataJSON() as { query?: string } | null)?.query || '').toLowerCase();
+    const request = route.request().postDataJSON() as { query?: string; locale?: string } | null;
+    const query = (request?.query || '').toLowerCase();
+    if (query.includes('медленный')) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
     if (query.includes('ошибка')) {
       transientAttempts += 1;
       if (transientAttempts === 1) {
@@ -35,13 +58,36 @@ test.beforeEach(async ({ page }) => {
         return;
       }
     }
+    const localizedSupported = request?.locale === 'en'
+      ? { ...supportedResponse, answer: '52 is the lens width. [1]' }
+      : supportedResponse;
     const body = query.includes('неизвест')
       ? unsupportedResponse
       : query.includes('внезап')
         ? urgentResponse
-        : supportedResponse;
+        : localizedSupported;
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
+});
+
+test('language switch clears completed and pending answers without stale writes', async ({ page }) => {
+  await page.goto('/assistant');
+  await page.getByRole('textbox').fill('Что значит 52-18-140?');
+  await page.getByRole('button', { name: 'Спросить', exact: true }).click();
+  await expect(page.getByText('52 — ширина линзы. [1]')).toBeVisible();
+  await switchAssistantLanguage(page, 'en');
+  await expect(page.getByText('52 — ширина линзы. [1]')).toHaveCount(0);
+  await switchAssistantLanguage(page, 'ru');
+
+  await page.getByRole('textbox').fill('Медленный ответ');
+  await page.getByRole('button', { name: 'Спросить', exact: true }).click();
+  await switchAssistantLanguage(page, 'en');
+  await expect(page.getByRole('heading', { name: 'Ask ViLu about vision and choosing frames' })).toBeVisible();
+  await switchAssistantLanguage(page, 'ru');
+  await page.waitForTimeout(650);
+  await expect(page.getByText('52 — ширина линзы. [1]')).toHaveCount(0);
+  await expect(page.getByText('52 is the lens width. [1]')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Спросите ViLu о зрении и выборе оправы' })).toBeVisible();
 });
 
 test('RU assistant answers and exposes its source', async ({ page }) => {
@@ -62,7 +108,7 @@ test('English preference translates the complete assistant shell', async ({ page
   await expect(page.getByText('History and preferences stay only in your browser.')).toBeVisible();
   await page.getByRole('textbox').fill('What does 52-18-140 mean?');
   await page.getByTestId('assistant-form').getByRole('button', { name: 'Ask', exact: true }).click();
-  await expect(page.getByText('52 — ширина линзы. [1]')).toBeVisible();
+  await expect(page.getByText('52 is the lens width. [1]')).toBeVisible();
   await expect(page.getByRole('button', { name: /How to choose a frame size/i })).toBeVisible();
 });
 

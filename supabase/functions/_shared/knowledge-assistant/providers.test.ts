@@ -120,6 +120,50 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     await expect(provider.complete('system', 'user')).resolves.toEqual({ claims: [] });
     await expect(provider.complete('system', 'user')).rejects.toMatchObject({ code: 'invalid_response', stage: 'chat' });
     await expect(provider.complete('system', 'user')).rejects.toMatchObject({ code: 'invalid_response', stage: 'chat' });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it.each([
+    ['empty string', { choices: [{ message: { content: '' } }] }],
+    ['array content', { choices: [{ message: { content: [] } }] }],
+    ['missing content', { choices: [{ message: {} }] }],
+  ])('does not retry an unproven %s chat response', async (_label, body) => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(body));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    await expect(provider.complete('system', 'user')).rejects.toMatchObject({
+      code: 'invalid_response', stage: 'chat',
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('retries one proven intermittent invalid chat response and keeps diagnostics content-free', async () => {
+    const leaked = 'private answer text';
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: null, reasoning: leaked } }] }))
+      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: '{"claims":[]}' } }] }));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    await expect(provider.complete('system', 'user')).resolves.toEqual({ claims: [] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(
+      Response.json({ choices: [{ message: { content: null, reasoning: leaked } }] }),
+    )));
+    const error = await provider.complete('system', 'user').catch((caught) => caught as ProviderError);
+    expect(providerErrorDiagnostic(error)).toEqual({
+      stage: 'chat', reason: 'invalid_response', status: undefined, providerCode: undefined,
+      responseShape: {
+        root: 'object', choices: 'array_nonempty', message: 'object', content: 'null',
+      },
+    });
+    expect(JSON.stringify(providerErrorDiagnostic(error))).not.toContain(leaked);
   });
 
   it('rejects incomplete provider configuration', () => {
@@ -174,9 +218,9 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
   });
 
   it('rejects an empty chat response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(
       Response.json({ choices: [{ message: { content: '' } }] }),
-    ));
+    )));
     const provider = new OpenAICompatibleChatProvider({
       baseUrl: 'https://provider.example/v1',
       apiKey: 'test-token',

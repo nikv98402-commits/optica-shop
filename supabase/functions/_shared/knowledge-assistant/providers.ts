@@ -7,6 +7,7 @@ export class ProviderError extends Error {
     public readonly status?: number,
     public readonly providerCode?: number,
     public readonly providerMessage?: string,
+    public readonly responseShape?: ProviderResponseShape,
   ) {
     super(code);
   }
@@ -18,7 +19,16 @@ export function providerErrorDiagnostic(error: ProviderError) {
     reason: error.code,
     status: error.status,
     providerCode: error.providerCode,
+    ...(error.responseShape ? { responseShape: error.responseShape } : {}),
   };
+}
+
+export interface ProviderResponseShape {
+  root: 'object' | 'array' | 'null' | 'other';
+  choices: 'array_empty' | 'array_nonempty' | 'missing_or_other';
+  message: 'object' | 'missing_or_other';
+  content: 'string_empty' | 'string' | 'array' | 'null' | 'missing_or_other';
+  contentLength?: number;
 }
 
 const MAX_CHAT_RESPONSE_CHARACTERS = 32_000;
@@ -129,7 +139,7 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
   }
 
   async complete(system: string, user: string): Promise<ModelAnswer> {
-    const response = await providerFetch(endpoint(this.config.baseUrl, '/chat/completions'), {
+    const request = () => providerFetch(endpoint(this.config.baseUrl, '/chat/completions'), {
       method: 'POST',
       headers: { Authorization: `Bearer ${this.config.apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -139,15 +149,48 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       }),
     }, 'chat', this.config.timeoutMs);
-    const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-    const content = body.choices?.[0]?.message?.content;
-    if (!content || content.length > MAX_CHAT_RESPONSE_CHARACTERS) {
-      throw new ProviderError('invalid_response', 'chat');
-    }
+    const parse = async (response: Response) => {
+      const body = await response.json() as unknown;
+      const root = body && typeof body === 'object' && !Array.isArray(body)
+        ? body as { choices?: unknown }
+        : null;
+      const choices = Array.isArray(root?.choices) ? root.choices : null;
+      const first = choices?.[0];
+      const message = first && typeof first === 'object' && !Array.isArray(first)
+        ? (first as { message?: unknown }).message
+        : null;
+      const messageObject = message && typeof message === 'object' && !Array.isArray(message)
+        ? message as { content?: unknown }
+        : null;
+      const content = messageObject?.content;
+      const shape: ProviderResponseShape = {
+        root: body === null ? 'null' : Array.isArray(body) ? 'array' : typeof body === 'object' ? 'object' : 'other',
+        choices: choices ? (choices.length ? 'array_nonempty' : 'array_empty') : 'missing_or_other',
+        message: messageObject ? 'object' : 'missing_or_other',
+        content: content === null ? 'null'
+          : Array.isArray(content) ? 'array'
+            : typeof content === 'string' ? (content.length ? 'string' : 'string_empty')
+              : 'missing_or_other',
+        ...(typeof content === 'string' ? { contentLength: content.length } : {}),
+      };
+      if (typeof content !== 'string' || !content || content.length > MAX_CHAT_RESPONSE_CHARACTERS) {
+        throw new ProviderError('invalid_response', 'chat', undefined, undefined, undefined, shape);
+      }
+      try {
+        return JSON.parse(content) as ModelAnswer;
+      } catch {
+        throw new ProviderError('invalid_response', 'chat', undefined, undefined, undefined, shape);
+      }
+    };
+
     try {
-      return JSON.parse(content) as ModelAnswer;
-    } catch {
-      throw new ProviderError('invalid_response', 'chat');
+      return await parse(await request());
+    } catch (error) {
+      if (!(error instanceof ProviderError)
+        || error.code !== 'invalid_response'
+        || error.stage !== 'chat'
+        || error.responseShape?.content !== 'null') throw error;
+      return parse(await request());
     }
   }
 }

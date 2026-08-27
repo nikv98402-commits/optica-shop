@@ -2,6 +2,20 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.5.0] - 2026-08-27
+
+### Fixed
+
+- Prevented Ask ViLu from showing completed or late responses in the wrong
+  language after switching between RU and EN.
+- Limited chat-provider retries to the confirmed temporary null-content response
+  and added content-free structural diagnostics for invalid responses.
+
+### Added
+
+- Added contract, unit, and desktop/mobile browser coverage for completed and
+  in-flight Ask ViLu requests across the full RU to EN to RU cycle.
+
 ## [0.13.4.0] - 2026-08-27
 
 ### Fixed
