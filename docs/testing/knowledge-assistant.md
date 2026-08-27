@@ -21,6 +21,8 @@ citation, urgent, and abstention paths use deterministic test doubles.
 - With the flag off, no navigation entry appears and `/assistant` redirects.
 - With the flag on, RU is the default; switching to EN translates all assistant
   controls, empty/error states, preferences, source headings, and disclaimers.
+- Switching RU -> EN -> RU clears the previously shown answer and local history;
+  an in-flight response from the old locale must not appear after the switch.
 - At 320 px there is no horizontal overflow and input, submit, settings,
   sources, feedback, retry, and clear remain reachable.
 - A supported answer has numbered, clickable citations from the registry.
