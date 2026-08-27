@@ -29,8 +29,12 @@ citation, urgent, and abstention paths use deterministic test doubles.
 - An unsupported question abstains instead of answering from model memory.
 - Sudden vision loss or severe pain produces urgent guidance before retrieval.
 - Provider/offline failure keeps the draft and offers retry.
+- A hung retrieval or provider request reaches the bounded timeout state,
+  keeps the draft, offers retry, and cannot render a late answer afterward.
 - Reload preserves local history; clear removes history and preferences.
 - DevTools Network contains no profile, photo, prescription, contact, location,
   or hidden system configuration.
 - Analytics contains no query or answer text, symptoms, free-form preferences,
   user URLs, contact values, or history.
+- Server timing diagnostics contain only stage, status, duration, and remaining
+  budget; they contain no prompt, answer, retrieved text, tokens, keys, or secrets.

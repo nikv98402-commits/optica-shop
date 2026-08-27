@@ -1,10 +1,15 @@
 import type { RetrievedChunk, Retriever } from './contracts.ts';
+import type { OperationBudget } from './deadline.ts';
 
-interface SupabaseRpcClient {
-  rpc(name: string, args: Record<string, unknown>): PromiseLike<{
+interface SupabaseRpcRequest extends PromiseLike<{
     data: Array<Record<string, unknown>> | null;
     error: { message?: string } | null;
-  }>;
+  }> {
+  abortSignal?(signal: AbortSignal): SupabaseRpcRequest;
+}
+
+interface SupabaseRpcClient {
+  rpc(name: string, args: Record<string, unknown>): SupabaseRpcRequest;
 }
 
 export class RetrievalError extends Error {}
@@ -16,12 +21,14 @@ export class SupabaseKnowledgeRetriever implements Retriever {
     private readonly similarityThreshold = 0.58,
   ) {}
 
-  async retrieve(embedding: number[]): Promise<RetrievedChunk[]> {
-    const { data, error } = await this.client.rpc('match_knowledge_chunks', {
+  async retrieve(embedding: number[], budget?: OperationBudget): Promise<RetrievedChunk[]> {
+    let request = this.client.rpc('match_knowledge_chunks', {
       query_embedding: embedding,
       match_count: this.matchCount,
       similarity_threshold: this.similarityThreshold,
     });
+    if (budget && request.abortSignal) request = request.abortSignal(budget.signal);
+    const { data, error } = await request;
     if (error) throw new RetrievalError(error.message || 'retrieval_failed');
     return (data || []).map((row) => ({
       chunkId: String(row.chunk_id),

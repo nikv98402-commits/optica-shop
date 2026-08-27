@@ -2,6 +2,20 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.6.0] - 2026-08-27
+
+### Fixed
+
+- Added one server-side deadline across the complete Ask ViLu pipeline, with
+  bounded retrieval and provider stages that stop work when the budget expires.
+- Prevented retries and citation correction when insufficient request budget
+  remains, and abort the client invocation on timeout to avoid late responses.
+
+### Added
+
+- Added content-free stage timing diagnostics and regression coverage for hung
+  retrieval, provider timeouts, exhausted budgets, retry gating, and cancellation.
+
 ## [0.13.5.0] - 2026-08-27
 
 ### Fixed

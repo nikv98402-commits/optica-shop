@@ -14,18 +14,22 @@ payments, store locator, canonical metadata, or existing knowledge slugs.
    urgent-language classification.
 3. Normal requests consume an atomic Supabase rate-limit bucket keyed by a
    short salted hash; no raw IP address is stored.
-4. Non-urgent queries are embedded with the configured multilingual
+4. One server-owned deadline bounds the complete request. Each rate-limit,
+   embedding, retrieval, chat, correction, and external-source stage receives
+   only its remaining budget and an abort signal.
+5. Non-urgent queries are embedded with the configured multilingual
    1024-dimensional provider.
-5. `match_knowledge_chunks` returns at most eight chunks whose sources remain
+6. `match_knowledge_chunks` returns at most eight chunks whose sources remain
    editorially approved and above the server-owned similarity threshold.
-6. The configured Cloudflare Workers AI chat model receives only policy,
+7. The configured Cloudflare Workers AI chat model receives only policy,
    preferences, recent context, and retrieved chunks with opaque source ids.
-7. Model JSON is treated as untrusted. Every claim must provide a retrieved
+8. Model JSON is treated as untrusted. Every claim must provide a retrieved
    chunk id and an exact supporting quote. The server verifies the quote and
-   derives citations from the chunk. One correction retry is allowed.
-8. Approved link-only sources are returned as clearly separated external
+   derives citations from the chunk. One correction retry is allowed only when
+   enough request budget remains.
+9. Approved link-only sources are returned as clearly separated external
    reading and never enter model context.
-9. The browser renders numbered sources and stores history and preferences in
+10. The browser renders numbered sources and stores history and preferences in
    versioned `localStorage` only.
 
 Approved external corpus releases reuse the same `knowledge_sources` and
@@ -50,7 +54,9 @@ remain unversioned and continue to use their original editorial lifecycle.
 - The indexer creates all embeddings before a transactional RPC replaces live
   chunks, so a provider failure cannot empty a published source.
 - Request/response bodies are never logged. Operational errors contain only a
-  stable category.
+  stable category. Stage timing logs contain only the stage, status, duration,
+  and remaining budget; they never contain prompts, answers, retrieved text,
+  tokens, keys, or secrets.
 - Analytics accepts coarse enums and ids only. Raw query, answer, health text,
   contact data, prescriptions, images, chat history, and user URLs are dropped.
 
@@ -59,6 +65,8 @@ remain unversioned and continue to use their original editorial lifecycle.
 - Missing provider configuration or provider outage: `502`, local draft kept,
   retry shown.
 - Retrieval/database outage: `503`, local draft kept, retry shown.
+- Request deadline exhausted: `504`, active provider/database work is aborted,
+  local draft kept, retry shown, and no late response is rendered.
 - No supporting chunk: HTTP 200 abstention without model generation.
 - Invalid model JSON/citation: one correction, then abstention.
 - Urgent red flag: deterministic urgent guidance, even if providers are down.

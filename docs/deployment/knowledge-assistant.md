@@ -30,6 +30,21 @@ RATE_LIMIT_SALT
 The indexer additionally needs `SUPABASE_URL` and
 `SUPABASE_SERVICE_ROLE_KEY` in its controlled server environment.
 
+## Deadline and observability
+
+The Edge Function owns one 18-second deadline for the complete Ask ViLu
+pipeline. Rate limiting, embedding, retrieval, chat, citation correction, and
+external-source loading use bounded slices of that shared budget and propagate
+abort signals to supported provider and Supabase requests. The browser also
+aborts its invocation when its client timeout expires. These limits are
+code-owned safety boundaries, not deployment secrets or environment settings.
+
+An exhausted server deadline returns HTTP `504` with `request_timeout`. Monitor
+`knowledge_assistant_stage_timing` for the stage, status, duration, and remaining
+budget. This event is intentionally structural: do not add prompts, answers,
+retrieved text, tokens, keys, or secrets to it. A `504` should leave the user's
+draft available for retry and must not produce a late answer in the browser.
+
 ## Free Cloudflare Workers AI configuration
 
 Cloudflare Workers AI exposes OpenAI-compatible chat and embedding endpoints,
