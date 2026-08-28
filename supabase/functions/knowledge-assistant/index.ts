@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.50.0';
 import { answerKnowledgeQuestion } from '../_shared/knowledge-assistant/orchestrator.ts';
 import {
   PipelineDeadline,
@@ -64,7 +64,7 @@ async function privacyKey(request: Request) {
 }
 
 async function isRateLimited(
-  client: ReturnType<typeof createClient>,
+  client: SupabaseClient,
   request: Request,
   signal: AbortSignal,
 ) {
@@ -142,7 +142,7 @@ serve(async (request) => {
       ? await deadline.run(
         'external_sources',
         2_000,
-        ({ signal }) => client
+        async ({ signal }) => await client
           .from('knowledge_sources')
           .select('id,title,url,publisher')
           .eq('review_status', 'approved')
