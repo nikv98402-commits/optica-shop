@@ -2,6 +2,18 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.6.1] - 2026-08-28
+
+### Fixed
+
+- Restored reliable startup of the Ask ViLu Edge Function by loading its pinned
+  Supabase client through the native Deno npm resolver.
+
+### Added
+
+- Added a frozen function-specific dependency graph and a regression check that
+  prevents the incompatible `esm.sh/ws` import chain from returning.
+
 ## [0.13.6.0] - 2026-08-27
 
 ### Fixed

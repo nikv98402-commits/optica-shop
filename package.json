@@ -1,7 +1,7 @@
 {
   "name": "visionlux-optica-shop",
   "private": true,
-  "version": "0.13.6.0",
+  "version": "0.13.6.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,6 +22,7 @@
     "knowledge:preview:check": "node scripts/check-knowledge-assistant-preview.mjs",
     "knowledge:preview:check:live": "node scripts/check-knowledge-assistant-preview.mjs --live",
     "test:knowledge-boundary": "node scripts/check-knowledge-assistant-boundary.mjs",
+    "test:knowledge-edge-import": "node scripts/check-knowledge-assistant-edge-import.mjs",
     "test:e2e": "playwright test",
     "test:pages-routes": "playwright test --config playwright.pages.config.ts",
     "test:performance": "npm run build && node scripts/check-performance-budgets.mjs",
