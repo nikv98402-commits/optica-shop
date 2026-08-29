@@ -2,6 +2,22 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.11.0] - 2026-08-29
+
+### Fixed
+
+- Kept Ask ViLu history in the language in which it was created, preventing
+  saved Russian turns from appearing in English and saved English turns from
+  appearing in Russian after a direct load or reload.
+- Cleared incompatible legacy history fail-closed while preserving valid shared
+  assistant preferences and continuing to discard late responses after a
+  language switch.
+
+### Added
+
+- Added desktop and 390×844 mobile regressions for cross-language reloads and
+  in-flight RU/EN switching.
+
 ## [0.13.10.0] - 2026-08-29
 
 ### Fixed
