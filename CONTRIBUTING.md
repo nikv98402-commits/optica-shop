@@ -76,6 +76,7 @@ or write to production Supabase unless the task explicitly authorizes it.
 - The Profile UI may request deletion and poll status only. It must not invoke deletion processing directly or depend on an open browser.
 - `process-data-deletion` is a server-only worker authenticated with `DATA_DELETION_DISPATCH_SECRET`. Its Supabase gateway JWT check is disabled per-function so the handler can validate that non-JWT scheduler secret. Preserve the handler check, internal service-role client, storage-first deletion order, observable statuses (`requested`, `processing`, `completed`, `failed`), and recovery of expired `processing` leases.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` through `VITE_*`, browser code, logs, fixtures, or screenshots.
+- Keep Ask ViLu `ModelAnswer` limits synchronized across `contracts.ts`, the provider JSON Schema, runtime validation, and the system instruction: at most two claims, exactly one evidence item per claim, 72-character claim text, 96-character quotes, and 48-character chunk IDs. Never repair or accept truncated JSON; retry only an explicit `content=null` response.
 - Employers, other employees, and members of another organization must never receive an employee's screening answers, result, or referral.
 - Do not send PII, prescription values, complaints, or uploaded-photo details to analytics.
 - User-facing copy must not promise diagnosis, exact PD measurement, or guaranteed fit.

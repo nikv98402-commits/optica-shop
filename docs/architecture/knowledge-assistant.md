@@ -23,10 +23,12 @@ payments, store locator, canonical metadata, or existing knowledge slugs.
    editorially approved and above the server-owned similarity threshold.
 7. The configured Cloudflare Workers AI chat model receives only policy,
    preferences, recent context, and retrieved chunks with opaque source ids.
-8. Model JSON is treated as untrusted. Every claim must provide a retrieved
-   chunk id and an exact supporting quote. The server verifies the quote and
-   derives citations from the chunk. One correction retry is allowed only when
-   enough request budget remains.
+8. Model JSON is treated as untrusted. The shared schema, runtime validator,
+   and system instruction limit each answer to at most two concise claims with
+   exactly one evidence item per claim. Claim text is capped at 72 characters,
+   quotes at 96 characters, and chunk ids at 48 characters so the maximum RU/EN
+   payload fits below the 1,024-token provider output budget. The server verifies
+   each exact quote and derives citations from the chunk.
 9. Approved link-only sources are returned as clearly separated external
    reading and never enter model context.
 10. The browser renders numbered sources and stores history and preferences in
@@ -68,7 +70,10 @@ remain unversioned and continue to use their original editorial lifecycle.
 - Request deadline exhausted: `504`, active provider/database work is aborted,
   local draft kept, retry shown, and no late response is rendered.
 - No supporting chunk: HTTP 200 abstention without model generation.
-- Invalid model JSON/citation: one correction, then abstention.
+- Truncated or malformed model JSON: `502` fail-closed; retry only when the
+  provider explicitly returns `content=null` and enough budget remains.
+- Invalid citation: one bounded correction when enough budget remains, then
+  abstention.
 - Urgent red flag: deterministic urgent guidance, even if providers are down.
 - Rollback: set `VITE_FEATURE_KNOWLEDGE_ASSISTANT=false`; isolated database
   objects may remain dormant.

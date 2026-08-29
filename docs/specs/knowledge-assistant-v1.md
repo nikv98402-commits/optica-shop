@@ -12,8 +12,8 @@ profile data.
 - Route: `/assistant`, visible only with `VITE_FEATURE_KNOWLEDGE_ASSISTANT=true`.
 - Input: a question, locale, at most six bounded recent turns, and allowlisted
   answer preferences.
-- Output: a concise answer, numbered citations, related ViLu pages, confidence,
-  and a safety state.
+- Output: at most two concise claims with exactly one supporting citation each,
+  related ViLu pages, confidence, and a safety state.
 - History and preferences remain in versioned browser `localStorage` and can be
   cleared by the user.
 - Link-only sources are displayed separately as external reading. They are not
@@ -25,8 +25,9 @@ profile data.
   database or model provider.
 - Diagnosis, prescription/image interpretation, and treatment requests are
   refused deterministically.
-- Every generated claim must include one or more retrieved chunk IDs and an
-  exact supporting quote from each chunk.
+- Every generated claim must include exactly one retrieved chunk ID and one
+  exact supporting quote. Shared schema, runtime, and prompt limits keep the
+  maximum RU/EN answer inside the provider's 1,024-token output budget.
 - The server validates that every quote is present in its referenced chunk and
   derives public citations from those chunks. A source ID alone is not proof.
 - Invalid evidence gets one correction attempt; a second failure returns an
@@ -71,7 +72,8 @@ thresholds, and source text remain server-side.
 - Invalid/oversized request: `400`/`413`.
 - Rate exceeded: `429`.
 - Retrieval or rate-limit storage unavailable: `503` and no model call.
-- Model provider unavailable: `502`.
+- Model provider unavailable, malformed JSON, or truncated JSON: fail-closed
+  `502`; retry only for an explicit temporary `content=null` response.
 - No supporting source or invalid corrected evidence: HTTP 200 abstention.
 - Frontend feature off: navigation hidden and direct route redirected.
 
