@@ -21,9 +21,8 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
       preferences: { answerLength: 'short', experience: 'beginner', interests: [] },
     }, []);
 
-    expect(system).toContain('Return exactly one JSON object and nothing else');
-    expect(system).toContain('Do not wrap the JSON in Markdown or code fences');
-    expect(system).toContain('do not add prose before or after it');
+    expect(system).toContain('Return only one JSON object matching response_format');
+    expect(system).toContain('Do not add Markdown or prose');
   });
 
   it('keeps provider messages out of diagnostics safe for logs', () => {
@@ -169,15 +168,15 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
               type: 'object',
               additionalProperties: false,
               properties: {
-                text: { type: 'string', minLength: 1 },
+                text: { type: 'string' },
                 evidence: {
                   type: 'array',
                   items: {
                     type: 'object',
                     additionalProperties: false,
                     properties: {
-                      chunkId: { type: 'string', minLength: 1 },
-                      quote: { type: 'string', minLength: 1 },
+                      chunkId: { type: 'string' },
+                      quote: { type: 'string' },
                     },
                     required: ['chunkId', 'quote'],
                   },
@@ -190,6 +189,12 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
         required: ['claims'],
       },
     });
+    const requestBody = JSON.parse((fetchMock.mock.calls[0]?.[1] as RequestInit).body as string) as {
+      temperature?: number;
+      max_tokens?: number;
+    };
+    expect(requestBody.temperature).toBe(0);
+    expect(requestBody.max_tokens).toBe(1024);
   });
 
   it.each([
@@ -209,7 +214,7 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     await expect(provider.complete('system', 'user')).resolves.toEqual(answer);
   });
 
-  it('regresses the Russian frame-selection query with the strict JSON Schema request', async () => {
+  it('regresses the previously unstable Russian visit-preparation query with the strict JSON Schema request', async () => {
     const answer = {
       claims: [{
         text: 'Оправу подбирают с учётом посадки.',
@@ -224,7 +229,7 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
       baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
     });
 
-    await expect(provider.complete('system', 'Как подобрать оправу по лицу?')).resolves.toEqual(answer);
+    await expect(provider.complete('system', 'Как подготовиться к выбору очков?')).resolves.toEqual(answer);
     const request = JSON.parse((fetchMock.mock.calls[0]?.[1] as RequestInit).body as string) as {
       response_format?: { type?: string };
     };
@@ -279,6 +284,75 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
       stage: 'chat', reason: 'invalid_response', validationFailure,
     });
     expect(JSON.stringify(diagnostic)).not.toContain(content);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('classifies truncated JSON at the output-token limit without retrying or logging content', async () => {
+    const truncated = '{"claims":[{"text":"Оборванный ответ"';
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({
+      choices: [{ finish_reason: 'length', message: { content: truncated } }],
+      usage: { prompt_tokens: 321, completion_tokens: 1024, total_tokens: 1345 },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    const error = await provider.complete('system', 'user').catch((caught) => caught as ProviderError);
+    expect(providerErrorDiagnostic(error)).toEqual({
+      stage: 'chat', reason: 'invalid_response', status: undefined, providerCode: undefined,
+      responseShape: {
+        root: 'object', choices: 'array_nonempty', message: 'object', content: 'string',
+        contentLength: truncated.length,
+        finishReason: 'length',
+        maxTokensReached: true,
+        usage: { promptTokens: 321, completionTokens: 1024, totalTokens: 1345 },
+      },
+      validationFailure: 'json_syntax',
+    });
+    expect(JSON.stringify(providerErrorDiagnostic(error))).not.toContain(truncated);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('classifies json_syntax with finish_reason=stop separately from token exhaustion', async () => {
+    const invalid = 'not-json';
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({
+      choices: [{ finish_reason: 'stop', message: { content: invalid } }],
+      usage: { prompt_tokens: 100, completion_tokens: 12, total_tokens: 112 },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    const error = await provider.complete('system', 'user').catch((caught) => caught as ProviderError);
+    expect(providerErrorDiagnostic(error)).toMatchObject({
+      responseShape: {
+        finishReason: 'stop',
+        maxTokensReached: false,
+        usage: { promptTokens: 100, completionTokens: 12, totalTokens: 112 },
+      },
+      validationFailure: 'json_syntax',
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('reduces unknown provider metadata to content-free structural telemetry', async () => {
+    const secretMetadata = 'provider-internal-secret';
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({
+      choices: [{ finish_reason: secretMetadata, message: { content: 'not-json' } }],
+      usage: { prompt_tokens: 'private', completion_tokens: -1, total_tokens: 1 },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    const error = await provider.complete('system', 'user').catch((caught) => caught as ProviderError);
+    const diagnostic = providerErrorDiagnostic(error);
+    expect(diagnostic.responseShape).toMatchObject({ finishReason: 'other', maxTokensReached: false });
+    expect(diagnostic.responseShape).not.toHaveProperty('usage');
+    expect(JSON.stringify(diagnostic)).not.toContain(secretMetadata);
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
