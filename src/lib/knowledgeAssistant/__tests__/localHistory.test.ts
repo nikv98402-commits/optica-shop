@@ -9,18 +9,41 @@ import {
 
 describe('Knowledge Assistant local state', () => {
   it('falls back safely from malformed or old state', () => {
-    localStorage.setItem('vilu_knowledge_assistant_v1', JSON.stringify({ version: 0, turns: ['unsafe'] }));
-    expect(readAssistantLocalState()).toEqual({ version: 1, turns: [], preferences: defaultAssistantPreferences });
+    localStorage.setItem('vilu_knowledge_assistant_v2', JSON.stringify({ version: 0, turns: ['unsafe'] }));
+    expect(readAssistantLocalState('ru')).toEqual({ version: 2, locale: 'ru', turns: [], preferences: defaultAssistantPreferences });
+  });
+
+  it('fails closed for legacy turns while preserving valid shared preferences', () => {
+    const preferences = { ...defaultAssistantPreferences, experience: 'familiar' as const };
+    localStorage.setItem('vilu_knowledge_assistant_v1', JSON.stringify({
+      version: 1,
+      turns: [{ id: 'legacy', role: 'user', content: 'Старый вопрос', createdAt: new Date().toISOString() }],
+      preferences,
+    }));
+
+    expect(readAssistantLocalState('en')).toEqual({ version: 2, locale: 'en', turns: [], preferences });
+  });
+
+  it('drops turns from another locale while preserving preferences', () => {
+    const preferences = { ...defaultAssistantPreferences, answerLength: 'detailed' as const };
+    localStorage.setItem('vilu_knowledge_assistant_v2', JSON.stringify({
+      version: 2,
+      locale: 'ru',
+      turns: [{ id: 'ru', role: 'user', content: 'Русский вопрос', createdAt: new Date().toISOString() }],
+      preferences,
+    }));
+
+    expect(readAssistantLocalState('en')).toEqual({ version: 2, locale: 'en', turns: [], preferences });
   });
 
   it('stores at most 20 turns and clears all assistant state', () => {
     const turns = Array.from({ length: 25 }, (_, index) => ({
       id: String(index), role: 'user' as const, content: `turn-${index}`, createdAt: new Date().toISOString(),
     }));
-    saveAssistantLocalState({ version: 1, turns, preferences: defaultAssistantPreferences });
-    expect(readAssistantLocalState().turns).toHaveLength(20);
+    saveAssistantLocalState({ version: 2, locale: 'ru', turns, preferences: defaultAssistantPreferences });
+    expect(readAssistantLocalState('ru').turns).toHaveLength(20);
     clearAssistantLocalState();
-    expect(readAssistantLocalState().turns).toEqual([]);
+    expect(readAssistantLocalState('ru').turns).toEqual([]);
   });
 
   it('bounds server context to six turns and 6000 characters', () => {

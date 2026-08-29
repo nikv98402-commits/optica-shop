@@ -43,7 +43,10 @@ async function switchAssistantLanguage(page: Page, target: 'en' | 'ru') {
   await page.getByRole('button', { name: target === 'en' ? 'Close menu' : 'Закрыть меню' }).click();
 }
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
+  if (testInfo.project.name === 'mobile') {
+    await page.setViewportSize({ width: 390, height: 844 });
+  }
   let transientAttempts = 0;
   await page.route('**/functions/v1/knowledge-assistant', async (route) => {
     const request = route.request().postDataJSON() as { query?: string; locale?: string } | null;
@@ -110,6 +113,42 @@ test('English preference translates the complete assistant shell', async ({ page
   await page.getByTestId('assistant-form').getByRole('button', { name: 'Ask', exact: true }).click();
   await expect(page.getByText('52 is the lens width. [1]')).toBeVisible();
   await expect(page.getByRole('button', { name: /How to choose a frame size/i })).toBeVisible();
+});
+
+test('direct EN load and reload discard stored RU turns', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('vilu_language', 'en');
+    localStorage.setItem('vilu_knowledge_assistant_v2', JSON.stringify({
+      version: 2,
+      locale: 'ru',
+      preferences: { experience: 'familiar', interests: [], answerLength: 'detailed' },
+      turns: [{ id: 'ru-turn', role: 'user', content: 'Сохранённый русский вопрос', createdAt: new Date().toISOString() }],
+    }));
+  });
+  await page.goto('/assistant');
+  await expect(page.getByRole('heading', { name: 'Ask ViLu about vision and choosing frames' })).toBeVisible();
+  await expect(page.getByText('Сохранённый русский вопрос')).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByText('Сохранённый русский вопрос')).toHaveCount(0);
+  await expect(page.getByText('Choose a suggestion or ask your own question.')).toBeVisible();
+});
+
+test('direct RU load and reload discard stored EN turns', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('vilu_language', 'ru');
+    localStorage.setItem('vilu_knowledge_assistant_v2', JSON.stringify({
+      version: 2,
+      locale: 'en',
+      preferences: { experience: 'familiar', interests: [], answerLength: 'detailed' },
+      turns: [{ id: 'en-turn', role: 'user', content: 'Stored English question', createdAt: new Date().toISOString() }],
+    }));
+  });
+  await page.goto('/assistant');
+  await expect(page.getByRole('heading', { name: 'Спросите ViLu о зрении и выборе оправы' })).toBeVisible();
+  await expect(page.getByText('Stored English question')).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByText('Stored English question')).toHaveCount(0);
+  await expect(page.getByText('Выберите подсказку или задайте свой вопрос.')).toBeVisible();
 });
 
 test('previously unstable English mobile request completes with the bounded answer contract', async ({ page }) => {

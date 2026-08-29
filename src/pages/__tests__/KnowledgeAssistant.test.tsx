@@ -47,15 +47,35 @@ describe('KnowledgeAssistant', () => {
   });
 
   it('clears local history and settings from the UI', async () => {
-    localStorage.setItem('vilu_knowledge_assistant_v1', JSON.stringify({
-      version: 1, preferences: { experience: 'familiar', interests: [], answerLength: 'detailed' },
+    localStorage.setItem('vilu_knowledge_assistant_v2', JSON.stringify({
+      version: 2, locale: 'ru', preferences: { experience: 'familiar', interests: [], answerLength: 'detailed' },
       turns: [{ id: 'turn', role: 'user', content: 'Stored question', createdAt: new Date().toISOString() }],
     }));
     const user = userEvent.setup();
     render(<LanguageProvider><KnowledgeAssistant onNavigate={vi.fn()} /></LanguageProvider>);
     await user.click(screen.getByRole('button', { name: /Очистить историю/i }));
     expect(screen.queryByText('Stored question')).not.toBeInTheDocument();
-    expect(localStorage.getItem('vilu_knowledge_assistant_v1')).toContain('"turns":[]');
+    expect(localStorage.getItem('vilu_knowledge_assistant_v2')).toContain('"turns":[]');
+  });
+
+  it.each([
+    ['en', 'ru', 'Русский вопрос'],
+    ['ru', 'en', 'English question'],
+  ] as const)('does not render %s UI with stored %s turns on direct load', (activeLocale, storedLocale, storedQuestion) => {
+    localStorage.setItem('vilu_language', activeLocale);
+    localStorage.setItem('vilu_knowledge_assistant_v2', JSON.stringify({
+      version: 2,
+      locale: storedLocale,
+      preferences: { experience: 'familiar', interests: [], answerLength: 'detailed' },
+      turns: [{ id: 'turn', role: 'user', content: storedQuestion, createdAt: new Date().toISOString() }],
+    }));
+
+    render(<LanguageProvider><KnowledgeAssistant onNavigate={vi.fn()} /></LanguageProvider>);
+
+    expect(screen.queryByText(storedQuestion)).not.toBeInTheDocument();
+    expect(screen.getByText(activeLocale === 'en'
+      ? 'Choose a suggestion or ask your own question.'
+      : 'Выберите подсказку или задайте свой вопрос.')).toBeVisible();
   });
 
   it('clears a completed response across RU to EN to RU', async () => {
