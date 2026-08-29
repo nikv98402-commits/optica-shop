@@ -8,7 +8,8 @@ export function buildGroundedPrompt(request: AssistantRequest, chunks: Retrieved
     'Do not claim certainty about health, fit, PD, or comfort. Encourage an in-person specialist check when appropriate.',
     `Answer in ${request.locale === 'ru' ? 'Russian' : 'English'}.`,
     `Answer length: ${request.preferences.answerLength}. Experience: ${request.preferences.experience}.`,
-    'Return strict JSON: {"claims":[{"text":"...","evidence":[{"chunkId":"uuid","quote":"exact source quote"}]}]}.',
+    'Return exactly one JSON object and nothing else: {"claims":[{"text":"...","evidence":[{"chunkId":"uuid","quote":"exact source quote"}]}]}.',
+    'Do not wrap the JSON in Markdown or code fences and do not add prose before or after it.',
     'Every substantive claim must include at least one exact quote copied from a provided chunk.',
     'The quote must support the claim. Never invent, translate, or paraphrase evidence quotes.',
   ].join('\n');

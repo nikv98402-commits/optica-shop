@@ -5,6 +5,7 @@ import {
   ProviderError,
   providerErrorDiagnostic,
 } from './providers.ts';
+import { buildGroundedPrompt } from './prompt.ts';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -12,6 +13,19 @@ afterEach(() => {
 });
 
 describe('OpenAICompatibleEmbeddingProvider', () => {
+  it('requires exactly one unwrapped JSON object in the grounded prompt', () => {
+    const { system } = buildGroundedPrompt({
+      locale: 'en',
+      query: 'How does this work?',
+      recentTurns: [],
+      preferences: { answerLength: 'short', experience: 'beginner', interests: [] },
+    }, []);
+
+    expect(system).toContain('Return exactly one JSON object and nothing else');
+    expect(system).toContain('Do not wrap the JSON in Markdown or code fences');
+    expect(system).toContain('do not add prose before or after it');
+  });
+
   it('keeps provider messages out of diagnostics safe for logs', () => {
     const diagnostic = providerErrorDiagnostic(
       new ProviderError('unavailable', 'chat', 401, 10000, 'account secret and provider details'),
@@ -105,7 +119,7 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     await expect(provider.embed('test')).rejects.toMatchObject({ code: 'timeout', stage: 'embeddings' });
   });
 
-  it('validates chat success, malformed JSON, and oversized content', async () => {
+  it('accepts a valid JSON chat response and rejects malformed JSON and oversized content', async () => {
     const provider = new OpenAICompatibleChatProvider({
       baseUrl: 'https://provider.example/v1',
       apiKey: 'test-token',
@@ -121,6 +135,90 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     await expect(provider.complete('system', 'user')).rejects.toMatchObject({ code: 'invalid_response', stage: 'chat' });
     await expect(provider.complete('system', 'user')).rejects.toMatchObject({ code: 'invalid_response', stage: 'chat' });
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('accepts the confirmed provider envelope with JSON in a complete markdown fence', async () => {
+    const answer = {
+      claims: [{
+        text: 'A supported claim.',
+        evidence: [{ chunkId: 'chunk-1', quote: 'An exact source quote.' }],
+      }],
+    };
+    const content = `\`\`\`json\n${JSON.stringify(answer, null, 2)}\n\`\`\``;
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({
+      choices: [{ message: { role: 'assistant', content } }],
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    await expect(provider.complete('system', 'user')).resolves.toEqual(answer);
+    const request = JSON.parse((fetchMock.mock.calls[0]?.[1] as RequestInit).body as string) as {
+      response_format?: unknown;
+    };
+    expect(request.response_format).toEqual({ type: 'json_object' });
+  });
+
+  it('accepts a complete unlabelled markdown fence containing the strict contract', async () => {
+    const content = '```\n{"claims":[]}\n```';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      Response.json({ choices: [{ message: { content } }] }),
+    ));
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    await expect(provider.complete('system', 'user')).resolves.toEqual({ claims: [] });
+  });
+
+  it.each([
+    ['arbitrary text', 'The result is {"claims":[]}'],
+    ['prose around a fence', 'Result:\n```json\n{"claims":[]}\n```'],
+    ['malformed fenced JSON', '```json\n{"claims":\n```'],
+    ['a JSON value with the wrong contract', '{"claims":"not-an-array"}'],
+  ])('rejects %s without retrying', async (_label, content) => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ choices: [{ message: { content } }] }));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    await expect(provider.complete('system', 'user')).rejects.toMatchObject({
+      code: 'invalid_response', stage: 'chat',
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['null root', 'null'],
+    ['array root', '[]'],
+    ['missing claims', '{}'],
+    ['null claim', '{"claims":[null]}'],
+    ['array claim', '{"claims":[[]]}'],
+    ['empty claim text', '{"claims":[{"text":"","evidence":[]}]}'],
+    ['non-string claim text', '{"claims":[{"text":1,"evidence":[]}]}'],
+    ['missing evidence', '{"claims":[{"text":"claim"}]}'],
+    ['non-array evidence', '{"claims":[{"text":"claim","evidence":{}}]}'],
+    ['null evidence item', '{"claims":[{"text":"claim","evidence":[null]}]}'],
+    ['array evidence item', '{"claims":[{"text":"claim","evidence":[[]]}]}'],
+    ['empty chunk id', '{"claims":[{"text":"claim","evidence":[{"chunkId":"","quote":"quote"}]}]}'],
+    ['non-string chunk id', '{"claims":[{"text":"claim","evidence":[{"chunkId":1,"quote":"quote"}]}]}'],
+    ['empty quote', '{"claims":[{"text":"claim","evidence":[{"chunkId":"chunk","quote":""}]}]}'],
+    ['non-string quote', '{"claims":[{"text":"claim","evidence":[{"chunkId":"chunk","quote":1}]}]}'],
+  ])('rejects malformed contract shape: %s', async (_label, content) => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({ choices: [{ message: { content } }] }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    await expect(provider.complete('system', 'user')).rejects.toMatchObject({
+      code: 'invalid_response', stage: 'chat',
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it.each([

@@ -2,6 +2,20 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.7.0] - 2026-08-29
+
+### Fixed
+
+- Made Ask ViLu accept the provider's confirmed JSON response envelope while
+  rejecting arbitrary text, malformed data, incomplete claims, and oversized
+  responses without weakening citation validation.
+- Kept chat retries limited to the confirmed temporary null-content response.
+
+### Added
+
+- Added regression coverage for strict prompts, raw and fenced JSON, malformed
+  claims and evidence, oversized responses, and retry boundaries.
+
 ## [0.13.6.1] - 2026-08-28
 
 ### Fixed
