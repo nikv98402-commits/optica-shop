@@ -1,8 +1,8 @@
 # Ask ViLu intermittent HTTP 502 after PR #126
 
-Date: 2026-08-29  
-Production project: `ygdjkeqdzcibgbuasjak`  
-Edge Function: `knowledge-assistant`, version 41, `ACTIVE`  
+Date: 2026-08-29
+Production project: `ygdjkeqdzcibgbuasjak`
+Edge Function: `knowledge-assistant`, version 41, `ACTIVE`
 Source: `origin/main` at `31a9d621b39e81b5f4f3a0fac7f64b4d3430a5e8`
 
 ## Scope and safety

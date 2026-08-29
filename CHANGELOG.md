@@ -2,6 +2,22 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.10.0] - 2026-08-29
+
+### Fixed
+
+- Bounded Ask ViLu answers to two concise claims with one exact citation each so
+  maximum RU/EN responses fit within the provider output budget instead of being
+  truncated into intermittent HTTP 502 errors.
+- Kept model responses fail-closed when JSON is incomplete or exceeds the shared
+  contract limits, while preserving exact citation validation and retrying only
+  temporary null-content responses.
+
+### Added
+
+- Added maximum-payload contract coverage and a 390×844 English mobile regression
+  for the previously unstable Ask ViLu request.
+
 ## [0.13.9.0] - 2026-08-29
 
 ### Fixed
