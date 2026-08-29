@@ -34,9 +34,17 @@ export interface ProviderResponseShape {
   message: 'object' | 'missing_or_other';
   content: 'string_empty' | 'string' | 'array' | 'null' | 'missing_or_other';
   contentLength?: number;
+  finishReason?: 'stop' | 'length' | 'content_filter' | 'tool_calls' | 'other';
+  maxTokensReached?: boolean;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 const MAX_CHAT_RESPONSE_CHARACTERS = 32_000;
+const MAX_CHAT_OUTPUT_TOKENS = 1_024;
 const MINIMUM_RETRY_BUDGET_MS = 1_000;
 const COMPLETE_JSON_FENCE = /^```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```$/i;
 const MODEL_ANSWER_JSON_SCHEMA = {
@@ -49,15 +57,15 @@ const MODEL_ANSWER_JSON_SCHEMA = {
         type: 'object',
         additionalProperties: false,
         properties: {
-          text: { type: 'string', minLength: 1 },
+          text: { type: 'string' },
           evidence: {
             type: 'array',
             items: {
               type: 'object',
               additionalProperties: false,
               properties: {
-                chunkId: { type: 'string', minLength: 1 },
-                quote: { type: 'string', minLength: 1 },
+                chunkId: { type: 'string' },
+                quote: { type: 'string' },
               },
               required: ['chunkId', 'quote'],
             },
@@ -133,6 +141,30 @@ function validEmbedding(value: unknown): value is number[] {
   return Array.isArray(value)
     && value.length === 1024
     && value.every((item) => typeof item === 'number' && Number.isFinite(item));
+}
+
+function safeFinishReason(value: unknown): ProviderResponseShape['finishReason'] | undefined {
+  if (typeof value !== 'string') return undefined;
+  if (value === 'stop' || value === 'length' || value === 'content_filter' || value === 'tool_calls') {
+    return value;
+  }
+  return 'other';
+}
+
+function safeUsage(value: unknown): ProviderResponseShape['usage'] | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const usage = value as Record<string, unknown>;
+  const promptTokens = usage.prompt_tokens;
+  const completionTokens = usage.completion_tokens;
+  const totalTokens = usage.total_tokens;
+  if (![promptTokens, completionTokens, totalTokens].every(
+    (tokens) => typeof tokens === 'number' && Number.isSafeInteger(tokens) && tokens >= 0,
+  )) return undefined;
+  return {
+    promptTokens: promptTokens as number,
+    completionTokens: completionTokens as number,
+    totalTokens: totalTokens as number,
+  };
 }
 
 function hasExactKeys(value: object, expected: string[]) {
@@ -233,7 +265,8 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
       headers: { Authorization: `Bearer ${this.config.apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: this.config.model,
-        temperature: 0.1,
+        temperature: 0,
+        max_tokens: MAX_CHAT_OUTPUT_TOKENS,
         response_format: {
           type: 'json_schema',
           json_schema: MODEL_ANSWER_JSON_SCHEMA,
@@ -244,10 +277,13 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
     const parse = async (response: Response) => {
       const body = await response.json() as unknown;
       const root = body && typeof body === 'object' && !Array.isArray(body)
-        ? body as { choices?: unknown }
+        ? body as { choices?: unknown; usage?: unknown }
         : null;
       const choices = Array.isArray(root?.choices) ? root.choices : null;
       const first = choices?.[0];
+      const finishReason = first && typeof first === 'object' && !Array.isArray(first)
+        ? safeFinishReason((first as { finish_reason?: unknown }).finish_reason)
+        : undefined;
       const message = first && typeof first === 'object' && !Array.isArray(first)
         ? (first as { message?: unknown }).message
         : null;
@@ -255,6 +291,7 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
         ? message as { content?: unknown }
         : null;
       const content = messageObject?.content;
+      const usage = safeUsage(root?.usage);
       const shape: ProviderResponseShape = {
         root: body === null ? 'null' : Array.isArray(body) ? 'array' : typeof body === 'object' ? 'object' : 'other',
         choices: choices ? (choices.length ? 'array_nonempty' : 'array_empty') : 'missing_or_other',
@@ -264,6 +301,12 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
             : typeof content === 'string' ? (content.length ? 'string' : 'string_empty')
               : 'missing_or_other',
         ...(typeof content === 'string' ? { contentLength: content.length } : {}),
+        ...(finishReason ? { finishReason } : {}),
+        ...(finishReason || usage ? {
+          maxTokensReached: finishReason === 'length'
+            || (usage?.completionTokens ?? -1) >= MAX_CHAT_OUTPUT_TOKENS,
+        } : {}),
+        ...(usage ? { usage } : {}),
       };
       if (typeof content !== 'string' || !content || content.length > MAX_CHAT_RESPONSE_CHARACTERS) {
         throw new ProviderError('invalid_response', 'chat', undefined, undefined, undefined, shape);

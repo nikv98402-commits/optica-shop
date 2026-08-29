@@ -2,6 +2,22 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.9.0] - 2026-08-29
+
+### Fixed
+
+- Made Ask ViLu generate deterministic grounded JSON with enough output budget to
+  avoid intermittent truncated responses while preserving fail-closed validation,
+  exact citation checks, and retries only for temporary null content.
+- Added privacy-safe provider diagnostics for finish reason, token usage, and
+  output-limit exhaustion without recording questions or response content.
+
+### Added
+
+- Added RU/EN regression coverage for the previously unstable Russian question,
+  truncated JSON at the token limit, ordinary syntax failures, and sanitized
+  provider metadata.
+
 ## [0.13.8.0] - 2026-08-29
 
 ### Fixed
