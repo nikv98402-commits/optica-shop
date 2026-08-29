@@ -157,7 +157,78 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     const request = JSON.parse((fetchMock.mock.calls[0]?.[1] as RequestInit).body as string) as {
       response_format?: unknown;
     };
-    expect(request.response_format).toEqual({ type: 'json_object' });
+    expect(request.response_format).toEqual({
+      type: 'json_schema',
+      json_schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          claims: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                text: { type: 'string', minLength: 1 },
+                evidence: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: false,
+                    properties: {
+                      chunkId: { type: 'string', minLength: 1 },
+                      quote: { type: 'string', minLength: 1 },
+                    },
+                    required: ['chunkId', 'quote'],
+                  },
+                },
+              },
+              required: ['text', 'evidence'],
+            },
+          },
+        },
+        required: ['claims'],
+      },
+    });
+  });
+
+  it.each([
+    ['ru', 'Подбор оправы опирается на точные измерения.', 'Точные измерения помогают выбрать оправу.'],
+    ['en', 'Frame selection uses precise measurements.', 'Precise measurements help select a frame.'],
+  ])('accepts a strict %s ModelAnswer without changing Unicode text', async (_locale, text, quote) => {
+    const answer = {
+      claims: [{ text, evidence: [{ chunkId: 'chunk-1', quote }] }],
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      Response.json({ choices: [{ message: { content: JSON.stringify(answer) } }] }),
+    ));
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    await expect(provider.complete('system', 'user')).resolves.toEqual(answer);
+  });
+
+  it('regresses the Russian frame-selection query with the strict JSON Schema request', async () => {
+    const answer = {
+      claims: [{
+        text: 'Оправу подбирают с учётом посадки.',
+        evidence: [{ chunkId: 'ru-frame-fit', quote: 'Посадку проверяют по ключевым точкам.' }],
+      }],
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({ choices: [{ message: { content: JSON.stringify(answer) } }] }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    await expect(provider.complete('system', 'Как подобрать оправу по лицу?')).resolves.toEqual(answer);
+    const request = JSON.parse((fetchMock.mock.calls[0]?.[1] as RequestInit).body as string) as {
+      response_format?: { type?: string };
+    };
+    expect(request.response_format?.type).toBe('json_schema');
   });
 
   it('accepts a complete unlabelled markdown fence containing the strict contract', async () => {
@@ -191,6 +262,27 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
   });
 
   it.each([
+    ['json_syntax', 'not-json'],
+    ['contract_shape', '{"claims":"not-an-array"}'],
+  ] as const)('reports content-free %s validation diagnostics', async (validationFailure, content) => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({ choices: [{ message: { content } }] }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    const error = await provider.complete('system', 'user').catch((caught) => caught as ProviderError);
+    const diagnostic = providerErrorDiagnostic(error);
+    expect(diagnostic).toMatchObject({
+      stage: 'chat', reason: 'invalid_response', validationFailure,
+    });
+    expect(JSON.stringify(diagnostic)).not.toContain(content);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it.each([
     ['null root', 'null'],
     ['array root', '[]'],
     ['missing claims', '{}'],
@@ -206,6 +298,9 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     ['non-string chunk id', '{"claims":[{"text":"claim","evidence":[{"chunkId":1,"quote":"quote"}]}]}'],
     ['empty quote', '{"claims":[{"text":"claim","evidence":[{"chunkId":"chunk","quote":""}]}]}'],
     ['non-string quote', '{"claims":[{"text":"claim","evidence":[{"chunkId":"chunk","quote":1}]}]}'],
+    ['unexpected root property', '{"claims":[],"answer":"extra"}'],
+    ['unexpected claim property', '{"claims":[{"text":"claim","evidence":[],"confidence":1}]}'],
+    ['unexpected evidence property', '{"claims":[{"text":"claim","evidence":[{"chunkId":"chunk","quote":"quote","url":"extra"}]}]}'],
   ])('rejects malformed contract shape: %s', async (_label, content) => {
     const fetchMock = vi.fn().mockResolvedValue(
       Response.json({ choices: [{ message: { content } }] }),

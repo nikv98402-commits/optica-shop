@@ -62,8 +62,9 @@ KNOWLEDGE_EMBEDDING_API_KEY=<CLOUDFLARE_API_TOKEN>
 KNOWLEDGE_EMBEDDING_MODEL=@cf/qwen/qwen3-embedding-0.6b
 ```
 
-The chat model is selected because it supports JSON mode. The multilingual
-embedding model returns the 1024 dimensions required by the database schema.
+The chat model must support strict JSON Schema response formatting for the
+existing `ModelAnswer` contract. The multilingual embedding model returns the
+1024 dimensions required by the database schema.
 Use the same embedding model for live queries and indexing. If the existing
 index was produced by a different embedding model, run
 `npm run knowledge:index` before enabling the assistant.

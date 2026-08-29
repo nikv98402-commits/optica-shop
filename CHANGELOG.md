@@ -2,6 +2,21 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.8.0] - 2026-08-29
+
+### Fixed
+
+- Made Ask ViLu request the provider's strict answer schema so valid grounded
+  RU/EN responses are accepted consistently while malformed or unexpected output
+  remains fail-closed.
+- Kept retries limited to temporary null-content responses and added content-free
+  diagnostic categories for JSON syntax and contract-shape failures.
+
+### Added
+
+- Added contract coverage for the strict schema, RU/EN responses, the reproduced
+  Russian frame-selection query, unexpected fields, and privacy-safe diagnostics.
+
 ## [0.13.7.0] - 2026-08-29
 
 ### Fixed
