@@ -1,16 +1,17 @@
 # Knowledge Assistant deployment
 
-## Default state
+## Frontend state
 
-The feature is off unless the frontend is built with exactly:
+The feature is available only when the frontend is built with exactly:
 
 ```text
 VITE_FEATURE_KNOWLEDGE_ASSISTANT=true
 ```
 
 Missing, `false`, or any other value hides navigation and safely redirects
-direct `/assistant` visits. Keep production off until preview acceptance is
-signed.
+direct `/assistant` visits. The current GitHub Pages workflow explicitly sets
+this value to `true`; preview or rollback builds may still set it to `false`.
+This flag is separate from every `VITE_FEATURE_VILU_*` protected-workspace flag.
 
 ## Server-only configuration
 
@@ -30,6 +31,11 @@ RATE_LIMIT_SALT
 The indexer additionally needs `SUPABASE_URL` and
 `SUPABASE_SERVICE_ROLE_KEY` in its controlled server environment.
 
+The Edge Function pins `npm:@supabase/supabase-js@2.50.0` in
+`supabase/functions/knowledge-assistant/index.ts`. Keep its function-specific
+`deno.json` and frozen `deno.lock` together; do not replace the npm import with
+an `esm.sh` dependency chain.
+
 ## Deadline and observability
 
 The Edge Function owns one 18-second deadline for the complete Ask ViLu
@@ -42,8 +48,11 @@ code-owned safety boundaries, not deployment secrets or environment settings.
 An exhausted server deadline returns HTTP `504` with `request_timeout`. Monitor
 `knowledge_assistant_stage_timing` for the stage, status, duration, and remaining
 budget. This event is intentionally structural: do not add prompts, answers,
-retrieved text, tokens, keys, or secrets to it. A `504` should leave the user's
-draft available for retry and must not produce a late answer in the browser.
+retrieved text, token values, keys, or secrets to it. Bounded numeric provider
+usage counts, `finishReason`, `maxTokensReached`, response shape and validation
+category are permitted because they contain no model content. A `504` should
+leave the user's draft available for retry and must not produce a late answer
+in the browser.
 
 ## Free Cloudflare Workers AI configuration
 
@@ -90,11 +99,36 @@ contract is in `docs/specs/knowledge-assistant-preview-rollout.md`.
    ViLu-owned indexed sources, 1024-dimensional embeddings, and at least one
    citation in the smoke answer.
 8. Build Vercel Preview with `VITE_FEATURE_KNOWLEDGE_ASSISTANT=true`, the preview
-   Supabase URL, and its anon key. Production must remain `false`.
+   Supabase URL, and its anon key. Do not change the production build flag as
+   part of preview acceptance.
 9. Complete RU/EN desktop and 320 px mobile acceptance, urgent guidance,
    abstention, retry, citations, local clear, and secret scan.
 10. Enable production only in a separate change after explicit safety,
     editorial, and product sign-off.
+
+## Production deployment and verification
+
+From the reviewed `main` commit, verify the function module and deploy only the
+function named below:
+
+```powershell
+cd supabase/functions/knowledge-assistant
+deno check --frozen index.ts
+cd ../../..
+npx --yes supabase@2.115.0 functions deploy knowledge-assistant --project-ref <project-ref>
+```
+
+After deployment, perform read-only RU/EN checks on desktop and mobile
+390×844. Verify supported, abstention and timeout paths; citations; HTTP status;
+console errors; and that structural diagnostics contain no prompt, answer,
+retrieved text, token value, API key or secret. Numeric usage counters and
+content-free shape/validation categories may be present. Also verify direct
+load and reload with history from the opposite locale, legacy-v1 fail-closed
+cleanup, persistence of valid shared preferences, and RU→EN→RU during an
+unfinished request without a late answer.
+
+Do not apply database migrations, enable protected-workspace feature flags or
+start data-deletion processing as part of an Ask ViLu-only deployment.
 
 ## Rollback
 

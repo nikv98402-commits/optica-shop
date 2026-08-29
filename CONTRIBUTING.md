@@ -18,6 +18,11 @@ npm run dev
 
 The legacy storefront must work without Supabase environment variables. Demo data is the default fallback. Organization-scoped ViLu routes require configured Supabase Auth, the identity, employee-care, Passport/Profile, and Employer/Provider migrations, and explicit global and organization feature flags.
 
+Use [`docs/deployment/vilu-workspaces.md`](docs/deployment/vilu-workspaces.md)
+as the canonical Slice 0–3 operations runbook. It defines the route/role matrix,
+migration order, two-level feature gates, production rollout, rollback and
+canary checks. Do not infer a rollout sequence from migration filenames alone.
+
 ## Required Checks
 
 Run these before opening or merging a PR:
@@ -74,9 +79,10 @@ or write to production Supabase unless the task explicitly authorizes it.
 - Keep booking, urgent escalation, and outcome confirmation optimistic-locking and idempotency-safe. Reusing one key with another payload must fail, while a concurrent same-key retry must return the original response without a second side effect.
 - Audit sensitive Provider Queue reads and mutations without placing patient names, document paths, clinical reasons, or outcome details in audit metadata.
 - The Profile UI may request deletion and poll status only. It must not invoke deletion processing directly or depend on an open browser.
-- `process-data-deletion` is a server-only worker authenticated with `DATA_DELETION_DISPATCH_SECRET`. Its Supabase gateway JWT check is disabled per-function so the handler can validate that non-JWT scheduler secret. Preserve the handler check, internal service-role client, storage-first deletion order, observable statuses (`requested`, `processing`, `completed`, `failed`), and recovery of expired `processing` leases.
+- `process-data-deletion` is a server-only worker authenticated with `DATA_DELETION_DISPATCH_SECRET`. Its Supabase gateway JWT check is disabled per-function so the handler can validate that non-JWT scheduler secret. Preserve the handler check, internal service-role client, storage-first deletion order, observable statuses (`requested`, `processing`, `completed`, `cancelled`, `failed`), and recovery of expired `processing` leases. Cancellation is allowed only while a request is still `requested`, before processing begins.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` through `VITE_*`, browser code, logs, fixtures, or screenshots.
 - Keep Ask ViLu `ModelAnswer` limits synchronized across `contracts.ts`, the provider JSON Schema, runtime validation, and the system instruction: at most two claims, exactly one evidence item per claim, 72-character claim text, 96-character quotes, and 48-character chunk IDs. Never repair or accept truncated JSON; retry only an explicit `content=null` response.
+- Keep Ask ViLu browser history locale-bound. Direct load or reload must discard turns saved for the other locale while preserving valid shared preferences; locale-agnostic legacy v1 turns are cleared fail-closed. A response started before RU/EN changes must never write after the switch.
 - Employers, other employees, and members of another organization must never receive an employee's screening answers, result, or referral.
 - Do not send PII, prescription values, complaints, or uploaded-photo details to analytics.
 - User-facing copy must not promise diagnosis, exact PD measurement, or guaranteed fit.
@@ -201,4 +207,12 @@ Production is deployed to:
 https://vilu.store/
 
 GitHub Pages deploy is configured in `.github/workflows/deploy-pages.yml` and runs on push to `main`.
+
+After deployment, run the read-only matrix in
+[`docs/deployment/vilu-workspaces.md`](docs/deployment/vilu-workspaces.md): RU/EN,
+desktop/mobile 390×844, all three roles, direct protected routes, console and
+HTTP checks. For Ask ViLu also verify opposite-locale reload, legacy-v1 cleanup,
+shared preferences and RU→EN→RU during an unfinished request. Do not enable
+feature flags, apply migrations or run deletion processing as part of canary
+unless the release task grants that authority separately.
 
