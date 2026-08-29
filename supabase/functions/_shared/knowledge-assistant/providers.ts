@@ -9,6 +9,7 @@ export class ProviderError extends Error {
     public readonly providerCode?: number,
     public readonly providerMessage?: string,
     public readonly responseShape?: ProviderResponseShape,
+    public readonly validationFailure?: ProviderValidationFailure,
   ) {
     super(code);
   }
@@ -21,8 +22,11 @@ export function providerErrorDiagnostic(error: ProviderError) {
     status: error.status,
     providerCode: error.providerCode,
     ...(error.responseShape ? { responseShape: error.responseShape } : {}),
+    ...(error.validationFailure ? { validationFailure: error.validationFailure } : {}),
   };
 }
+
+export type ProviderValidationFailure = 'json_syntax' | 'contract_shape';
 
 export interface ProviderResponseShape {
   root: 'object' | 'array' | 'null' | 'other';
@@ -35,6 +39,36 @@ export interface ProviderResponseShape {
 const MAX_CHAT_RESPONSE_CHARACTERS = 32_000;
 const MINIMUM_RETRY_BUDGET_MS = 1_000;
 const COMPLETE_JSON_FENCE = /^```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```$/i;
+const MODEL_ANSWER_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    claims: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          text: { type: 'string', minLength: 1 },
+          evidence: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                chunkId: { type: 'string', minLength: 1 },
+                quote: { type: 'string', minLength: 1 },
+              },
+              required: ['chunkId', 'quote'],
+            },
+          },
+        },
+        required: ['text', 'evidence'],
+      },
+    },
+  },
+  required: ['claims'],
+} as const;
 
 interface ProviderConfig {
   baseUrl: string;
@@ -101,17 +135,25 @@ function validEmbedding(value: unknown): value is number[] {
     && value.every((item) => typeof item === 'number' && Number.isFinite(item));
 }
 
+function hasExactKeys(value: object, expected: string[]) {
+  const keys = Object.keys(value);
+  return keys.length === expected.length && expected.every((key) => keys.includes(key));
+}
+
 function validModelAnswer(value: unknown): value is ModelAnswer {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  if (!hasExactKeys(value, ['claims'])) return false;
   const claims = (value as { claims?: unknown }).claims;
   return Array.isArray(claims) && claims.every((claim) => {
     if (!claim || typeof claim !== 'object' || Array.isArray(claim)) return false;
+    if (!hasExactKeys(claim, ['text', 'evidence'])) return false;
     const candidate = claim as { text?: unknown; evidence?: unknown };
     return typeof candidate.text === 'string'
       && candidate.text.length > 0
       && Array.isArray(candidate.evidence)
       && candidate.evidence.every((evidence) => {
         if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) return false;
+        if (!hasExactKeys(evidence, ['chunkId', 'quote'])) return false;
         const citation = evidence as { chunkId?: unknown; quote?: unknown };
         return typeof citation.chunkId === 'string'
           && citation.chunkId.length > 0
@@ -121,15 +163,21 @@ function validModelAnswer(value: unknown): value is ModelAnswer {
   });
 }
 
-function parseModelAnswer(content: string): ModelAnswer | null {
+type ModelAnswerParseResult =
+  | { answer: ModelAnswer; validationFailure?: never }
+  | { answer: null; validationFailure: ProviderValidationFailure };
+
+function parseModelAnswer(content: string): ModelAnswerParseResult {
   const trimmed = content.trim();
   const fence = COMPLETE_JSON_FENCE.exec(trimmed);
   const json = fence?.[1] ?? trimmed;
   try {
     const parsed = JSON.parse(json) as unknown;
-    return validModelAnswer(parsed) ? parsed : null;
+    return validModelAnswer(parsed)
+      ? { answer: parsed }
+      : { answer: null, validationFailure: 'contract_shape' };
   } catch {
-    return null;
+    return { answer: null, validationFailure: 'json_syntax' };
   }
 }
 
@@ -186,7 +234,10 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
       body: JSON.stringify({
         model: this.config.model,
         temperature: 0.1,
-        response_format: { type: 'json_object' },
+        response_format: {
+          type: 'json_schema',
+          json_schema: MODEL_ANSWER_JSON_SCHEMA,
+        },
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       }),
     }, 'chat', this.config.timeoutMs, budget);
@@ -217,9 +268,19 @@ export class OpenAICompatibleChatProvider implements ChatProvider {
       if (typeof content !== 'string' || !content || content.length > MAX_CHAT_RESPONSE_CHARACTERS) {
         throw new ProviderError('invalid_response', 'chat', undefined, undefined, undefined, shape);
       }
-      const answer = parseModelAnswer(content);
-      if (!answer) throw new ProviderError('invalid_response', 'chat', undefined, undefined, undefined, shape);
-      return answer;
+      const parsed = parseModelAnswer(content);
+      if (!parsed.answer) {
+        throw new ProviderError(
+          'invalid_response',
+          'chat',
+          undefined,
+          undefined,
+          undefined,
+          shape,
+          parsed.validationFailure,
+        );
+      }
+      return parsed.answer;
     };
 
     try {
