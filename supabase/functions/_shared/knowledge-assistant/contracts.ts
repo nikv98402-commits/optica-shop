@@ -42,6 +42,14 @@ export interface ModelAnswer {
   claims: ModelClaim[];
 }
 
+export const MODEL_ANSWER_LIMITS = {
+  maxClaims: 2,
+  maxEvidencePerClaim: 1,
+  maxClaimCharacters: 72,
+  maxQuoteCharacters: 96,
+  maxChunkIdCharacters: 48,
+} as const;
+
 export interface AssistantResponse {
   answerId: string;
   answer: string;

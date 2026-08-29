@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  MAX_CHAT_OUTPUT_TOKENS,
   OpenAICompatibleChatProvider,
   OpenAICompatibleEmbeddingProvider,
   ProviderError,
   providerErrorDiagnostic,
 } from './providers.ts';
+import { MODEL_ANSWER_LIMITS } from './contracts.ts';
 import { buildGroundedPrompt } from './prompt.ts';
 
 afterEach(() => {
@@ -21,8 +23,10 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
       preferences: { answerLength: 'short', experience: 'beginner', interests: [] },
     }, []);
 
-    expect(system).toContain('Return only one JSON object matching response_format');
-    expect(system).toContain('Do not add Markdown or prose');
+    expect(system).toContain('Return only one compact JSON object matching response_format');
+    expect(system).toContain('Do not add indentation, Markdown, or prose');
+    expect(system).toContain(`Return 1-${MODEL_ANSWER_LIMITS.maxClaims} concise claims`);
+    expect(system).toContain(`Each quote must be at most ${MODEL_ANSWER_LIMITS.maxQuoteCharacters} characters`);
   });
 
   it('keeps provider messages out of diagnostics safe for logs', () => {
@@ -125,12 +129,14 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
       model: 'chat-model',
     });
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: '{"claims":[]}' } }] }))
+      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: '{"claims":[{"text":"Supported.","evidence":[{"chunkId":"chunk-1","quote":"Exact quote."}]}]}' } }] }))
       .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: 'not-json' } }] }))
       .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: 'x'.repeat(32_001) } }] }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(provider.complete('system', 'user')).resolves.toEqual({ claims: [] });
+    await expect(provider.complete('system', 'user')).resolves.toEqual({
+      claims: [{ text: 'Supported.', evidence: [{ chunkId: 'chunk-1', quote: 'Exact quote.' }] }],
+    });
     await expect(provider.complete('system', 'user')).rejects.toMatchObject({ code: 'invalid_response', stage: 'chat' });
     await expect(provider.complete('system', 'user')).rejects.toMatchObject({ code: 'invalid_response', stage: 'chat' });
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -164,19 +170,35 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
         properties: {
           claims: {
             type: 'array',
+            minItems: 1,
+            maxItems: MODEL_ANSWER_LIMITS.maxClaims,
             items: {
               type: 'object',
               additionalProperties: false,
               properties: {
-                text: { type: 'string' },
+                text: {
+                  type: 'string',
+                  minLength: 1,
+                  maxLength: MODEL_ANSWER_LIMITS.maxClaimCharacters,
+                },
                 evidence: {
                   type: 'array',
+                  minItems: 1,
+                  maxItems: MODEL_ANSWER_LIMITS.maxEvidencePerClaim,
                   items: {
                     type: 'object',
                     additionalProperties: false,
                     properties: {
-                      chunkId: { type: 'string' },
-                      quote: { type: 'string' },
+                      chunkId: {
+                        type: 'string',
+                        minLength: 1,
+                        maxLength: MODEL_ANSWER_LIMITS.maxChunkIdCharacters,
+                      },
+                      quote: {
+                        type: 'string',
+                        minLength: 1,
+                        maxLength: MODEL_ANSWER_LIMITS.maxQuoteCharacters,
+                      },
                     },
                     required: ['chunkId', 'quote'],
                   },
@@ -214,6 +236,31 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     await expect(provider.complete('system', 'user')).resolves.toEqual(answer);
   });
 
+  it.each([
+    ['en', 'A', 'Q'],
+    ['ru', 'Ж', 'Ц'],
+  ])('keeps the maximum valid %s ModelAnswer within the output-token byte envelope', async (_locale, textChar, quoteChar) => {
+    const answer = {
+      claims: Array.from({ length: MODEL_ANSWER_LIMITS.maxClaims }, () => ({
+        text: textChar.repeat(MODEL_ANSWER_LIMITS.maxClaimCharacters),
+        evidence: [{
+          chunkId: 'a'.repeat(MODEL_ANSWER_LIMITS.maxChunkIdCharacters),
+          quote: quoteChar.repeat(MODEL_ANSWER_LIMITS.maxQuoteCharacters),
+        }],
+      })),
+    };
+    const content = JSON.stringify(answer);
+    expect(new TextEncoder().encode(content).length).toBeLessThan(MAX_CHAT_OUTPUT_TOKENS);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      Response.json({ choices: [{ finish_reason: 'stop', message: { content } }] }),
+    ));
+    const provider = new OpenAICompatibleChatProvider({
+      baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
+    });
+
+    await expect(provider.complete('system', 'user')).resolves.toEqual(answer);
+  });
+
   it('regresses the previously unstable Russian visit-preparation query with the strict JSON Schema request', async () => {
     const answer = {
       claims: [{
@@ -237,7 +284,7 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
   });
 
   it('accepts a complete unlabelled markdown fence containing the strict contract', async () => {
-    const content = '```\n{"claims":[]}\n```';
+    const content = '```\n{"claims":[{"text":"Claim.","evidence":[{"chunkId":"chunk-1","quote":"Exact quote."}]}]}\n```';
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       Response.json({ choices: [{ message: { content } }] }),
     ));
@@ -245,7 +292,9 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
       baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
     });
 
-    await expect(provider.complete('system', 'user')).resolves.toEqual({ claims: [] });
+    await expect(provider.complete('system', 'user')).resolves.toEqual({
+      claims: [{ text: 'Claim.', evidence: [{ chunkId: 'chunk-1', quote: 'Exact quote.' }] }],
+    });
   });
 
   it.each([
@@ -359,6 +408,7 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
   it.each([
     ['null root', 'null'],
     ['array root', '[]'],
+    ['empty claims', '{"claims":[]}'],
     ['missing claims', '{}'],
     ['null claim', '{"claims":[null]}'],
     ['array claim', '{"claims":[[]]}'],
@@ -375,6 +425,11 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     ['unexpected root property', '{"claims":[],"answer":"extra"}'],
     ['unexpected claim property', '{"claims":[{"text":"claim","evidence":[],"confidence":1}]}'],
     ['unexpected evidence property', '{"claims":[{"text":"claim","evidence":[{"chunkId":"chunk","quote":"quote","url":"extra"}]}]}'],
+    ['too many claims', JSON.stringify({ claims: Array.from({ length: MODEL_ANSWER_LIMITS.maxClaims + 1 }, () => ({ text: 'claim', evidence: [{ chunkId: 'chunk', quote: 'exact quote' }] })) })],
+    ['claim text too long', JSON.stringify({ claims: [{ text: 'x'.repeat(MODEL_ANSWER_LIMITS.maxClaimCharacters + 1), evidence: [{ chunkId: 'chunk', quote: 'exact quote' }] }] })],
+    ['too many evidence items', JSON.stringify({ claims: [{ text: 'claim', evidence: Array.from({ length: MODEL_ANSWER_LIMITS.maxEvidencePerClaim + 1 }, () => ({ chunkId: 'chunk', quote: 'exact quote' })) }] })],
+    ['chunk id too long', JSON.stringify({ claims: [{ text: 'claim', evidence: [{ chunkId: 'x'.repeat(MODEL_ANSWER_LIMITS.maxChunkIdCharacters + 1), quote: 'exact quote' }] }] })],
+    ['quote too long', JSON.stringify({ claims: [{ text: 'claim', evidence: [{ chunkId: 'chunk', quote: 'x'.repeat(MODEL_ANSWER_LIMITS.maxQuoteCharacters + 1) }] }] })],
   ])('rejects malformed contract shape: %s', async (_label, content) => {
     const fetchMock = vi.fn().mockResolvedValue(
       Response.json({ choices: [{ message: { content } }] }),
@@ -411,13 +466,15 @@ describe('OpenAICompatibleEmbeddingProvider', () => {
     const leaked = 'private answer text';
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: null, reasoning: leaked } }] }))
-      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: '{"claims":[]}' } }] }));
+      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: '{"claims":[{"text":"Supported.","evidence":[{"chunkId":"chunk-1","quote":"Exact quote."}]}]}' } }] }));
     vi.stubGlobal('fetch', fetchMock);
     const provider = new OpenAICompatibleChatProvider({
       baseUrl: 'https://provider.example/v1', apiKey: 'test-token', model: 'chat-model',
     });
 
-    await expect(provider.complete('system', 'user')).resolves.toEqual({ claims: [] });
+    await expect(provider.complete('system', 'user')).resolves.toEqual({
+      claims: [{ text: 'Supported.', evidence: [{ chunkId: 'chunk-1', quote: 'Exact quote.' }] }],
+    });
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(

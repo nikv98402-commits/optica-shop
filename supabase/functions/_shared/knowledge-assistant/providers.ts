@@ -1,4 +1,4 @@
-import type { ChatProvider, EmbeddingProvider, ModelAnswer } from './contracts.ts';
+import { MODEL_ANSWER_LIMITS, type ChatProvider, type EmbeddingProvider, type ModelAnswer } from './contracts.ts';
 import type { OperationBudget } from './deadline.ts';
 
 export class ProviderError extends Error {
@@ -44,7 +44,7 @@ export interface ProviderResponseShape {
 }
 
 const MAX_CHAT_RESPONSE_CHARACTERS = 32_000;
-const MAX_CHAT_OUTPUT_TOKENS = 1_024;
+export const MAX_CHAT_OUTPUT_TOKENS = 1_024;
 const MINIMUM_RETRY_BUDGET_MS = 1_000;
 const COMPLETE_JSON_FENCE = /^```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```$/i;
 const MODEL_ANSWER_JSON_SCHEMA = {
@@ -53,19 +53,35 @@ const MODEL_ANSWER_JSON_SCHEMA = {
   properties: {
     claims: {
       type: 'array',
+      minItems: 1,
+      maxItems: MODEL_ANSWER_LIMITS.maxClaims,
       items: {
         type: 'object',
         additionalProperties: false,
         properties: {
-          text: { type: 'string' },
+          text: {
+            type: 'string',
+            minLength: 1,
+            maxLength: MODEL_ANSWER_LIMITS.maxClaimCharacters,
+          },
           evidence: {
             type: 'array',
+            minItems: 1,
+            maxItems: MODEL_ANSWER_LIMITS.maxEvidencePerClaim,
             items: {
               type: 'object',
               additionalProperties: false,
               properties: {
-                chunkId: { type: 'string' },
-                quote: { type: 'string' },
+                chunkId: {
+                  type: 'string',
+                  minLength: 1,
+                  maxLength: MODEL_ANSWER_LIMITS.maxChunkIdCharacters,
+                },
+                quote: {
+                  type: 'string',
+                  minLength: 1,
+                  maxLength: MODEL_ANSWER_LIMITS.maxQuoteCharacters,
+                },
               },
               required: ['chunkId', 'quote'],
             },
@@ -176,23 +192,31 @@ function validModelAnswer(value: unknown): value is ModelAnswer {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   if (!hasExactKeys(value, ['claims'])) return false;
   const claims = (value as { claims?: unknown }).claims;
-  return Array.isArray(claims) && claims.every((claim) => {
-    if (!claim || typeof claim !== 'object' || Array.isArray(claim)) return false;
-    if (!hasExactKeys(claim, ['text', 'evidence'])) return false;
-    const candidate = claim as { text?: unknown; evidence?: unknown };
-    return typeof candidate.text === 'string'
-      && candidate.text.length > 0
-      && Array.isArray(candidate.evidence)
-      && candidate.evidence.every((evidence) => {
-        if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) return false;
-        if (!hasExactKeys(evidence, ['chunkId', 'quote'])) return false;
-        const citation = evidence as { chunkId?: unknown; quote?: unknown };
-        return typeof citation.chunkId === 'string'
-          && citation.chunkId.length > 0
-          && typeof citation.quote === 'string'
-          && citation.quote.length > 0;
-      });
-  });
+  return Array.isArray(claims)
+    && claims.length > 0
+    && claims.length <= MODEL_ANSWER_LIMITS.maxClaims
+    && claims.every((claim) => {
+      if (!claim || typeof claim !== 'object' || Array.isArray(claim)) return false;
+      if (!hasExactKeys(claim, ['text', 'evidence'])) return false;
+      const candidate = claim as { text?: unknown; evidence?: unknown };
+      return typeof candidate.text === 'string'
+        && candidate.text.length > 0
+        && candidate.text.length <= MODEL_ANSWER_LIMITS.maxClaimCharacters
+        && Array.isArray(candidate.evidence)
+        && candidate.evidence.length > 0
+        && candidate.evidence.length <= MODEL_ANSWER_LIMITS.maxEvidencePerClaim
+        && candidate.evidence.every((evidence) => {
+          if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) return false;
+          if (!hasExactKeys(evidence, ['chunkId', 'quote'])) return false;
+          const citation = evidence as { chunkId?: unknown; quote?: unknown };
+          return typeof citation.chunkId === 'string'
+            && citation.chunkId.length > 0
+            && citation.chunkId.length <= MODEL_ANSWER_LIMITS.maxChunkIdCharacters
+            && typeof citation.quote === 'string'
+            && citation.quote.length > 0
+            && citation.quote.length <= MODEL_ANSWER_LIMITS.maxQuoteCharacters;
+        });
+    });
 }
 
 type ModelAnswerParseResult =
