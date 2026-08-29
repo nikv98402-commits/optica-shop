@@ -67,6 +67,10 @@ vilu.store
 
 ```text
 /:locale/organizations/:organizationId/employee/today
+/:locale/organizations/:organizationId/employee/screenings/:screeningId/result
+/:locale/organizations/:organizationId/employee/referrals/:referralId
+/:locale/organizations/:organizationId/employee/passport
+/:locale/organizations/:organizationId/employee/profile
 /:locale/organizations/:organizationId/employer/outcomes
 /:locale/organizations/:organizationId/provider/queue
 ```
@@ -90,6 +94,10 @@ Slice 2 добавляет отдельные Vision Passport и Profile под 
 Slice 3 реализует Employer Outcomes под `vilu_employer_outcomes_v2` и Provider Queue под `vilu_provider_queue_v2`. Employer Outcomes возвращает только зафиксированные завершённые UTC-месяцы и агрегаты одной когорты `screening -> referral -> outcome`; малые ячейки, производные ставки и дополняющие ячейки скрываются, чтобы нельзя было восстановить индивидуальные медицинские события сравнением соседних отчётов. Provider Queue доступен только участнику активной provider-организации при действующем `clinic_access` consent и поддерживает очередь, приоритет/SLA, запись, срочную эскалацию, документы и подтверждение результата. Чувствительные чтения и изменения аудитируются без помещения клинического содержимого в audit metadata; мутации используют optimistic locking и идемпотентные ключи, включая конкурентные повторы.
 
 Основной контракт Slice 3 находится в `supabase/migrations/20260821120000_create_vilu_employer_provider_operations.sql`, а безопасный порядок удаления новых дочерних записей — в `supabase/migrations/20260821130000_harden_vilu_slice3_deletion.sql`. RLS, privacy, deletion и двухсессионная конкурентность покрыты файлами `supabase/tests/employer_provider_operations_rls.test.sql`, `supabase/tests/employer_provider_deletion.test.sql` и `supabase/tests/provider_operations_concurrency.test.sql`.
+
+Единая матрица ролей, маршрутов, флагов, миграций, production rollout,
+rollback и canary-проверок находится в
+[`docs/deployment/vilu-workspaces.md`](docs/deployment/vilu-workspaces.md).
 
 ## Релизный MVP-поток
 
@@ -253,6 +261,7 @@ Codex должен использовать его как проектный к�
 - `docs/specs/knowledge-assistant-v1.md` — зафиксированная продуктовая и инженерная спецификация помощника.
 - `docs/knowledge-assistant/source-review.md` — безопасное добавление и повторная проверка источников.
 - `docs/deployment/knowledge-assistant.md` — preview rollout, секреты, индексирование и rollback.
+- `docs/deployment/vilu-workspaces.md` — эксплуатация Slice 0–3: роли, маршруты, флаги, миграции, RLS, rollout, удаление данных и canary.
 - `docs/deployment/knowledge-corpus-publication.md` — проверка артефакта, возобновляемый stage-only upload, отдельная активация и rollback корпуса.
 - `docs/testing/knowledge-assistant.md` — локальная проверка, privacy и RU/EN mobile QA.
 - `tools/vilu-corpus/README.md` — изолированный corpus pipeline, bounded pilot, безопасная диагностика и ограничения артефактов.
@@ -300,7 +309,10 @@ npm run smoke
 ## Публикация
 
 Проект настроен для GitHub Pages через `.github/workflows/deploy-pages.yml`.
-Workflow запускается при каждом push в `main`, выполняет typecheck, сборку Vite и публикует папку `dist`.
+Workflow запускается при каждом push в `main`, выполняет typecheck, lint, сборку
+Vite, создаёт статические entry-файлы прямых маршрутов и публикует папку `dist`.
+Сейчас workflow явно включает только `VITE_FEATURE_KNOWLEDGE_ASSISTANT=true`.
+Флаги защищённых Slice 0–3 в workflow не заданы и поэтому остаются выключенными.
 
 ## Supabase
 
