@@ -31,7 +31,10 @@ citation, urgent, and abstention paths use deterministic test doubles.
 - Provider/offline failure keeps the draft and offers retry.
 - A hung retrieval or provider request reaches the bounded timeout state,
   keeps the draft, offers retry, and cannot render a late answer afterward.
-- Reload preserves local history; clear removes history and preferences.
+- Reload preserves only history created in the active locale. Direct EN load or
+  reload with saved RU turns, and direct RU load or reload with saved EN turns,
+  must start without the incompatible history. Valid shared preferences remain;
+  clear removes both history and preferences.
 - DevTools Network contains no profile, photo, prescription, contact, location,
   or hidden system configuration.
 - Analytics contains no query or answer text, symptoms, free-form preferences,

@@ -15,7 +15,9 @@ profile data.
 - Output: at most two concise claims with exactly one supporting citation each,
   related ViLu pages, confidence, and a safety state.
 - History and preferences remain in versioned browser `localStorage` and can be
-  cleared by the user.
+  cleared by the user. Turns are restored only when their stored locale matches
+  the active RU/EN locale; incompatible or locale-agnostic legacy turns are
+  discarded fail-closed, while valid shared preferences are preserved.
 - Link-only sources are displayed separately as external reading. They are not
   placed into retrieval context, quoted, translated, or used as evidence.
 

@@ -32,7 +32,10 @@ payments, store locator, canonical metadata, or existing knowledge slugs.
 9. Approved link-only sources are returned as clearly separated external
    reading and never enter model context.
 10. The browser renders numbered sources and stores history and preferences in
-   versioned `localStorage` only.
+   versioned `localStorage` only. Saved turns carry their `ru`/`en` locale;
+   direct loads and reloads discard turns from another locale, while valid
+   shared preferences remain available. Locale-agnostic legacy turns are
+   cleared fail-closed.
 
 Approved external corpus releases reuse the same `knowledge_sources` and
 `knowledge_chunks` tables. Corpus rows are linked to a version that is built in
