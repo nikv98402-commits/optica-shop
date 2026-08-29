@@ -112,6 +112,17 @@ test('English preference translates the complete assistant shell', async ({ page
   await expect(page.getByRole('button', { name: /How to choose a frame size/i })).toBeVisible();
 });
 
+test('previously unstable English mobile request completes with the bounded answer contract', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem('vilu_language', 'en'));
+  await page.goto('/assistant');
+  await page.getByRole('textbox').fill('How should I prepare for choosing glasses?');
+  await page.getByTestId('assistant-form').getByRole('button', { name: 'Ask', exact: true }).click();
+
+  await expect(page.getByText('52 is the lens width. [1]')).toBeVisible();
+  await expect(page.getByText(/could not get an answer/i)).toHaveCount(0);
+});
+
 test('unsupported question shows a safe abstention and related material', async ({ page }) => {
   await page.goto('/assistant');
   await page.getByRole('textbox').fill('Неизвестный вопрос без источника');
