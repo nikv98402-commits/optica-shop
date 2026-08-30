@@ -73,7 +73,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   });
 });
 
-test('language switch clears completed and pending answers without stale writes', async ({ page }) => {
+test('RU history survives RU to EN to RU, reload, and a pending locale switch', async ({ page }) => {
   await page.goto('/assistant');
   await page.getByRole('textbox').fill('Что значит 52-18-140?');
   await page.getByRole('button', { name: 'Спросить', exact: true }).click();
@@ -81,6 +81,9 @@ test('language switch clears completed and pending answers without stale writes'
   await switchAssistantLanguage(page, 'en');
   await expect(page.getByText('52 — ширина линзы. [1]')).toHaveCount(0);
   await switchAssistantLanguage(page, 'ru');
+  await expect(page.getByText('52 — ширина линзы. [1]')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('52 — ширина линзы. [1]')).toBeVisible();
 
   await page.getByRole('textbox').fill('Медленный ответ');
   await page.getByRole('button', { name: 'Спросить', exact: true }).click();
@@ -88,9 +91,27 @@ test('language switch clears completed and pending answers without stale writes'
   await expect(page.getByRole('heading', { name: 'Ask ViLu about vision and choosing frames' })).toBeVisible();
   await switchAssistantLanguage(page, 'ru');
   await page.waitForTimeout(650);
-  await expect(page.getByText('52 — ширина линзы. [1]')).toHaveCount(0);
+  await expect(page.getByText('52 — ширина линзы. [1]')).toHaveCount(1);
   await expect(page.getByText('52 is the lens width. [1]')).toHaveCount(0);
+  await expect(page.getByText('Медленный ответ')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Спросите ViLu о зрении и выборе оправы' })).toBeVisible();
+});
+
+test('EN history survives EN to RU to EN and reload without language mixing', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('vilu_language', 'en'));
+  await page.goto('/assistant');
+  await page.getByRole('textbox').fill('What does 52-18-140 mean?');
+  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(page.getByText('52 is the lens width. [1]')).toBeVisible();
+
+  await switchAssistantLanguage(page, 'ru');
+  await expect(page.getByText('52 is the lens width. [1]')).toHaveCount(0);
+  await switchAssistantLanguage(page, 'en');
+  await expect(page.getByText('52 is the lens width. [1]')).toBeVisible();
+  await expect(page.getByText('52 — ширина линзы. [1]')).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByText('52 is the lens width. [1]')).toBeVisible();
+  await expect(page.getByText('52 — ширина линзы. [1]')).toHaveCount(0);
 });
 
 test('RU assistant answers and exposes its source', async ({ page }) => {

@@ -67,8 +67,14 @@ test('header controls, dead store navigation, and auth labels stay accessible in
   const russianTrigger = page.getByRole('button', { name: 'Создать защищённый аккаунт' });
   await russianTrigger.click();
   await expect(page.getByRole('dialog', { name: 'Регистрация' })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'Имя' })).toBeFocused();
-  await expect(page.getByRole('textbox', { name: 'Электронная почта' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Электронная почта' })).toBeFocused();
+  const russianDialog = page.getByRole('dialog', { name: 'Регистрация' });
+  const russianFocusable = russianDialog.locator('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])');
+  await russianFocusable.first().focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(russianFocusable.last()).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(russianFocusable.first()).toBeFocused();
   await page.getByRole('button', { name: 'Закрыть' }).click();
   await expect(russianTrigger).toBeFocused();
 
@@ -97,11 +103,15 @@ test('header controls, dead store navigation, and auth labels stay accessible in
   const englishTrigger = page.getByRole('button', { name: 'Create secure account' });
   await englishTrigger.click();
   await expect(page.getByRole('dialog', { name: 'Create Account' })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'Name' })).toBeFocused();
-  await expect(page.getByRole('textbox', { name: 'Email Address' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Email Address' })).toBeFocused();
   await expect.poll(() => languageSurface(page)).not.toMatch(/[А-Яа-яЁё]/);
+  const englishDialog = page.getByRole('dialog', { name: 'Create Account' });
+  const englishFocusable = englishDialog.locator('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])');
+  await englishFocusable.first().focus();
   await page.keyboard.press('Shift+Tab');
-  await expect(page.getByRole('button', { name: 'Close' })).toBeFocused();
+  await expect(englishFocusable.last()).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(englishFocusable.first()).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Create Account' })).toHaveCount(0);
   await expect(englishTrigger).toBeFocused();

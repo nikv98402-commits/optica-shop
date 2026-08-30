@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Eye, Lock, Mail, User, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +23,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
   const { language } = useLanguage();
   const t = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
 
@@ -34,7 +35,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
     if (isOpen) setMode(initialMode);
   }, [initialMode, isOpen]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isOpen) return;
 
     returnFocusRef.current = document.activeElement instanceof HTMLElement
@@ -54,10 +55,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
       dialog?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
     ).filter((element) => !element.hasAttribute('hidden'));
 
-    const focusFrame = window.requestAnimationFrame(() => {
-      const firstInput = dialog?.querySelector<HTMLElement>('input:not([disabled])');
-      (firstInput ?? getFocusableElements()[0] ?? dialog)?.focus();
-    });
+    emailRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -91,7 +89,6 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', handleKeyDown);
       returnFocusRef.current?.focus();
       returnFocusRef.current = null;
@@ -170,7 +167,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode }: AuthModalProps
             <span className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-vilu-ink/40">{t.auth.email}</span>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-vilu-green" size={18} />
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required className="w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card py-4 pl-12 pr-4 font-bold outline-none transition focus:border-vilu-lime" placeholder="demo@vilu.store" />
+              <input ref={emailRef} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required className="w-full rounded-2xl border border-vilu-ink/10 bg-vilu-card py-4 pl-12 pr-4 font-bold outline-none transition focus:border-vilu-lime" placeholder="demo@vilu.store" />
             </div>
           </label>
 
