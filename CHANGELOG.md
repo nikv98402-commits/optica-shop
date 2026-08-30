@@ -2,6 +2,23 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.12.0] - 2026-08-30
+
+### Fixed
+
+- Restored reliable keyboard entry into the sign-in and registration dialog,
+  including initial email focus, forward and reverse focus trapping, Escape
+  closing, and focus return in Russian and English.
+- Preserved separate Russian and English Ask ViLu conversations across language
+  switches and reloads while keeping preferences shared and discarding legacy
+  mixed-language history fail-closed.
+
+### Added
+
+- Added desktop and 390×844 mobile regressions for AuthModal keyboard behavior,
+  locale-specific Ask ViLu history restoration, reloads, and in-flight language
+  switches without late answers.
+
 ## [0.13.11.0] - 2026-08-29
 
 ### Fixed
