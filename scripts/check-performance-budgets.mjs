@@ -27,6 +27,7 @@ const entryJs = initialAsset(/<script[^>]+src="([^"]*\/assets\/index-[^"]+\.js)"
 const entryCss = initialAsset(/<link[^>]+href="([^"]*\/assets\/index-[^"]+\.css)"/, 'entry CSS');
 const js = await size(entryJs);
 const css = await size(entryCss);
+const cssText = await readFile(join(assets, entryCss), 'utf8');
 
 assert(js.gzip < 150 * 1024, `Entry JS is ${js.gzip} bytes gzip; budget is <153600.`);
 assert(css.raw < 100 * 1024, `Entry CSS is ${css.raw} bytes raw; budget is <102400.`);
@@ -39,10 +40,30 @@ for (const chunk of ['supabase-', 'AuthNavigationBridge-', 'FoundationRoutes-', 
 }
 
 assert(html.includes('requestIdleCallback'), 'Yandex Metrica must remain outside the initial rendering path.');
-assert(/rel="preload"\s+as="style"[^>]+fonts\.googleapis\.com/.test(html), 'Google Fonts must use non-blocking preload.');
+assert(!/fonts\.(?:googleapis|gstatic)\.com/.test(html), 'Initial HTML must not depend on Google Fonts.');
+assert(!/fonts\.(?:googleapis|gstatic)\.com/.test(cssText), 'Entry CSS must not depend on Google Fonts.');
+
+const criticalFontPreloads = [
+  'fonts/manrope-cyrillic-variable.woff2',
+  'fonts/unbounded-cyrillic-variable.woff2',
+];
+for (const font of criticalFontPreloads) {
+  assert(html.includes(`rel="preload" href="/${font}" as="font" type="font/woff2" crossorigin`), `Missing critical local font preload for ${font}.`);
+}
+assert((html.match(/rel="preload"[^>]+as="font"/g) ?? []).length === criticalFontPreloads.length, 'Only critical local fonts may be preloaded.');
+
+for (const font of [
+  ...criticalFontPreloads,
+  'fonts/manrope-latin-variable.woff2',
+  'fonts/unbounded-latin-variable.woff2',
+]) {
+  const bytes = await readFile(join(dist, font));
+  assert(bytes.byteLength > 1_000, `Local font ${font} is missing or empty.`);
+}
 
 console.log(JSON.stringify({
   entryJs: { file: entryJs, ...js, budgetGzip: 150 * 1024 },
   entryCss: { file: entryCss, ...css, budgetRaw: 100 * 1024, budgetGzip: 25 * 1024 },
   lazyChunksVerified: ['supabase', 'AuthNavigationBridge', 'FoundationRoutes', 'TryOnPilot', 'faceFitEngine'],
+  localFontsVerified: true,
 }, null, 2));
