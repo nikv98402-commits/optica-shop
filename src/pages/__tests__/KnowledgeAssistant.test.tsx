@@ -46,16 +46,20 @@ describe('KnowledgeAssistant', () => {
     expect(screen.getByRole('button', { name: 'Ask' })).toBeDisabled();
   });
 
-  it('clears local history and settings from the UI', async () => {
-    localStorage.setItem('vilu_knowledge_assistant_v2', JSON.stringify({
-      version: 2, locale: 'ru', preferences: { experience: 'familiar', interests: [], answerLength: 'detailed' },
+  it('clears active-locale history while preserving shared settings', async () => {
+    localStorage.setItem('vilu_knowledge_assistant_history_v3_ru', JSON.stringify({
+      version: 3, locale: 'ru',
       turns: [{ id: 'turn', role: 'user', content: 'Stored question', createdAt: new Date().toISOString() }],
+    }));
+    localStorage.setItem('vilu_knowledge_assistant_preferences_v3', JSON.stringify({
+      version: 3, preferences: { experience: 'familiar', interests: [], answerLength: 'detailed' },
     }));
     const user = userEvent.setup();
     render(<LanguageProvider><KnowledgeAssistant onNavigate={vi.fn()} /></LanguageProvider>);
     await user.click(screen.getByRole('button', { name: /Очистить историю/i }));
     expect(screen.queryByText('Stored question')).not.toBeInTheDocument();
-    expect(localStorage.getItem('vilu_knowledge_assistant_v2')).toContain('"turns":[]');
+    expect(localStorage.getItem('vilu_knowledge_assistant_history_v3_ru')).toContain('"turns":[]');
+    expect(localStorage.getItem('vilu_knowledge_assistant_preferences_v3')).toContain('"experience":"familiar"');
   });
 
   it.each([
@@ -78,7 +82,7 @@ describe('KnowledgeAssistant', () => {
       : 'Выберите подсказку или задайте свой вопрос.')).toBeVisible();
   });
 
-  it('clears a completed response across RU to EN to RU', async () => {
+  it('restores a completed response after RU to EN to RU', async () => {
     const user = userEvent.setup();
     render(<LanguageProvider><LanguageHarness /></LanguageProvider>);
     await user.type(screen.getByRole('textbox'), 'Что значит размер?');
@@ -88,7 +92,7 @@ describe('KnowledgeAssistant', () => {
     expect(screen.queryByText(supported.answer)).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Ask ViLu about vision and choosing frames' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'toggle locale' }));
-    expect(screen.queryByText(supported.answer)).not.toBeInTheDocument();
+    expect(screen.getByText(supported.answer)).toBeVisible();
   });
 
   it('ignores a late response from the previous locale', async () => {

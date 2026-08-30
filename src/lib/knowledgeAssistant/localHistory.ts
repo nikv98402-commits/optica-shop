@@ -1,9 +1,10 @@
 import type { Language } from '../../i18n/translations';
 import type { AssistantPreferences, AssistantStoredTurn } from '../../types/knowledgeAssistant';
 
-const STORAGE_KEY = 'vilu_knowledge_assistant_v2';
-const LEGACY_STORAGE_KEY = 'vilu_knowledge_assistant_v1';
-const SCHEMA_VERSION = 2;
+const HISTORY_STORAGE_PREFIX = 'vilu_knowledge_assistant_history_v3_';
+const PREFERENCES_STORAGE_KEY = 'vilu_knowledge_assistant_preferences_v3';
+const LEGACY_STORAGE_KEYS = ['vilu_knowledge_assistant_v1', 'vilu_knowledge_assistant_v2'] as const;
+const SCHEMA_VERSION = 3;
 const MAX_STORED_TURNS = 20;
 
 export const defaultAssistantPreferences: AssistantPreferences = {
@@ -13,11 +14,24 @@ export const defaultAssistantPreferences: AssistantPreferences = {
 };
 
 export interface AssistantLocalState {
-  version: 2;
+  version: 3;
   locale: Language;
   turns: AssistantStoredTurn[];
   preferences: AssistantPreferences;
 }
+
+interface StoredHistory {
+  version: 3;
+  locale: Language;
+  turns: AssistantStoredTurn[];
+}
+
+interface StoredPreferences {
+  version: 3;
+  preferences: AssistantPreferences;
+}
+
+const historyStorageKey = (locale: Language) => `${HISTORY_STORAGE_PREFIX}${locale}`;
 
 function emptyState(locale: Language, preferences = defaultAssistantPreferences): AssistantLocalState {
   return {
@@ -49,24 +63,43 @@ function hasValidTurns(value: unknown): value is AssistantStoredTurn[] {
     ));
 }
 
-function isValidState(value: unknown): value is AssistantLocalState {
+function isValidHistory(value: unknown, locale: Language): value is StoredHistory {
   if (!value || typeof value !== 'object') return false;
-  const state = value as Partial<AssistantLocalState>;
+  const state = value as Partial<StoredHistory>;
   return state.version === SCHEMA_VERSION
-    && (state.locale === 'ru' || state.locale === 'en')
-    && hasValidTurns(state.turns)
-    && isValidPreferences(state.preferences);
+    && state.locale === locale
+    && hasValidTurns(state.turns);
 }
 
-function readLegacyPreferences(storage: Storage): AssistantPreferences | null {
-  try {
-    const raw = storage.getItem(LEGACY_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { preferences?: unknown };
-    return isValidPreferences(parsed?.preferences) ? parsed.preferences : null;
-  } catch {
-    return null;
+function readPreferences(storage: Storage): AssistantPreferences {
+  const storedPreferences = storage.getItem(PREFERENCES_STORAGE_KEY);
+  if (storedPreferences) {
+    try {
+      const parsed = JSON.parse(storedPreferences) as Partial<StoredPreferences>;
+      if (parsed.version === SCHEMA_VERSION && isValidPreferences(parsed.preferences)) {
+        return parsed.preferences;
+      }
+    } catch {
+      // Invalid settings fail closed to the defaults below.
+    }
   }
+
+  for (const key of LEGACY_STORAGE_KEYS) {
+    try {
+      const raw = storage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as { preferences?: unknown };
+      if (isValidPreferences(parsed.preferences)) return parsed.preferences;
+    } catch {
+      // Legacy turns are never restored; keep looking only for valid preferences.
+    }
+  }
+
+  return defaultAssistantPreferences;
+}
+
+function removeLegacyState(storage: Storage) {
+  LEGACY_STORAGE_KEYS.forEach((key) => storage.removeItem(key));
 }
 
 export function readAssistantLocalState(
@@ -74,16 +107,17 @@ export function readAssistantLocalState(
   storage: Storage = window.localStorage,
 ): AssistantLocalState {
   try {
-    const raw = storage.getItem(STORAGE_KEY);
-    if (!raw) return emptyState(locale, readLegacyPreferences(storage) ?? defaultAssistantPreferences);
+    const preferences = readPreferences(storage);
+    const raw = storage.getItem(historyStorageKey(locale));
+    removeLegacyState(storage);
+    if (!raw) return emptyState(locale, preferences);
     const parsed = JSON.parse(raw) as unknown;
-    if (!isValidState(parsed)) return emptyState(locale);
-    if (parsed.locale !== locale) return emptyState(locale, parsed.preferences);
+    if (!isValidHistory(parsed, locale)) return emptyState(locale, preferences);
     return {
       version: SCHEMA_VERSION,
       locale,
       turns: parsed.turns.slice(-MAX_STORED_TURNS),
-      preferences: parsed.preferences,
+      preferences,
     };
   } catch {
     return emptyState(locale);
@@ -94,19 +128,26 @@ export function saveAssistantLocalState(
   state: AssistantLocalState,
   storage: Storage = window.localStorage,
 ) {
-  const safeState: AssistantLocalState = {
+  const safeHistory: StoredHistory = {
     version: SCHEMA_VERSION,
     locale: state.locale,
     turns: state.turns.slice(-MAX_STORED_TURNS),
+  };
+  const safePreferences: StoredPreferences = {
+    version: SCHEMA_VERSION,
     preferences: state.preferences,
   };
-  storage.setItem(STORAGE_KEY, JSON.stringify(safeState));
-  storage.removeItem(LEGACY_STORAGE_KEY);
+  storage.setItem(historyStorageKey(state.locale), JSON.stringify(safeHistory));
+  storage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(safePreferences));
+  removeLegacyState(storage);
 }
 
-export function clearAssistantLocalState(storage: Storage = window.localStorage) {
-  storage.removeItem(STORAGE_KEY);
-  storage.removeItem(LEGACY_STORAGE_KEY);
+export function clearAssistantLocalState(
+  locale: Language,
+  storage: Storage = window.localStorage,
+) {
+  storage.removeItem(historyStorageKey(locale));
+  removeLegacyState(storage);
 }
 
 export function toBoundedRecentTurns(turns: AssistantStoredTurn[]) {

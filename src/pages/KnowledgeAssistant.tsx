@@ -214,7 +214,7 @@ export function KnowledgeAssistant({ onNavigate, onOpenStores }: KnowledgeAssist
     if (previousLanguageRef.current === language) return;
     previousLanguageRef.current = language;
     requestTokenRef.current += 1;
-    setLocalState((current) => ({ ...current, locale: language, turns: [] }));
+    setLocalState(readAssistantLocalState(language));
     setLastQuery('');
     setErrorCode(null);
     setExpandedSources({});
@@ -295,7 +295,7 @@ export function KnowledgeAssistant({ onNavigate, onOpenStores }: KnowledgeAssist
   };
 
   const clearHistory = () => {
-    clearAssistantLocalState();
+    clearAssistantLocalState(language);
     setLocalState(readAssistantLocalState(language));
     setDraft('');
     setLastQuery('');
