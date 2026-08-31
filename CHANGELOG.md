@@ -2,6 +2,19 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.13.0] - 2026-08-31
+
+### Fixed
+
+- Made direct profile links load successfully and safely continue to the authenticated
+  dashboard without an intermediate GitHub Pages 404 in Russian and English.
+
+### Added
+
+- Added desktop and 390×844 mobile regressions for direct profile navigation, plus a
+  reproducible production network diagnostic for DNS, TCP, TLS, TTFB, redirects, cache
+  headers, and initial same-origin resources.
+
 ## [0.13.12.0] - 2026-08-30
 
 ### Fixed

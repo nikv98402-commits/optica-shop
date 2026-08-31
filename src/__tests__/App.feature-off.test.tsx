@@ -31,6 +31,7 @@ vi.mock('../pages/VisionAccess', () => ({ VisionAccess: () => null }));
 vi.mock('../pages/AboutBrand', () => ({ AboutBrand: () => null }));
 vi.mock('../pages/PaymentStatus', () => ({ PaymentStatus: () => null }));
 vi.mock('../pages/KnowledgeAssistant', () => ({ KnowledgeAssistant: () => <h1>Assistant page</h1> }));
+vi.mock('../pages/AuthenticatedDashboard', () => ({ AuthenticatedDashboard: () => <h1>Dashboard page</h1> }));
 vi.mock('../pages/KnowledgeBase', () => ({ getKnowledgePage: () => null, KnowledgeBase: () => null }));
 vi.mock('../services/serviceCheckout', () => ({
   createServiceCheckoutDraft: vi.fn(),
@@ -50,6 +51,13 @@ describe('App with Knowledge Assistant disabled', () => {
     expect(window.location.pathname).toBe('/');
     expect(screen.getByRole('heading', { name: 'Home page' })).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Assistant page' })).not.toBeInTheDocument();
+  });
+
+  it('canonicalizes a direct /profile visit to /dashboard', async () => {
+    window.history.replaceState({}, '', '/profile');
+    render(<App />);
+    expect(window.location.pathname).toBe('/dashboard');
+    expect(await screen.findByRole('heading', { name: 'Dashboard page' })).toBeVisible();
   });
 
   it('guards navigation to the disabled assistant', async () => {

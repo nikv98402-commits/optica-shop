@@ -11,7 +11,7 @@ export const PRODUCT_SLUGS = [
   'comfort-monthly',
 ];
 
-export const DIRECT_ROUTE_ENTRIES = ['assistant', 'dashboard', 'checkout'];
+export const DIRECT_ROUTE_ENTRIES = ['assistant', 'dashboard', 'checkout', 'profile'];
 
 export const STATIC_ROUTES = [
   'tryon',
@@ -25,6 +25,7 @@ export const STATIC_ROUTES = [
   'product',
   'assistant',
   'dashboard',
+  'profile',
   'cabinet',
   'checkout',
   'about',

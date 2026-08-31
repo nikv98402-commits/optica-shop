@@ -54,7 +54,12 @@ function currentKnowledgeSlug() {
     const normalizedRedirect = redirect.startsWith('/') ? redirect : `/${redirect}`;
     window.history.replaceState({}, '', normalizedRedirect);
   }
-  return window.location.pathname.replace(/^\/+|\/+$/g, '');
+  const slug = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (slug === 'profile') {
+    window.history.replaceState({}, '', '/dashboard');
+    return 'dashboard';
+  }
+  return slug;
 }
 
 function currentAppPage(): Page {

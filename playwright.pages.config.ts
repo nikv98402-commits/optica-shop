@@ -21,5 +21,14 @@ export default defineConfig({
       VITE_SUPABASE_ANON_KEY: 'public-test-anon-key',
     },
   },
-  projects: [{ name: 'desktop', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'mobile-390x844',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 390, height: 844 },
+      },
+    },
+  ],
 });

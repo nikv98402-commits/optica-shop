@@ -45,4 +45,16 @@ describe('GitHub Pages SPA routing', () => {
       await expect(access(join(distDirectory, route, 'index.html'))).rejects.toThrow();
     }
   });
+
+  it('publishes /profile as a direct HTTP 200 entry before the SPA canonicalizes it', async () => {
+    const distDirectory = await mkdtemp(join(tmpdir(), 'vilu-pages-'));
+    await writeFile(join(distDirectory, 'index.html'), '<main>ViLu SPA</main>');
+
+    await addGithubPagesRoutes(distDirectory);
+
+    await expect(readFile(join(distDirectory, 'profile.html'), 'utf8')).resolves.toBe(
+      '<main>ViLu SPA</main>',
+    );
+    await expect(access(join(distDirectory, 'profile', 'index.html'))).rejects.toThrow();
+  });
 });
