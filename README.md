@@ -262,6 +262,7 @@ Codex должен использовать его как проектный к�
 - `docs/knowledge-assistant/source-review.md` — безопасное добавление и повторная проверка источников.
 - `docs/deployment/knowledge-assistant.md` — preview rollout, секреты, индексирование и rollback.
 - `docs/deployment/vilu-workspaces.md` — эксплуатация Slice 0–3: роли, маршруты, флаги, миграции, RLS, rollout, удаление данных и canary.
+- `docs/deployment/vilu-closed-pilot.md` — подготовка закрытого пилота: две связанные организации, три тестовые роли, выключенные по умолчанию флаги, проверки и data-preserving rollback.
 - `docs/deployment/knowledge-corpus-publication.md` — проверка артефакта, возобновляемый stage-only upload, отдельная активация и rollback корпуса.
 - `docs/testing/knowledge-assistant.md` — локальная проверка, privacy и RU/EN mobile QA.
 - `tools/vilu-corpus/README.md` — изолированный corpus pipeline, bounded pilot, безопасная диагностика и ограничения артефактов.

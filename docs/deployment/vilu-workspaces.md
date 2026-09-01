@@ -99,7 +99,7 @@ previous one.
 
 ## Production rollout
 
-For the one-organization closed pilot, use
+For one closed pilot spanning linked employer and provider organizations, use
 [`vilu-closed-pilot.md`](vilu-closed-pilot.md). Its provisioning and rollback
 files keep all organization flags disabled and do not create Auth or care data.
 

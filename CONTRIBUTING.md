@@ -38,6 +38,21 @@ npm run test:e2e
 npm run test:performance
 ```
 
+For changes to the closed-pilot provisioning, protected route entries or pilot
+safety workflow, also run:
+
+```bash
+npm run test:pilot
+npm run test:pilot:sql
+npm run test:pages-routes
+```
+
+`test:pilot:sql` requires the local Supabase Docker stack. Every pull request
+also runs `.github/workflows/pilot-safety.yml`, which must pass both
+`test:rls` and `test:pilot:sql` before the pilot package can merge. The complete
+operator sequence is in
+[`docs/deployment/vilu-closed-pilot.md`](docs/deployment/vilu-closed-pilot.md).
+
 `npm run test:rls` runs against the local Supabase database. It verifies allowed and denied access, cross-organization and cross-employee isolation, role-escalation and telemetry-role spoofing denial, draft ownership, concurrent idempotent referral creation, Passport/Profile access, provider consent, exports, documents, Employer Outcomes privacy suppression, Provider Queue operations and auditing, concurrent provider mutations, and the data-deletion queue. Start the local Supabase stack first; Docker must be available.
 
 `npm run test:performance` builds the production bundle and enforces the anonymous Home budgets: initial JavaScript below 150 KiB gzip, initial CSS below 100 KiB raw and 25 KiB gzip, independently loadable Supabase/workspace/try-on/Face-fit chunks, non-blocking fonts, and deferred analytics. Run it whenever route imports, shared CSS, Home media, fonts, or analytics loading changes.
