@@ -19,6 +19,8 @@ export default defineConfig({
       VITE_FEATURE_KNOWLEDGE_ASSISTANT: 'true',
       VITE_SUPABASE_URL: 'https://example.supabase.co',
       VITE_SUPABASE_ANON_KEY: 'public-test-anon-key',
+      VILU_PILOT_EMPLOYER_ORG_ID: '20000000-0000-4000-8000-000000000001',
+      VILU_PILOT_PROVIDER_ORG_ID: '20000000-0000-4000-8000-000000000002',
     },
   },
   projects: [

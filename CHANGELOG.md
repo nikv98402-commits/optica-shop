@@ -2,6 +2,17 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.13.14.0] - 2026-09-01
+
+### Added
+
+- Added a fail-closed, transactional provisioning and rollback package for a closed
+  ViLu pilot spanning linked employer and provider organizations and three test roles.
+- Added organization-scoped pilot route entries, privacy and guard regressions, and
+  mandatory pull-request CI for RLS and operator runbook integration checks.
+- Documented pilot preparation, staged flag activation, validation, and data-preserving
+  rollback while keeping all pilot feature flags disabled by default.
+
 ## [0.13.13.0] - 2026-08-31
 
 ### Fixed
