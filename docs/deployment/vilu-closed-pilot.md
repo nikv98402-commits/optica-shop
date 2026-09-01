@@ -23,8 +23,11 @@ The pilot feature matrix is:
 
 ## Local preflight
 
-1. Create three disposable local Auth users and record only their UUIDs.
-2. Generate two different UUIDv4 organization IDs.
+1. Create three disposable local Auth users with the same
+   `raw_app_meta_data.vilu_closed_pilot_marker` UUID. Never add this marker to
+   an existing owner, production or service identity.
+2. Generate two different UUIDv4 organization IDs and a third UUIDv4 as the
+   durable `pilot_marker`.
 3. Start/reset local Supabase and run the full RLS suite.
 4. Execute the provisioning file twice. The second execution must leave the
    same two organizations, three memberships and six disabled feature rows.
@@ -35,6 +38,7 @@ or reports:
 
 ```powershell
 psql $env:LOCAL_DATABASE_URL `
+  -v pilot_marker='<uuid>' `
   -v employer_org_id='<uuid>' `
   -v provider_org_id='<uuid>' `
   -v employee_user_id='<uuid>' `
@@ -43,8 +47,10 @@ psql $env:LOCAL_DATABASE_URL `
   -f supabase/runbooks/vilu_closed_pilot_provision.sql
 ```
 
-The transaction stops before any insert when an Auth user is missing or IDs
-are reused. Existing organization conflicts, invalid role/type combinations,
+The transaction creates a private registry that permanently binds the marker,
+two organizations and three disposable Auth identities. It stops when an Auth
+marker is missing, an identity has any non-pilot membership, or a replay changes
+any binding. Existing organization conflicts, invalid role/type combinations,
 incomplete flags and enabled ViLu flags outside the allowlist also roll back.
 Output is limited to organization IDs/types and aggregate counts.
 
@@ -97,6 +103,7 @@ Disable the two pilot organizations without deleting users or care records:
 
 ```powershell
 psql $env:PRODUCTION_DATABASE_URL `
+  -v pilot_marker='<uuid>' `
   -v employer_org_id='<uuid>' `
   -v provider_org_id='<uuid>' `
   -f supabase/runbooks/vilu_closed_pilot_disable.sql

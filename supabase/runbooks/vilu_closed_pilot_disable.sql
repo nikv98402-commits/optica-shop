@@ -5,31 +5,24 @@
 
 begin;
 
+set local vilu_pilot.marker = :'pilot_marker';
 set local vilu_pilot.employer_org_id = :'employer_org_id';
 set local vilu_pilot.provider_org_id = :'provider_org_id';
 
 do $preflight$
 begin
+  perform current_setting('vilu_pilot.marker')::uuid;
   if current_setting('vilu_pilot.employer_org_id')::uuid = current_setting('vilu_pilot.provider_org_id')::uuid then
     raise exception 'Pilot organization IDs must be distinct';
   end if;
   if not exists (
-    select 1 from public.organizations
-    where id = current_setting('vilu_pilot.employer_org_id')::uuid
-      and name = 'ViLu closed pilot employer'
-      and organization_type = 'employer'
-      and country_code = 'RU'
+    select 1
+    from private.vilu_closed_pilot_registry
+    where pilot_marker = current_setting('vilu_pilot.marker')::uuid
+      and employer_organization_id = current_setting('vilu_pilot.employer_org_id')::uuid
+      and provider_organization_id = current_setting('vilu_pilot.provider_org_id')::uuid
   ) then
-    raise exception 'Employer organization ID is not the provisioned closed-pilot organization';
-  end if;
-  if not exists (
-    select 1 from public.organizations
-    where id = current_setting('vilu_pilot.provider_org_id')::uuid
-      and name = 'ViLu closed pilot provider'
-      and organization_type = 'provider'
-      and country_code = 'RU'
-  ) then
-    raise exception 'Provider organization ID is not the provisioned closed-pilot organization';
+    raise exception 'Pilot marker is not bound to the supplied organizations';
   end if;
 end
 $preflight$;
