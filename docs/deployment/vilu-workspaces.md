@@ -99,6 +99,10 @@ previous one.
 
 ## Production rollout
 
+For the one-organization closed pilot, use
+[`vilu-closed-pilot.md`](vilu-closed-pilot.md). Its provisioning and rollback
+files keep all organization flags disabled and do not create Auth or care data.
+
 1. Confirm the Supabase project ref, current backup, reviewed `main` commit and
    that all protected global and organization flags are disabled.
 2. Link the CLI to the intended project and inspect pending migrations:

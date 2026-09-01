@@ -7,21 +7,69 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
+  pilot-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Unit and pilot contract tests
+        run: npm test
+
+      - name: Direct route UI regression tests
+        run: npm run test:pages-routes
+
+      - name: Start local Supabase
+        run: npx --yes supabase@2.115.0 start
+
+      - name: RLS integration tests
+        run: npm run test:rls
+
+      - name: Pilot operator runbook integration
+        run: npm run test:pilot:sql
+
+      - name: Stop local Supabase
+        if: always()
+        run: npx --yes supabase@2.115.0 stop --no-backup
+
   build:
+    needs: pilot-safety
     runs-on: ubuntu-latest
     env:
       VITE_TALLY_FORM_URL: ${{ vars.VITE_TALLY_FORM_URL }}
       VITE_FEATURE_KNOWLEDGE_ASSISTANT: "true"
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      # Protected ViLu surfaces remain fail-closed when these repository
+      # variables are absent or anything other than the exact string "true".
+      VITE_FEATURE_VILU_FOUNDATION: ${{ vars.VITE_FEATURE_VILU_FOUNDATION }}
+      VITE_FEATURE_VILU_AUTH_V2: ${{ vars.VITE_FEATURE_VILU_AUTH_V2 }}
+      VITE_FEATURE_VILU_EMPLOYEE_FLOW_V2: ${{ vars.VITE_FEATURE_VILU_EMPLOYEE_FLOW_V2 }}
+      VITE_FEATURE_VILU_PROVIDER_QUEUE_V2: ${{ vars.VITE_FEATURE_VILU_PROVIDER_QUEUE_V2 }}
+      VITE_FEATURE_VILU_PASSPORT_PROFILE_V2: ${{ vars.VITE_FEATURE_VILU_PASSPORT_PROFILE_V2 }}
+      VITE_FEATURE_VILU_EMPLOYER_OUTCOMES_V2: ${{ vars.VITE_FEATURE_VILU_EMPLOYER_OUTCOMES_V2 }}
+      # Non-secret UUIDs are optional. Both must be present and valid before
+      # the build emits protected pilot route entries.
+      VILU_PILOT_EMPLOYER_ORG_ID: ${{ vars.VILU_PILOT_EMPLOYER_ORG_ID }}
+      VILU_PILOT_PROVIDER_ORG_ID: ${{ vars.VILU_PILOT_PROVIDER_ORG_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,6 +101,10 @@ jobs:
           path: dist
 
   deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

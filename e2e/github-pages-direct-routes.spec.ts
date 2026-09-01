@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 
+const employerOrganizationId = '20000000-0000-4000-8000-000000000001';
+const providerOrganizationId = '20000000-0000-4000-8000-000000000002';
+
 for (const route of ['/assistant', '/dashboard', '/checkout']) {
   test(`${route} loads its static route entry directly with HTTP 200`, async ({ page }) => {
     const responses: number[] = [];
@@ -14,6 +17,30 @@ for (const route of ['/assistant', '/dashboard', '/checkout']) {
     await expect(page.locator('#root')).not.toBeEmpty();
     await expect(page).toHaveURL(new RegExp(`${route}$`));
   });
+}
+
+for (const locale of ['ru', 'en'] as const) {
+  for (const route of [
+    `/${locale}/organizations/${employerOrganizationId}/employee/today`,
+    `/${locale}/organizations/${employerOrganizationId}/employee/passport`,
+    `/${locale}/organizations/${employerOrganizationId}/employee/profile`,
+    `/${locale}/organizations/${employerOrganizationId}/employer/outcomes`,
+    `/${locale}/organizations/${providerOrganizationId}/provider/queue`,
+  ]) {
+    test(`${route} has a direct static pilot entry and stays globally gated`, async ({ page }) => {
+      const responses: number[] = [];
+      page.on('response', (response) => {
+        if (response.request().isNavigationRequest()) responses.push(response.status());
+      });
+
+      const response = await page.goto(route, { waitUntil: 'domcontentloaded' });
+
+      expect(response?.status()).toBe(200);
+      expect(responses).toEqual([200]);
+      await expect(page).toHaveURL(/\/$/);
+      await expect(page.locator('#root')).not.toBeEmpty();
+    });
+  }
 }
 
 for (const locale of ['ru', 'en'] as const) {

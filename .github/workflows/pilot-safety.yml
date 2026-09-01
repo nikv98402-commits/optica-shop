@@ -1,0 +1,50 @@
+name: ViLu closed pilot safety
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pilot-safety-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pilot-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Unit and pilot contract tests
+        run: npm test
+
+      - name: Direct route UI regression tests
+        run: npm run test:pages-routes
+
+      - name: Start local Supabase
+        run: npx --yes supabase@2.115.0 start
+
+      - name: RLS integration tests
+        run: npm run test:rls
+
+      - name: Pilot operator runbook integration
+        run: npm run test:pilot:sql
+
+      - name: Stop local Supabase
+        if: always()
+        run: npx --yes supabase@2.115.0 stop --no-backup
