@@ -57,7 +57,8 @@ describe('ReferralPage', () => {
 
     expect(await screen.findByText('Запись создана')).toBeInTheDocument();
     expect(screen.getByText('Запись на')).toBeInTheDocument();
-    expect(screen.getByText(/17.*сент.*2026.*15:15/i)).toBeInTheDocument();
+    const expectedAppointment = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long', timeStyle: 'short' }).format(new Date('2026-09-17T12:15:00Z'));
+    expect(screen.getByText(expectedAppointment)).toBeInTheDocument();
     expect(screen.queryByText(/2.*сент.*2026/i)).not.toBeInTheDocument();
   });
 
