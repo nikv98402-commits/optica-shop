@@ -44,26 +44,21 @@ export function AtomicHeading({ lines, as: Tag = 'h1', className = '', ariaLabel
       return;
     }
 
-    const assemble = window.setTimeout(() => setAssembled(true), 120);
-    const cycle = window.setInterval(() => {
-      setAssembled(false);
-      window.setTimeout(() => setAssembled(true), 1350);
-    }, 5900);
+    const assemble = window.setTimeout(() => setAssembled(true), 40);
 
     return () => {
       window.clearTimeout(assemble);
-      window.clearInterval(cycle);
     };
   }, [active]);
 
   return (
     <Tag
       ref={rootRef}
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? lines.join(' ')}
       className={`atomic-heading ${assembled ? 'is-assembled' : ''} ${className}`}
     >
       {atoms.map((line, lineIndex) => (
-        <span className="atomic-heading__line" key={`${lines[lineIndex]}-${lineIndex}`}>
+        <span aria-hidden="true" className="atomic-heading__line" key={`${lines[lineIndex]}-${lineIndex}`}>
           {line.map((char, charIndex) => {
             const vector = atomVector(lineIndex, charIndex);
             return (
@@ -75,14 +70,13 @@ export function AtomicHeading({ lines, as: Tag = 'h1', className = '', ariaLabel
                   '--atom-x': `${vector.x}px`,
                   '--atom-y': `${vector.y}px`,
                   '--atom-r': `${vector.rotation}deg`,
-                  '--atom-delay': `${lineIndex * 90 + charIndex * 22}ms`,
+                  '--atom-delay': `${lineIndex * 20 + charIndex * 4}ms`,
                 } as CSSProperties}
               >
                 {char === ' ' ? '\u00a0' : char}
               </span>
             );
           })}
-          <span className="sr-only">{lines[lineIndex]}</span>
         </span>
       ))}
     </Tag>
