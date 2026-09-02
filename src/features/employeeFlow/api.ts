@@ -75,7 +75,7 @@ export async function createReferral(organizationId: string, screeningId: string
 }
 
 export async function getReferral(organizationId: string, referralId: string) {
-  const { data, error } = await supabase.rpc('get_employee_referral', {
+  const { data, error } = await supabase.rpc('get_employee_referral_detail', {
     target_organization_id: organizationId,
     target_referral_id: referralId,
   }).single();

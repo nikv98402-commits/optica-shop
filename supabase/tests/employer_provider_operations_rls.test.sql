@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(36);
+select plan(41);
 
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at)
 select ('14000000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','slice3-'||i||'@example.test','',now(),now(),now() from generate_series(1,24)i;
@@ -61,6 +61,14 @@ select lives_ok($$select public.book_provider_appointment('24000000-0000-0000-00
 select lives_ok($$select public.book_provider_appointment('24000000-0000-0000-0000-000000000003','64000000-0000-0000-0000-000000000001',2,now()+interval '2 minutes','84000000-0000-0000-0000-000000000001')$$,'appointment operation is idempotent');
 select is((select count(*)::int from public.referral_appointments),1,'idempotent booking creates one appointment');
 select throws_ok($$select public.book_provider_appointment('24000000-0000-0000-0000-000000000003','64000000-0000-0000-0000-000000000001',2,now()+interval '3 days','84000000-0000-0000-0000-000000000001')$$,'22023',null,'idempotency key cannot be reused with different input');
+select set_config('request.jwt.claim.sub','14000000-0000-0000-0000-000000000001',true);
+select is(public.get_employee_referral_detail('24000000-0000-0000-0000-000000000001','64000000-0000-0000-0000-000000000001')->>'provider_status','appointment_booked','employee referral detail exposes the provider workflow status');
+select ok((public.get_employee_referral_detail('24000000-0000-0000-0000-000000000001','64000000-0000-0000-0000-000000000001')->>'appointment_at')::timestamptz=(select scheduled_at from public.referral_appointments where referral_id='64000000-0000-0000-0000-000000000001'),'employee referral detail exposes the booked appointment date');
+select is(public.get_employee_vision_passport('24000000-0000-0000-0000-000000000001')->'referrals'->0->>'status','appointment_booked','vision passport exposes the provider workflow status');
+select ok((public.get_employee_vision_passport('24000000-0000-0000-0000-000000000001')->'referrals'->0->>'appointmentAt')::timestamptz=(select scheduled_at from public.referral_appointments where referral_id='64000000-0000-0000-0000-000000000001'),'vision passport exposes the booked appointment date');
+select set_config('request.jwt.claim.sub','14000000-0000-0000-0000-000000000002',true);
+select throws_ok($$select public.get_employee_referral_detail('24000000-0000-0000-0000-000000000001','64000000-0000-0000-0000-000000000001')$$,'42501',null,'employee referral detail rejects another employee in the same organization');
+select set_config('request.jwt.claim.sub','14000000-0000-0000-0000-000000000022',true);
 select lives_ok($$select public.get_provider_referral('24000000-0000-0000-0000-000000000003','64000000-0000-0000-0000-000000000001')$$,'provider opens consented referral detail');
 select lives_ok($$select public.escalate_provider_referral('24000000-0000-0000-0000-000000000003','64000000-0000-0000-0000-000000000001',3,'clinical_red_flag','84000000-0000-0000-0000-000000000003')$$,'provider escalation uses the locked referral version');
 select throws_ok($$select public.confirm_provider_outcome('24000000-0000-0000-0000-000000000003','64000000-0000-0000-0000-000000000001',4,'exam_completed',now(),'84000000-0000-0000-0000-000000000004')$$,'22023',null,'outcome cannot predate its booked appointment');

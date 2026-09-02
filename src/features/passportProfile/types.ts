@@ -1,10 +1,10 @@
 export interface PassportScreening { id:string; completedAt:string; outcome:'routine'|'review_recommended'|'urgent'; reviewWithinDays:number }
-export type ReferralStatus = 'created';
+export type ReferralStatus = 'created'|'queued'|'appointment_booked'|'urgent_escalated'|'examination_completed'|'outcome_confirmed';
 export type RecommendationStatus = 'active'|'completed'|'dismissed';
 export type RecommendationKey = 'review.annual'|'comfort.breaks'|'exam.follow_up';
 export type DocumentType = 'visit_summary'|'prescription'|'care_plan';
 export type DeletionStatus = 'requested'|'processing'|'completed'|'cancelled'|'failed';
-export interface PassportReferral { id:string; status:ReferralStatus; priority:'review_recommended'|'urgent'; respondBy:string; createdAt:string }
+export interface PassportReferral { id:string; status:ReferralStatus; priority:'review_recommended'|'urgent'; respondBy:string; appointmentAt:string|null; createdAt:string }
 export interface PassportRecommendation { id:string; titleKey:RecommendationKey; status:RecommendationStatus; dueAt:string|null }
 export interface PassportDocument { id:string; type:DocumentType; title:string; storagePath:string; issuedAt:string }
 export interface VisionPassport { screenings:PassportScreening[]; referrals:PassportReferral[]; recommendations:PassportRecommendation[]; documents:PassportDocument[]; nextReviewAt:string|null }
