@@ -2,6 +2,20 @@
 
 All notable ViLu MVP changes should be documented here.
 
+## [0.14.0.0] - 2026-09-02
+
+### Changed
+
+- Employee referral details and the vision passport now follow the clinical
+  partner's current workflow status and show the booked appointment date.
+
+### Added
+
+- Added owner-scoped referral progress access with authorization regressions
+  that prevent employees from reading another employee's referral.
+- Documented the completed closed-pilot validation and data-preserving feature
+  flag closeout procedure.
+
 ## [0.13.14.0] - 2026-09-01
 
 ### Added
