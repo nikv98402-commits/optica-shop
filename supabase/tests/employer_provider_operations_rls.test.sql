@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(36);
 
 insert into auth.users(id,instance_id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at)
 select ('14000000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','slice3-'||i||'@example.test','',now(),now(),now() from generate_series(1,24)i;
@@ -46,7 +46,12 @@ select is(public.get_employer_outcomes('24000000-0000-0000-0000-000000000001',da
 select is(public.get_employer_outcomes('24000000-0000-0000-0000-000000000001',date_trunc('month',now())-interval '1 month',date_trunc('month',now()))->>'screeningRate',null::text,'screening rate is suppressed with its count cell');
 select is(public.get_employer_outcomes('24000000-0000-0000-0000-000000000001',date_trunc('month',now())-interval '1 month',date_trunc('month',now()))->>'nextStep',null::text,'next-step cell is suppressed when the preceding funnel complement is too small');
 select throws_ok($$select public.get_employer_outcomes('24000000-0000-0000-0000-000000000001',now()-interval '30 days',now())$$,'22023',null,'arbitrary overlapping windows cannot be used for differencing');
-select throws_ok($$select public.get_employer_outcomes('24000000-0000-0000-0000-000000000002',date_trunc('month',now())-interval '1 month',date_trunc('month',now()))$$,'42501',null,'privacy threshold blocks a small same-role organization');
+select lives_ok($$select public.get_employer_outcomes('24000000-0000-0000-0000-000000000002',date_trunc('month',now())-interval '1 month',date_trunc('month',now()))$$,'small same-role organization receives a safe suppression response');
+select is(public.get_employer_outcomes('24000000-0000-0000-0000-000000000002',date_trunc('month',now())-interval '1 month',date_trunc('month',now()))->>'privacySuppressed','true','small cohort response is explicitly suppressed');
+select ok(not public.get_employer_outcomes('24000000-0000-0000-0000-000000000002',date_trunc('month',now())-interval '1 month',date_trunc('month',now())) ? 'cohortSize','small cohort response does not expose its size');
+select set_config('request.jwt.claim.sub','14000000-0000-0000-0000-000000000024',true);
+select throws_ok($$select public.get_employer_outcomes('24000000-0000-0000-0000-000000000001',date_trunc('month',now())-interval '1 month',date_trunc('month',now()))$$,'42501',null,'missing employer membership remains a real access denial');
+select set_config('request.jwt.claim.sub','14000000-0000-0000-0000-000000000021',true);
 select is((select count(*)::int from public.screening_results),0,'employer cannot read medical results directly');
 select is((select count(*)::int from public.referrals),0,'employer cannot read referrals directly');
 
