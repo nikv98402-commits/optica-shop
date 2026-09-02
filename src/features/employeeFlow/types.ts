@@ -28,7 +28,8 @@ export interface Referral {
   status: 'created' | 'assigned' | 'booked' | 'urgent' | 'completed';
   version: number;
   provider_organization_id: string | null;
-  provider_status: string;
+  provider_status: 'unassigned' | 'queued' | 'appointment_booked' | 'urgent_escalated' | 'examination_completed' | 'outcome_confirmed';
+  appointment_at: string | null;
   priority: ScreeningOutcome;
   respond_by: string;
   created_at: string;

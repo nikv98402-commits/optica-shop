@@ -64,11 +64,14 @@ Apply the complete ordered chain; never apply a later Slice migration alone:
 3. `20260820120000_create_vilu_passport_profile.sql`
 4. `20260821120000_create_vilu_employer_provider_operations.sql`
 5. `20260821130000_harden_vilu_slice3_deletion.sql`
+6. `20260902140000_expose_employee_referral_progress.sql`
 
 The chain creates organizations, memberships, roles, feature flags and audit
 events; employee screenings and referrals; Passport/Profile, consent,
 documents and deletion requests; then employer/provider operations and their
-storage-safe deletion order.
+storage-safe deletion order. The final migration gives the referral owner a
+single organization-scoped progress read and keeps Referral and Vision Passport
+aligned with the provider workflow status and booked appointment date.
 
 ## Local verification
 
@@ -88,9 +91,9 @@ npm run lint
 `npm run test:rls` covers allowed/denied access, two organizations, role
 escalation denial, telemetry-role spoofing denial, employee draft resume,
 atomic referral creation, Passport/Profile and clinic consent, employer privacy
-suppression, provider auditing and optimistic concurrency, and deletion worker
-ordering. The provider concurrency suite uses two independent database
-sessions.
+suppression, owner-only referral progress, provider auditing and optimistic
+concurrency, and deletion worker ordering. The provider concurrency suite uses
+two independent database sessions.
 
 Before rollout, also exercise RU/EN on desktop and mobile 390×844 for each role.
 Test a user holding the same role in two organizations and confirm that changing
@@ -180,7 +183,8 @@ changes. Record HTTP status, load time, console/page errors and screenshots for:
 
 - `/`, `/assistant`, `/dashboard` and `/checkout` on desktop and mobile 390×844;
 - RU and EN navigation and direct protected-route loading;
-- employee Today → Result → Referral, Passport and Profile;
+- employee Today → Result → Referral, Passport and Profile, including matching
+  provider status and booked appointment date in Referral and Passport;
 - employer aggregate-only outcomes with no employee drill-down;
 - provider queue, pagination and only the operations valid for the current
   referral status;

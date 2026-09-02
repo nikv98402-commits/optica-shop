@@ -50,7 +50,7 @@ describe('employee flow RPC contracts', () => {
     const referral = { id: 'referral-1' };
     mocks.single.mockResolvedValue({ data: referral, error: null });
     await expect(getReferral('org-1', 'referral-1')).resolves.toBe(referral);
-    expect(mocks.rpc).toHaveBeenCalledWith('get_employee_referral', {
+    expect(mocks.rpc).toHaveBeenCalledWith('get_employee_referral_detail', {
       target_organization_id: 'org-1', target_referral_id: 'referral-1',
     });
   });
