@@ -138,6 +138,7 @@ Slice 3 is defined by these migrations:
 
 - `supabase/migrations/20260821120000_create_vilu_employer_provider_operations.sql` — Employer Outcomes, provider assignment, queue reads, booking, escalation, outcome confirmation, idempotency receipts and audit events.
 - `supabase/migrations/20260821130000_harden_vilu_slice3_deletion.sql` — deletion ordering for provider-operation receipts, appointments, escalations and clinical outcomes before their parent referral.
+- `supabase/migrations/20260902140000_expose_employee_referral_progress.sql` — owner-scoped employee referral progress and synchronized provider status and appointment date in Referral and Vision Passport reads.
 
 Apply the complete local migration chain and run the RLS suite:
 
@@ -149,7 +150,7 @@ npm run test:rls
 
 The Slice 3 database regressions are split by boundary:
 
-- `supabase/tests/employer_provider_operations_rls.test.sql` covers organization isolation, provider membership, clinic consent, audit events, outcome time bounds, privacy threshold and complementary suppression.
+- `supabase/tests/employer_provider_operations_rls.test.sql` covers organization isolation, provider membership, clinic consent, owner-scoped employee referral progress, audit events, outcome time bounds, privacy threshold and complementary suppression.
 - `supabase/tests/provider_operations_concurrency.test.sql` uses two independent database sessions to cover same-key replay and different-key optimistic conflicts for booking, escalation and outcome confirmation.
 - `supabase/tests/employer_provider_deletion.test.sql` verifies that the production deletion transaction removes provider-operation children before the referral and reaches an observable completed state.
 
