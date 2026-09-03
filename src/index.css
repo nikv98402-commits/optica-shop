@@ -5832,3 +5832,28 @@ html body #root .kinetic-surface > :is(.orbits-section--dark, .orbits-section--k
   color: var(--orbits-black) !important;
   background: rgba(255, 253, 248, 0.72) !important;
 }
+
+/* Vision Tracker frame contract: keep the opening hero full-bleed and its floating
+   back action legible after the legacy v5 rules above. This must remain after
+   those rules because they otherwise restore paper gutters and a paper button. */
+.eye-orbits-page {
+  padding: 0 0 6rem !important;
+}
+
+html body #root .eye-orbits-back {
+  border: 1px solid var(--orbits-black) !important;
+  color: var(--orbits-paper) !important;
+  background-color: var(--orbits-black) !important;
+  background-image: none !important;
+  backdrop-filter: none;
+}
+
+.eye-orbits-hero {
+  border-color: var(--orbits-black) !important;
+}
+
+@media (max-width: 768px) {
+  .eye-orbits-page {
+    padding-bottom: 4rem !important;
+  }
+}
