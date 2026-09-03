@@ -90,6 +90,7 @@
 
 @layer components {
   .employee-flow-header { @apply sticky top-0 z-40; }
+  .employee-flow-header nav { @apply flex items-center; }
   .employee-flow-header nav a { @apply rounded-full px-4 py-2 text-sm font-extrabold text-vilu-green hover:bg-vilu-lime/30; }
   .employee-flow-shell { @apply mx-auto min-h-[calc(100svh-77px)] max-w-7xl px-4 py-8 md:px-6 md:py-12; }
   .employee-flow-hero { @apply mb-8 grid items-end gap-6 border-b border-vilu-line pb-8 md:grid-cols-[minmax(0,1fr)_auto]; }
@@ -168,7 +169,14 @@
 }
 
 @media (max-width: 639px) {
-  .employee-flow-shell { padding-bottom: 6rem; }
+  .employee-flow-header__inner { flex-wrap: wrap; gap: 0.5rem 0.75rem; }
+  .employee-flow-header nav { order: 3; width: 100%; justify-content: space-between; border-top: 1px solid var(--vilu-line); padding-top: 0.5rem; }
+  .employee-flow-header nav a { flex: 1 1 0; padding-inline: 0.4rem; text-align: center; font-size: 0.78rem; }
+  .employee-flow-shell,.operations-shell { padding-top: 1.5rem; padding-bottom: 4rem; }
+  .employee-flow-hero,.operations-hero { margin-bottom: 1.5rem; padding-bottom: 1.5rem; gap: 1rem; }
+  .employee-flow-hero h1,.operations-hero h1 { font-size: clamp(2rem, 10vw, 2.75rem); }
+  .employee-flow-primary-card h1,.employee-flow-primary-card h2,.employee-flow-question h2 { font-size: clamp(1.75rem, 8vw, 2.35rem); }
+  .employee-flow-primary-card > p { font-size: 1rem; line-height: 1.65; }
   .employee-flow-hero .optical-status { align-items: flex-start; white-space: normal; }
   .employee-flow-primary-card .optical-button { width: 100%; }
 }
@@ -581,7 +589,14 @@ h1, h2, h3, .font-black {
 }
 
 .assistant-orbits-dialog {
-  min-height: 38rem;
+  min-height: 24rem;
+}
+
+.guard-message__description {
+  margin: 1rem auto 0;
+  max-width: 30rem;
+  color: var(--vilu-muted-text);
+  line-height: 1.65;
 }
 
 .assistant-orbits-composer {
@@ -3920,6 +3935,10 @@ body {
 
   .assistant-orbits-layout {
     padding-top: 1rem;
+  }
+
+  .assistant-orbits-dialog {
+    min-height: 0;
   }
 
   .assistant-orbits-next-steps {
