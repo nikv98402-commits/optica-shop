@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LanguageProvider } from '../../contexts/LanguageContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { KnowledgeAssistant } from '../KnowledgeAssistant';
@@ -25,6 +25,19 @@ function LanguageHarness() {
 
 describe('KnowledgeAssistant', () => {
   beforeEach(() => askKnowledgeAssistant.mockReset().mockResolvedValue(supported));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('does not steal focus or scroll position on a mobile viewport', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    render(<LanguageProvider><KnowledgeAssistant onNavigate={vi.fn()} /></LanguageProvider>);
+    expect(screen.getByRole('textbox')).not.toHaveFocus();
+  });
+
+  it('focuses the composer on a wide viewport', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    render(<LanguageProvider><KnowledgeAssistant onNavigate={vi.fn()} /></LanguageProvider>);
+    expect(screen.getByRole('textbox')).toHaveFocus();
+  });
 
   it('submits a RU question and renders expandable citations', async () => {
     const user = userEvent.setup();

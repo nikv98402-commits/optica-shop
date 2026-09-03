@@ -207,7 +207,7 @@ export function KnowledgeAssistant({ onNavigate, onOpenStores }: KnowledgeAssist
 
   useEffect(() => {
     trackEvent(AnalyticsEvent.AssistantOpened, { locale: language });
-    inputRef.current?.focus();
+    if (window.matchMedia?.('(min-width: 640px)').matches) inputRef.current?.focus();
   }, [language]);
 
   useEffect(() => {
