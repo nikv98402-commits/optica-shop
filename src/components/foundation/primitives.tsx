@@ -13,6 +13,8 @@ export function OpticalButton({ className, type = 'button', ...props }: ButtonHT
   return <button type={type} className={clsx('optical-button', className)} {...props} />;
 }
 
-export function OpticalStatus({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'signal' | 'success' | 'warning' }) {
+export type OpticalStatusTone = 'neutral' | 'signal' | 'info' | 'success' | 'warning' | 'danger';
+
+export function OpticalStatus({ children, tone = 'neutral' }: { children: ReactNode; tone?: OpticalStatusTone }) {
   return <span className={`optical-status optical-status--${tone}`}>{children}</span>;
 }

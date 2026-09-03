@@ -71,8 +71,10 @@
     @apply inline-flex items-center rounded-full border border-vilu-line bg-vilu-card px-3 py-1 text-xs font-bold;
   }
   .optical-status--signal { @apply border-vilu-lime bg-vilu-lime/20; }
-  .optical-status--success { @apply text-vilu-success; }
-  .optical-status--warning { @apply text-vilu-warning; }
+  .optical-status--info { color: var(--vilu-info); border-color: color-mix(in srgb, var(--vilu-info) 35%, transparent); background: color-mix(in srgb, var(--vilu-info) 8%, var(--vilu-card)); }
+  .optical-status--success { color: var(--vilu-success); border-color: color-mix(in srgb, var(--vilu-success) 35%, transparent); background: color-mix(in srgb, var(--vilu-success) 8%, var(--vilu-card)); }
+  .optical-status--warning { color: var(--vilu-warning); border-color: color-mix(in srgb, var(--vilu-warning) 35%, transparent); background: color-mix(in srgb, var(--vilu-warning) 9%, var(--vilu-card)); }
+  .optical-status--danger { color: var(--vilu-error); border-color: color-mix(in srgb, var(--vilu-error) 40%, transparent); background: color-mix(in srgb, var(--vilu-error) 9%, var(--vilu-card)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -185,6 +187,10 @@
   --vilu-card: #f8f3e8;
   --vilu-subtle: rgba(7, 17, 13, 0.06);
   --vilu-muted-text: rgba(7, 17, 13, 0.62);
+  --vilu-success: #15803d;
+  --vilu-warning: #92400e;
+  --vilu-error: #b91c1c;
+  --vilu-info: #1d4ed8;
   --background: var(--vilu-paper);
   --foreground: var(--vilu-ink);
   --card: var(--vilu-card);

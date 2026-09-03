@@ -25,7 +25,7 @@ export function ScreeningResultPage() {
   return <main className="employee-flow-shell">
     <section className="employee-flow-grid">
       <OpticalCard className="employee-flow-primary-card">
-        <OpticalStatus tone={outcome === 'urgent' ? 'warning' : 'signal'}>{copy.result.eyebrow}</OpticalStatus>
+        <OpticalStatus tone={outcome === 'urgent' ? 'danger' : outcome === 'review_recommended' ? 'warning' : 'success'}>{copy.result.eyebrow}</OpticalStatus>
         <h1>{copy.result.title[outcome]}</h1><p>{copy.result.summary[outcome]}</p>
         <div className="employee-flow-result-window"><small>{copy.result.window}</small><strong>{copy.result.days[data.result.review_within_days]}</strong></div>
         {needsReferral ? <OpticalButton disabled={busy} onClick={refer}>{copy.result.createReferral}</OpticalButton> : <Link className="optical-button" to={today}>{copy.result.noReferral}</Link>}
