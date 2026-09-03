@@ -14,7 +14,7 @@ export function RoleLayout({ role }: { role: 'employee' | 'employer' | 'provider
   return (
     <div className="optical-signal-page min-h-screen">
       <header className="employee-flow-header border-b border-vilu-line bg-vilu-paper/95 px-4 py-4 backdrop-blur md:px-6">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <div className="employee-flow-header__inner mx-auto flex max-w-7xl items-center justify-between">
           <Link className="text-2xl font-black" to="/">ViLu</Link>
           {role === 'employee' ? <nav aria-label={copy.roles.employee}>
             <Link to={`${employeeRoot}/today`}>{foundationTranslations[language].employeeNav.today}</Link>

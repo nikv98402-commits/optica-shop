@@ -71,8 +71,10 @@
     @apply inline-flex items-center rounded-full border border-vilu-line bg-vilu-card px-3 py-1 text-xs font-bold;
   }
   .optical-status--signal { @apply border-vilu-lime bg-vilu-lime/20; }
-  .optical-status--success { @apply text-vilu-success; }
-  .optical-status--warning { @apply text-vilu-warning; }
+  .optical-status--info { color: var(--vilu-info); border-color: color-mix(in srgb, var(--vilu-info) 35%, transparent); background: color-mix(in srgb, var(--vilu-info) 8%, var(--vilu-card)); }
+  .optical-status--success { color: var(--vilu-success); border-color: color-mix(in srgb, var(--vilu-success) 35%, transparent); background: color-mix(in srgb, var(--vilu-success) 8%, var(--vilu-card)); }
+  .optical-status--warning { color: var(--vilu-warning); border-color: color-mix(in srgb, var(--vilu-warning) 35%, transparent); background: color-mix(in srgb, var(--vilu-warning) 9%, var(--vilu-card)); }
+  .optical-status--danger { color: var(--vilu-error); border-color: color-mix(in srgb, var(--vilu-error) 40%, transparent); background: color-mix(in srgb, var(--vilu-error) 9%, var(--vilu-card)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -88,6 +90,7 @@
 
 @layer components {
   .employee-flow-header { @apply sticky top-0 z-40; }
+  .employee-flow-header nav { @apply flex items-center; }
   .employee-flow-header nav a { @apply rounded-full px-4 py-2 text-sm font-extrabold text-vilu-green hover:bg-vilu-lime/30; }
   .employee-flow-shell { @apply mx-auto min-h-[calc(100svh-77px)] max-w-7xl px-4 py-8 md:px-6 md:py-12; }
   .employee-flow-hero { @apply mb-8 grid items-end gap-6 border-b border-vilu-line pb-8 md:grid-cols-[minmax(0,1fr)_auto]; }
@@ -166,7 +169,14 @@
 }
 
 @media (max-width: 639px) {
-  .employee-flow-shell { padding-bottom: 6rem; }
+  .employee-flow-header__inner { flex-wrap: wrap; gap: 0.5rem 0.75rem; }
+  .employee-flow-header nav { order: 3; width: 100%; justify-content: space-between; border-top: 1px solid var(--vilu-line); padding-top: 0.5rem; }
+  .employee-flow-header nav a { flex: 1 1 0; padding-inline: 0.4rem; text-align: center; font-size: 0.78rem; }
+  .employee-flow-shell,.operations-shell { padding-top: 1.5rem; padding-bottom: 4rem; }
+  .employee-flow-hero,.operations-hero { margin-bottom: 1.5rem; padding-bottom: 1.5rem; gap: 1rem; }
+  .employee-flow-hero h1,.operations-hero h1 { font-size: clamp(2rem, 10vw, 2.75rem); }
+  .employee-flow-primary-card h1,.employee-flow-primary-card h2,.employee-flow-question h2 { font-size: clamp(1.75rem, 8vw, 2.35rem); }
+  .employee-flow-primary-card > p { font-size: 1rem; line-height: 1.65; }
   .employee-flow-hero .optical-status { align-items: flex-start; white-space: normal; }
   .employee-flow-primary-card .optical-button { width: 100%; }
 }
@@ -185,6 +195,10 @@
   --vilu-card: #f8f3e8;
   --vilu-subtle: rgba(7, 17, 13, 0.06);
   --vilu-muted-text: rgba(7, 17, 13, 0.62);
+  --vilu-success: #15803d;
+  --vilu-warning: #92400e;
+  --vilu-error: #b91c1c;
+  --vilu-info: #1d4ed8;
   --background: var(--vilu-paper);
   --foreground: var(--vilu-ink);
   --card: var(--vilu-card);
@@ -575,7 +589,14 @@ h1, h2, h3, .font-black {
 }
 
 .assistant-orbits-dialog {
-  min-height: 38rem;
+  min-height: 24rem;
+}
+
+.guard-message__description {
+  margin: 1rem auto 0;
+  max-width: 30rem;
+  color: var(--vilu-muted-text);
+  line-height: 1.65;
 }
 
 .assistant-orbits-composer {
@@ -1369,13 +1390,13 @@ body {
 
 .atomic-heading__atom {
   display: inline-block;
-  opacity: 0.08;
-  filter: blur(7px);
-  transform: translate(var(--atom-x), var(--atom-y)) rotate(var(--atom-r)) scale(0.56);
+  opacity: 0.48;
+  filter: blur(2px);
+  transform: translate(calc(var(--atom-x) * 0.16), calc(var(--atom-y) * 0.16)) rotate(calc(var(--atom-r) * 0.12)) scale(0.94);
   transition:
-    opacity 1s cubic-bezier(0.2, 0.8, 0.2, 1) var(--atom-delay),
-    filter 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) var(--atom-delay),
-    transform 1.45s cubic-bezier(0.2, 0.8, 0.2, 1) var(--atom-delay);
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--atom-delay),
+    filter 240ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--atom-delay),
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--atom-delay);
 }
 
 .atomic-heading.is-assembled .atomic-heading__atom {
@@ -3914,6 +3935,10 @@ body {
 
   .assistant-orbits-layout {
     padding-top: 1rem;
+  }
+
+  .assistant-orbits-dialog {
+    min-height: 0;
   }
 
   .assistant-orbits-next-steps {

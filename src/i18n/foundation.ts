@@ -3,8 +3,10 @@ import type { Language } from './translations';
 const en = {
   loading: 'Loading your workspace…',
   signInRequired: 'Sign in to continue',
+  signInBody: 'Use your ViLu account to return to the secure workspace.',
   signInAction: 'Sign in',
   accessDenied: 'You do not have access to this workspace.',
+  accessDeniedBody: 'Check the organization link or return to the ViLu home page.',
   unavailableTitle: 'This workspace is not enabled yet',
   unavailableBody: 'The secure ViLu foundation is ready, but this screen will arrive in a later slice.',
   backHome: 'Back to ViLu',
@@ -23,8 +25,10 @@ type TranslationShape<T> = T extends string
 const ru = {
   loading: 'Загружаем рабочее пространство…',
   signInRequired: 'Войдите, чтобы продолжить',
+  signInBody: 'Используйте аккаунт ViLu, чтобы вернуться в защищённое рабочее пространство.',
   signInAction: 'Войти',
   accessDenied: 'У вас нет доступа к этому рабочему пространству.',
+  accessDeniedBody: 'Проверьте ссылку организации или вернитесь на главную страницу ViLu.',
   unavailableTitle: 'Рабочее пространство пока не включено',
   unavailableBody: 'Защищённый фундамент ViLu готов, а этот экран появится в следующем срезе.',
   backHome: 'Вернуться в ViLu',

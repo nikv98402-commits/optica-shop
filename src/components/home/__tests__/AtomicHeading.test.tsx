@@ -14,7 +14,7 @@ describe('AtomicHeading', () => {
     expect(screen.getByRole('heading', { name: 'Clear route' })).toHaveClass('is-assembled');
   });
 
-  it('observes visibility, assembles, cycles, and disconnects on cleanup', () => {
+  it('observes visibility, assembles once, and disconnects on cleanup', () => {
     vi.useFakeTimers();
     let callback!: IntersectionObserverCallback;
     const observe = vi.fn();
@@ -33,19 +33,22 @@ describe('AtomicHeading', () => {
     expect(observe).toHaveBeenCalledWith(heading);
 
     act(() => callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
-    act(() => vi.advanceTimersByTime(120));
+    act(() => vi.advanceTimersByTime(40));
     expect(heading).toHaveClass('is-assembled');
 
     act(() => callback([{ isIntersecting: false } as IntersectionObserverEntry], {} as IntersectionObserver));
     expect(heading).toHaveClass('is-assembled');
 
-    act(() => callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
-    act(() => vi.advanceTimersByTime(5900));
-    expect(heading).not.toHaveClass('is-assembled');
-    act(() => vi.advanceTimersByTime(1350));
+    act(() => vi.advanceTimersByTime(10_000));
     expect(heading).toHaveClass('is-assembled');
 
     unmount();
     expect(disconnect).toHaveBeenCalledOnce();
+  });
+
+  it('exposes one accessible name when no explicit label is provided', () => {
+    vi.stubGlobal('IntersectionObserver', undefined);
+    render(<AtomicHeading lines={['Clear route', 'Better sight']} />);
+    expect(screen.getByRole('heading', { name: 'Clear route Better sight' })).toBeInTheDocument();
   });
 });

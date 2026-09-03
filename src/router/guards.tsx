@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Navigate, useLocation, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import { publicFeatures } from '../config/features';
 import { useAuth, type OrganizationRole } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -27,7 +27,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   if (loading) return <GuardMessage title={copy.loading} />;
   if (!user) {
     return <>
-      <GuardMessage title={copy.signInRequired} actionLabel={copy.signInAction} onAction={() => setAuthOpen(true)} />
+      <GuardMessage title={copy.signInRequired} description={copy.signInBody} actionLabel={copy.signInAction} onAction={() => setAuthOpen(true)} />
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} mode="login" />
       <input type="hidden" name="returnTo" value={`${location.pathname}${location.search}${location.hash}`} />
     </>;
@@ -44,7 +44,7 @@ export function RoleGuard({ roles, children }: { roles: OrganizationRole[]; chil
   const workspace = selectActiveWorkspace(user?.memberships ?? [], activeOrganizationId, roles, isEnabled);
   return workspace
     ? <ActiveWorkspaceContext.Provider value={workspace}>{children}</ActiveWorkspaceContext.Provider>
-    : <GuardMessage title={foundationTranslations[language].accessDenied} />;
+    : <GuardMessage title={foundationTranslations[language].accessDenied} description={foundationTranslations[language].accessDeniedBody} backLabel={foundationTranslations[language].backHome} />;
 }
 
 export function OrganizationFeatureGate({ feature, children }: { feature: OrganizationFeatureKey; children: ReactNode }) {
@@ -57,13 +57,15 @@ export function OrganizationFeatureGate({ feature, children }: { feature: Organi
   return enabled ? children : <GuardMessage title={foundationTranslations[language].unavailableTitle} />;
 }
 
-function GuardMessage({ title, actionLabel, onAction }: { title: string; actionLabel?: string; onAction?: () => void }) {
+function GuardMessage({ title, description, actionLabel, backLabel, onAction }: { title: string; description?: string; actionLabel?: string; backLabel?: string; onAction?: () => void }) {
   return (
     <main className="optical-signal-page grid min-h-screen place-items-center px-6">
       <section className="optical-card max-w-xl text-center" aria-live="polite">
         <p className="optical-eyebrow">ViLu</p>
         <h1 className="mt-3 text-3xl font-extrabold">{title}</h1>
+        {description && <p className="guard-message__description">{description}</p>}
         {actionLabel && onAction && <button className="optical-button mt-6" onClick={onAction}>{actionLabel}</button>}
+        {backLabel && <Link className="optical-button optical-button--secondary mt-6 inline-flex" to="/">{backLabel}</Link>}
       </section>
     </main>
   );
